@@ -470,3 +470,115 @@ class ProductDeliveryContext(Base):
     __table_args__ = (
         Index('idx_delivery_context_user_id', 'user_id'),
     )
+
+
+# ============================================
+# BUG TRACKING
+# ============================================
+
+class Bug(Base):
+    """Bug entity - standalone or linked to Epics/Features/Stories"""
+    __tablename__ = "bugs"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    bug_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("bug_"))
+    user_id: Mapped[str] = mapped_column(String(50), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    
+    # Required fields
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    severity: Mapped[str] = mapped_column(String(50), default=BugSeverity.MEDIUM.value, nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default=BugStatus.DRAFT.value, nullable=False)
+    
+    # Optional structured fields
+    steps_to_reproduce: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    expected_behavior: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    actual_behavior: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    environment: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    assignee_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    priority: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    due_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    
+    # Soft delete
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    links: Mapped[List["BugLink"]] = relationship(back_populates="bug", cascade="all, delete-orphan")
+    status_history: Mapped[List["BugStatusHistory"]] = relationship(back_populates="bug", cascade="all, delete-orphan")
+    conversation_events: Mapped[List["BugConversationEvent"]] = relationship(back_populates="bug", cascade="all, delete-orphan")
+    
+    __table_args__ = (
+        Index('idx_bugs_user_id', 'user_id'),
+        Index('idx_bugs_status', 'status'),
+        Index('idx_bugs_severity', 'severity'),
+        Index('idx_bugs_not_deleted', 'is_deleted'),
+    )
+
+
+class BugLink(Base):
+    """Polymorphic join table for linking bugs to Epics/Features/Stories"""
+    __tablename__ = "bug_links"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    link_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("link_"))
+    bug_id: Mapped[str] = mapped_column(String(50), ForeignKey("bugs.bug_id", ondelete="CASCADE"), nullable=False)
+    entity_type: Mapped[str] = mapped_column(String(50), nullable=False)  # epic, feature, story
+    entity_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    bug: Mapped["Bug"] = relationship(back_populates="links")
+    
+    __table_args__ = (
+        Index('idx_bug_links_bug_id', 'bug_id'),
+        Index('idx_bug_links_entity', 'entity_type', 'entity_id'),
+        UniqueConstraint('bug_id', 'entity_type', 'entity_id', name='uq_bug_entity_link'),
+    )
+
+
+class BugStatusHistory(Base):
+    """Status transition history for bugs"""
+    __tablename__ = "bug_status_history"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    history_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("hist_"))
+    bug_id: Mapped[str] = mapped_column(String(50), ForeignKey("bugs.bug_id", ondelete="CASCADE"), nullable=False)
+    from_status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # null for initial creation
+    to_status: Mapped[str] = mapped_column(String(50), nullable=False)
+    changed_by: Mapped[str] = mapped_column(String(50), nullable=False)  # user_id
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    bug: Mapped["Bug"] = relationship(back_populates="status_history")
+    
+    __table_args__ = (
+        Index('idx_bug_status_history_bug_id', 'bug_id'),
+    )
+
+
+class BugConversationEvent(Base):
+    """AI conversation events for bug refinement"""
+    __tablename__ = "bug_conversation_events"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    event_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("evt_"))
+    bug_id: Mapped[str] = mapped_column(String(50), ForeignKey("bugs.bug_id", ondelete="CASCADE"), nullable=False)
+    role: Mapped[str] = mapped_column(String(50), nullable=False)  # user, assistant, system
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    bug: Mapped["Bug"] = relationship(back_populates="conversation_events")
+    
+    __table_args__ = (
+        Index('idx_bug_conversation_bug_id', 'bug_id'),
+    )
