@@ -233,10 +233,10 @@ async def generate_personas_for_epic(
     async def generate():
         # Import here to create fresh session for generator
         from db.database import AsyncSessionLocal
+        from db.models import LLMProvider
         
         async with AsyncSessionLocal() as gen_session:
             gen_persona_service = PersonaService(gen_session)
-            gen_llm_service = LLMService(gen_session)
             
             try:
                 # Step 1: Generate persona data using LLM
@@ -282,14 +282,37 @@ Return ONLY the JSON array, no additional text."""
 
 Generate {count} personas that represent the key user types for this product. Return as a JSON array."""
 
-                # Call LLM
+                # Call LLM directly using pre-fetched config
                 full_response = ""
-                async for chunk in gen_llm_service.generate_stream(
-                    user_id=user_id,
-                    system_prompt=system_prompt,
-                    user_prompt=user_prompt
-                ):
-                    full_response += chunk
+                
+                if provider == LLMProvider.OPENAI.value:
+                    import openai
+                    client = openai.AsyncOpenAI(api_key=api_key)
+                    messages = [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ]
+                    stream = await client.chat.completions.create(
+                        model=model_name,
+                        messages=messages,
+                        stream=True
+                    )
+                    async for chunk in stream:
+                        if chunk.choices[0].delta.content:
+                            full_response += chunk.choices[0].delta.content
+                elif provider == LLMProvider.ANTHROPIC.value:
+                    import anthropic
+                    client = anthropic.AsyncAnthropic(api_key=api_key)
+                    async with client.messages.stream(
+                        model=model_name,
+                        max_tokens=4096,
+                        system=system_prompt,
+                        messages=[{"role": "user", "content": user_prompt}]
+                    ) as stream:
+                        async for text in stream.text_stream:
+                            full_response += text
+                else:
+                    raise ValueError(f"Unsupported LLM provider: {provider}")
                 
                 # Parse JSON from response
                 import re
