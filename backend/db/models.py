@@ -380,3 +380,36 @@ class PaymentTransaction(Base):
     __table_args__ = (
         Index('idx_payments_session', 'session_id'),
     )
+
+
+
+# ============================================
+# PRODUCT DELIVERY CONTEXT
+# ============================================
+
+class ProductDeliveryContext(Base):
+    """Per-user Product Delivery Context - automatically injected into all prompts"""
+    __tablename__ = "product_delivery_contexts"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    context_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("ctx_"))
+    user_id: Mapped[str] = mapped_column(String(50), ForeignKey("users.user_id", ondelete="CASCADE"), unique=True, nullable=False)
+    
+    # Required fields
+    industry: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)  # Comma-separated
+    delivery_methodology: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # waterfall, agile, scrum, kanban, hybrid
+    sprint_cycle_length: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # Days
+    sprint_start_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    num_developers: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    num_qa: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    delivery_platform: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # jira, azure_devops, none, other
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    user: Mapped["User"] = relationship(back_populates="delivery_context")
+    
+    __table_args__ = (
+        Index('idx_delivery_context_user_id', 'user_id'),
+    )
