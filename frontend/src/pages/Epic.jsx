@@ -146,10 +146,84 @@ const Epic = () => {
       setTranscript(transcriptRes.data.events);
       const decisionsRes = await epicAPI.getDecisions(epicId);
       setDecisions(decisionsRes.data.decisions);
+      
+      // If confirmed and not at final stage, automatically continue the conversation
+      if (confirmed && response.data.current_stage !== 'epic_locked') {
+        setConfirmingProposal(false);
+        // Auto-send a continuation message to get AI guidance for the new stage
+        await sendContinuationMessage(response.data.current_stage);
+      }
     } catch (err) {
       setError('Failed to process proposal. Please try again.');
     } finally {
       setConfirmingProposal(false);
+    }
+  };
+
+  const sendContinuationMessage = async (newStage) => {
+    setSending(true);
+    setStreamingContent('');
+    
+    // Determine the appropriate continuation prompt based on the new stage
+    let continuationPrompt = "Let's continue.";
+    if (newStage === 'outcome_capture') {
+      continuationPrompt = "The problem is now confirmed. Let's define the desired outcome.";
+    } else if (newStage === 'epic_drafted') {
+      continuationPrompt = "The outcome is now confirmed. Let's draft the epic.";
+    }
+    
+    // Add a brief system-style message (shown as user to maintain conversation flow)
+    const tempUserEvent = { 
+      event_id: `auto_${Date.now()}`, 
+      role: 'user', 
+      content: continuationPrompt, 
+      stage: newStage, 
+      created_at: new Date().toISOString() 
+    };
+    setTranscript(prev => [...prev, tempUserEvent]);
+
+    try {
+      const response = await epicAPI.chat(epicId, continuationPrompt);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '';
+      let receivedProposal = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.type === 'chunk') { 
+                fullContent += data.content; 
+                setStreamingContent(fullContent); 
+              }
+              else if (data.type === 'proposal') { receivedProposal = data; }
+              else if (data.type === 'error') { setError(data.message); }
+              else if (data.type === 'done') {
+                const assistantEvent = { 
+                  event_id: `asst_${Date.now()}`, 
+                  role: 'assistant', 
+                  content: fullContent, 
+                  stage: newStage, 
+                  created_at: new Date().toISOString() 
+                };
+                setTranscript(prev => [...prev, assistantEvent]);
+                setStreamingContent('');
+                if (receivedProposal) { setPendingProposal(receivedProposal); }
+              }
+            } catch (e) { /* Ignore JSON parse errors */ }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Continuation message failed:', err);
+    } finally {
+      setSending(false);
     }
   };
 
