@@ -51,7 +51,7 @@ const Settings = () => {
     }
   }, [searchParams]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [subRes, provRes] = await Promise.all([
@@ -65,9 +65,9 @@ const Settings = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setSubscription, setProviders]);
 
-  const pollPaymentStatus = async (sessionId, attempts = 0) => {
+  const pollPaymentStatus = useCallback(async (sessionId, attempts = 0) => {
     const maxAttempts = 10;
     const pollInterval = 2000;
 
