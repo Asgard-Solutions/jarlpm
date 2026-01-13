@@ -7,7 +7,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { useAuthStore, useThemeStore } from '@/store';
 import { 
   ArrowRight, 
-  CheckCircle2, Brain, Lock, MessageSquare, Loader2, FlaskConical
+  CheckCircle2, Brain, Lock, MessageSquare, Loader2, FlaskConical, Layers
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
