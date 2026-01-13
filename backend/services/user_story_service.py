@@ -1,13 +1,14 @@
 """
 User Story Service for JarlPM
 Handles user story lifecycle management with conversation-based refinement
+Supports both feature-bound and standalone user stories
 """
 from typing import Optional, List
 from datetime import datetime, timezone
 import json
 import re
 
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -38,6 +39,101 @@ class UserStoryService:
             .where(and_(Feature.feature_id == feature_id, Epic.user_id == user_id))
         )
         return result.scalar_one_or_none()
+    
+    # ============================================
+    # STANDALONE STORY OPERATIONS
+    # ============================================
+    
+    async def create_standalone_story(
+        self,
+        user_id: str,
+        title: str,
+        persona: str,
+        action: str,
+        benefit: str,
+        acceptance_criteria: Optional[List[str]] = None,
+        story_points: Optional[int] = None,
+        source: str = "ai_generated"
+    ) -> UserStory:
+        """Create a standalone user story (not linked to a feature)"""
+        story_text = f"As a {persona}, I want to {action} so that {benefit}."
+        
+        story = UserStory(
+            feature_id=None,  # Standalone - not linked to feature
+            user_id=user_id,
+            title=title,
+            persona=persona,
+            action=action,
+            benefit=benefit,
+            story_text=story_text,
+            acceptance_criteria=acceptance_criteria,
+            story_points=story_points,
+            source=source,
+            is_standalone=True,
+            current_stage=UserStoryStage.DRAFT.value
+        )
+        self.session.add(story)
+        await self.session.commit()
+        await self.session.refresh(story)
+        return story
+    
+    async def get_standalone_stories(self, user_id: str, include_all: bool = False) -> List[UserStory]:
+        """Get all standalone user stories for a user"""
+        query = select(UserStory).options(
+            selectinload(UserStory.conversation_events)
+        ).where(
+            and_(
+                UserStory.user_id == user_id,
+                UserStory.is_standalone == True
+            )
+        ).order_by(UserStory.created_at.desc())
+        
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+    
+    async def get_all_stories_for_user(
+        self,
+        user_id: str,
+        standalone_only: bool = False,
+        stage: Optional[str] = None
+    ) -> List[UserStory]:
+        """Get all stories for a user (both standalone and feature-bound optionally)"""
+        # Build base query for standalone stories
+        conditions = [UserStory.user_id == user_id, UserStory.is_standalone == True]
+        
+        if stage:
+            conditions.append(UserStory.current_stage == stage)
+        
+        query = select(UserStory).options(
+            selectinload(UserStory.conversation_events)
+        ).where(and_(*conditions)).order_by(UserStory.created_at.desc())
+        
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+    
+    async def get_story_for_user(self, story_id: str, user_id: str) -> Optional[UserStory]:
+        """Get a story by ID with ownership verification for standalone stories"""
+        story = await self.get_user_story(story_id)
+        if not story:
+            return None
+        
+        # For standalone stories, check direct ownership
+        if story.is_standalone:
+            if story.user_id != user_id:
+                return None
+            return story
+        
+        # For feature-bound stories, check via epic ownership
+        if story.feature_id:
+            epic = await self.get_epic_for_feature(story.feature_id, user_id)
+            if not epic:
+                return None
+        
+        return story
+    
+    # ============================================
+    # FEATURE-BOUND STORY OPERATIONS
+    # ============================================
     
     async def create_user_story(
         self,
