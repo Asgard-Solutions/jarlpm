@@ -128,7 +128,7 @@ const Epic = () => {
                 setStreamingContent('');
                 if (receivedProposal) { setPendingProposal(receivedProposal); }
               }
-            } catch (e) {}
+            } catch (e) { /* Ignore JSON parse errors for SSE chunks */ }
           }
         }
       }
