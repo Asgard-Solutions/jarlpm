@@ -226,11 +226,11 @@ class EpicService:
                 raise ValueError("Proposal ID mismatch")
             
             proposal = epic.pending_proposal
-            target_stage = EpicStage(proposal["target_stage"])
+            target_stage_value = proposal["target_stage"]
             
             # Validate stage advancement (also enforced by DB trigger)
-            if not self.can_advance_stage(epic.current_stage, target_stage):
-                raise ValueError(f"Cannot advance from {epic.current_stage} to {target_stage}")
+            if not self.can_advance_stage(epic.current_stage, target_stage_value):
+                raise ValueError(f"Cannot advance from {epic.current_stage} to {target_stage_value}")
             
             # Get or create snapshot
             snapshot = epic.snapshot
@@ -256,7 +256,7 @@ class EpicService:
                 snapshot.epic_locked_at = now
             
             # Advance stage (enforced by DB trigger for monotonic progression)
-            epic.current_stage = target_stage
+            epic.current_stage = target_stage_value
             epic.pending_proposal = None
             epic.updated_at = now
             
@@ -265,8 +265,8 @@ class EpicService:
                 epic_id=epic_id,
                 user_id=user_id,
                 decision_type="confirm_proposal",
-                from_stage=EpicStage(proposal["target_stage"]),  # Previous stage
-                to_stage=target_stage,
+                from_stage=epic.current_stage,
+                to_stage=target_stage_value,
                 proposal_id=proposal_id,
                 content_snapshot=content
             )
