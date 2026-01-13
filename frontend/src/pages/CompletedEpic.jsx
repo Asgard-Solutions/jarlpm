@@ -576,8 +576,10 @@ const CompletedEpic = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowGenerateDialog(true)}
-                className="text-violet-400 border-violet-500/30 hover:bg-violet-500/10"
+                disabled={!canGeneratePersonas}
+                className="text-violet-400 border-violet-500/30 hover:bg-violet-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
                 data-testid="generate-personas-btn"
+                title={!canGeneratePersonas ? "Complete the epic first to generate personas" : "Generate AI-powered user personas"}
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Generate Personas
@@ -595,7 +597,25 @@ const CompletedEpic = () => {
             </div>
           </div>
           
-          {personas.length === 0 ? (
+          {!canGeneratePersonas ? (
+            <Card className="border-dashed border-amber-500/30 bg-amber-500/5">
+              <CardContent className="py-8 text-center">
+                <AlertCircle className="w-12 h-12 mx-auto text-amber-400 mb-4" />
+                <h3 className="text-foreground font-semibold mb-2">Epic not yet completed</h3>
+                <p className="text-muted-foreground mb-4 text-sm max-w-md mx-auto">
+                  Complete the epic workflow (define problem, outcomes, features, and user stories) 
+                  before generating user personas.
+                </p>
+                <Button
+                  onClick={() => navigate(`/epic/${epicId}`)}
+                  variant="outline"
+                  className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                >
+                  Continue Epic Workflow
+                </Button>
+              </CardContent>
+            </Card>
+          ) : personas.length === 0 ? (
             <Card className="border-dashed border-violet-500/30">
               <CardContent className="py-8 text-center">
                 <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
