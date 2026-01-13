@@ -255,54 +255,57 @@ const Dashboard = () => {
           </Card>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {epics.map((epic) => (
-              <Card 
-                key={epic.epic_id} 
-                className="bg-card border-border hover:border-primary/30 transition-all cursor-pointer group"
-                onClick={() => navigate(`/epic/${epic.epic_id}`)}
-                data-testid={`epic-card-${epic.epic_id}`}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-foreground line-clamp-2">{epic.title}</CardTitle>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteConfirm(epic);
-                      }}
-                      data-testid={`delete-epic-${epic.epic_id}`}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <Badge 
-                      variant="outline" 
-                      className={`${STAGE_COLORS[epic.current_stage]} border`}
-                    >
-                      {epic.current_stage.includes('confirmed') || epic.current_stage === 'epic_locked' ? (
-                        <Lock className="w-3 h-3 mr-1" />
-                      ) : null}
-                      {STAGE_LABELS[epic.current_stage]}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {formatDate(epic.updated_at)}
-                    </span>
-                  </div>
-                  {epic.snapshot?.problem_statement && (
-                    <p className="text-sm text-muted-foreground mt-3 line-clamp-2">
-                      {epic.snapshot.problem_statement}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+            {epics.map((epic) => {
+              const isLocked = epic.current_stage === 'epic_locked';
+              return (
+                <Card 
+                  key={epic.epic_id} 
+                  className="bg-card border-border hover:border-primary/30 transition-all cursor-pointer group"
+                  onClick={() => navigate(isLocked ? `/epic/${epic.epic_id}/review` : `/epic/${epic.epic_id}`)}
+                  data-testid={`epic-card-${epic.epic_id}`}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start">
+                      <CardTitle className="text-foreground line-clamp-2">{epic.title}</CardTitle>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteConfirm(epic);
+                        }}
+                        data-testid={`delete-epic-${epic.epic_id}`}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <Badge 
+                        variant="outline" 
+                        className={`${STAGE_COLORS[epic.current_stage]} border`}
+                      >
+                        {epic.current_stage.includes('confirmed') || epic.current_stage === 'epic_locked' ? (
+                          <Lock className="w-3 h-3 mr-1" />
+                        ) : null}
+                        {STAGE_LABELS[epic.current_stage]}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {formatDate(epic.updated_at)}
+                      </span>
+                    </div>
+                    {epic.snapshot?.problem_statement && (
+                      <p className="text-sm text-muted-foreground mt-3 line-clamp-2">
+                        {epic.snapshot.problem_statement}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </main>
