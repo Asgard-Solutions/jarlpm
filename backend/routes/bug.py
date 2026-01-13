@@ -501,7 +501,6 @@ async def ai_refine_description(
         raise HTTPException(status_code=404, detail="Bug not found")
     
     llm_service = LLMService(session)
-    prompt_service = PromptService(session)
     
     # Get user's active LLM config
     config = await llm_service.get_active_config(user_id)
