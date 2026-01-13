@@ -285,7 +285,7 @@ const Settings = () => {
                     value={deliveryContext.industry}
                     onChange={(e) => setDeliveryContext({ ...deliveryContext, industry: e.target.value })}
                     placeholder="e.g., FinTech, Healthcare, E-commerce (comma-separated)"
-                    className="bg-nordic-bg-primary border-nordic-border text-nordic-text-primary"
+                    className="bg-background border-border text-foreground placeholder:text-muted-foreground"
                     data-testid="input-industry"
                   />
                   <p className="text-xs text-nordic-text-muted">Comma-separated list of industries</p>
