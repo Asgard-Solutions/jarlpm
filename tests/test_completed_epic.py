@@ -10,8 +10,8 @@ import os
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test session token from existing test data
-TEST_SESSION_TOKEN = "test_session_1768266514950"
-TEST_USER_ID = "test-user-1768266514950"
+TEST_SESSION_TOKEN = "test_session_completed_epic_2025"
+TEST_USER_ID = "user_test_05279c2b"
 
 # Existing test data IDs
 EXISTING_EPIC_ID = "epic_story_test_46de1163"
