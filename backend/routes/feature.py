@@ -307,7 +307,7 @@ async def update_feature(
     body: FeatureUpdate,
     session: AsyncSession = Depends(get_db)
 ):
-    """Update a feature (only if not approved)"""
+    """Update a feature (only if not approved and epic not locked)"""
     user_id = await get_current_user_id(request, session)
     
     feature_service = FeatureService(session)
@@ -320,6 +320,14 @@ async def update_feature(
     epic = await feature_service.get_epic(feature.epic_id, user_id)
     if not epic:
         raise HTTPException(status_code=404, detail="Feature not found")
+    
+    # Check lock policy - features can only be edited when epic is LOCKED (Feature Planning Mode)
+    # but the feature itself is not approved yet. The EpicStatus.LOCKED check is handled
+    # at the feature level (approved features can't be edited), not the epic level.
+    epic_status = lock_policy.get_epic_status(epic.current_stage)
+    policy_result = lock_policy.can_edit_feature(epic_status)
+    if not policy_result.allowed:
+        raise HTTPException(status_code=409, detail=policy_result.reason)
     
     try:
         updated = await feature_service.update_feature(
@@ -339,7 +347,7 @@ async def delete_feature(
     feature_id: str,
     session: AsyncSession = Depends(get_db)
 ):
-    """Delete a feature"""
+    """Delete a feature (only if epic not fully locked)"""
     user_id = await get_current_user_id(request, session)
     
     feature_service = FeatureService(session)
@@ -352,6 +360,12 @@ async def delete_feature(
     epic = await feature_service.get_epic(feature.epic_id, user_id)
     if not epic:
         raise HTTPException(status_code=404, detail="Feature not found")
+    
+    # Check lock policy
+    epic_status = lock_policy.get_epic_status(epic.current_stage)
+    policy_result = lock_policy.can_delete_feature(epic_status)
+    if not policy_result.allowed:
+        raise HTTPException(status_code=409, detail=policy_result.reason)
     
     await feature_service.delete_feature(feature_id)
     return {"message": "Feature deleted"}
