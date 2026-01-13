@@ -230,6 +230,7 @@ class EpicService:
             
             proposal = epic.pending_proposal
             target_stage_value = proposal["target_stage"]
+            from_stage_value = epic.current_stage  # Capture before change
             
             # Validate stage advancement (also enforced by DB trigger)
             if not self.can_advance_stage(epic.current_stage, target_stage_value):
@@ -268,7 +269,7 @@ class EpicService:
                 epic_id=epic_id,
                 user_id=user_id,
                 decision_type="confirm_proposal",
-                from_stage=epic.current_stage,
+                from_stage=from_stage_value,
                 to_stage=target_stage_value,
                 proposal_id=proposal_id,
                 content_snapshot=content
