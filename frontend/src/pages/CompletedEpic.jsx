@@ -115,14 +115,22 @@ const CompletedEpic = () => {
     try {
       const response = await personaAPI.generateFromEpic(epicId, personaCount);
       
+      // Handle non-OK responses (like 400, 402, etc.)
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Failed to generate personas');
+        // Clone the response before reading to avoid "body already read" error
+        const errorText = await response.text();
+        try {
+          const errorJson = JSON.parse(errorText);
+          throw new Error(errorJson.detail || 'Failed to generate personas');
+        } catch (parseErr) {
+          throw new Error(errorText || `HTTP ${response.status}: Failed to generate personas`);
+        }
       }
       
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       const newPersonas = [];
+      let streamError = null;
       
       while (true) {
         const { done, value } = await reader.read();
@@ -143,7 +151,8 @@ const CompletedEpic = () => {
                 newPersonas.push(data.persona);
                 setPersonas(prev => [...prev, data.persona]);
               } else if (data.type === 'error') {
-                throw new Error(data.message);
+                // Store error but don't throw immediately - let stream finish
+                streamError = data.message;
               } else if (data.type === 'done') {
                 setGenerationStatus(`✅ Generated ${data.count} personas!`);
                 setTimeout(() => {
@@ -151,15 +160,22 @@ const CompletedEpic = () => {
                   setGenerationStatus('');
                 }, 1500);
               }
-            } catch (e) {
-              // Ignore parse errors
+            } catch (parseErr) {
+              // Ignore JSON parse errors for incomplete chunks
+              console.debug('SSE parse error (likely incomplete chunk):', parseErr);
             }
           }
         }
       }
+      
+      // After stream ends, check if we had an error
+      if (streamError) {
+        throw new Error(streamError);
+      }
+      
     } catch (err) {
       console.error('Persona generation error:', err);
-      setGenerationError(err.message);
+      setGenerationError(err.message || 'An unexpected error occurred');
       setGenerationStatus('');
     } finally {
       setGenerating(false);
