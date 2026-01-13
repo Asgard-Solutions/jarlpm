@@ -149,9 +149,12 @@ class TestPersonaForEpic:
         # First get list of epics to find a valid epic_id
         epics_response = authenticated_client.get(f"{BASE_URL}/api/epics")
         assert epics_response.status_code == 200
-        epics = epics_response.json()
+        epics_data = epics_response.json()
         
-        if epics:
+        # Handle both list and dict response formats
+        epics = epics_data.get("epics", []) if isinstance(epics_data, dict) else epics_data
+        
+        if epics and len(epics) > 0:
             epic_id = epics[0].get("epic_id")
             response = authenticated_client.get(f"{BASE_URL}/api/personas/epic/{epic_id}")
             assert response.status_code == 200
@@ -160,7 +163,12 @@ class TestPersonaForEpic:
             assert isinstance(data, list)
             print(f"✓ GET /api/personas/epic/{epic_id} returns {len(data)} personas")
         else:
-            print("⚠ No epics found to test personas for epic")
+            # Test with a dummy epic_id - should return empty list
+            response = authenticated_client.get(f"{BASE_URL}/api/personas/epic/dummy_epic_id")
+            assert response.status_code == 200
+            data = response.json()
+            assert isinstance(data, list)
+            print("✓ GET /api/personas/epic/{epic_id} returns empty list for no epics")
 
 
 class TestPersonaGeneration:
