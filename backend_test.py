@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 
 class JarlPMAPITester:
-    def __init__(self, base_url: str = "https://epic-assistant.preview.emergentagent.com"):
+    def __init__(self, base_url: str = "https://jarlpm-ai.preview.emergentagent.com"):
         self.base_url = base_url
         self.session_token = "test_session_1768266514950"  # Provided test token
         self.epic_id = "epic_8c3454380b4c"  # Provided test epic
@@ -117,7 +117,7 @@ class JarlPMAPITester:
         self.run_test("Subscription Status", "GET", "subscription/status", 200)
         
         # Test create checkout (should work but we won't complete payment)
-        checkout_data = {"origin_url": "https://epic-assistant.preview.emergentagent.com"}
+        checkout_data = {"origin_url": "https://jarlpm-ai.preview.emergentagent.com"}
         self.run_test("Create Checkout Session", "POST", "subscription/create-checkout", 200, checkout_data)
 
     def test_epic_endpoints(self):
