@@ -179,6 +179,10 @@ class UserStoryService:
         if not story:
             return False
         
+        # Enable cascade delete for append-only tables by setting session variable
+        from sqlalchemy import text
+        await self.session.execute(text("SET LOCAL jarlpm.allow_cascade_delete = 'true'"))
+        
         await self.session.delete(story)
         await self.session.commit()
         return True
