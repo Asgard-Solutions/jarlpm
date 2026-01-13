@@ -84,7 +84,7 @@ class UserStoryService:
         ).where(
             and_(
                 UserStory.user_id == user_id,
-                UserStory.is_standalone == True
+                UserStory.is_standalone.is_(True)
             )
         ).order_by(UserStory.created_at.desc())
         
@@ -99,7 +99,7 @@ class UserStoryService:
     ) -> List[UserStory]:
         """Get all stories for a user (both standalone and feature-bound optionally)"""
         # Build base query for standalone stories
-        conditions = [UserStory.user_id == user_id, UserStory.is_standalone == True]
+        conditions = [UserStory.user_id == user_id, UserStory.is_standalone.is_(True)]
         
         if stage:
             conditions.append(UserStory.current_stage == stage)
