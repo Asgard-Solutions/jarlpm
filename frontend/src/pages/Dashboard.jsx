@@ -155,6 +155,16 @@ const Dashboard = () => {
               <Button 
                 variant="outline"
                 size="sm"
+                onClick={() => navigate('/stories')}
+                className="text-primary border-primary/30 hover:bg-primary/10"
+                data-testid="stories-nav-btn"
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Stories
+              </Button>
+              <Button 
+                variant="outline"
+                size="sm"
                 onClick={() => navigate('/bugs')}
                 className="text-red-400 border-red-500/30 hover:bg-red-500/10"
                 data-testid="bugs-nav-btn"
