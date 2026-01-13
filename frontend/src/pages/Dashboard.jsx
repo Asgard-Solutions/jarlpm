@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { 
   Plus, Settings, LogOut, Loader2, 
-  AlertCircle, FileText, Clock, Lock, Trash2, Bug
+  AlertCircle, FileText, Clock, Lock, Trash2, Bug, BookOpen
 } from 'lucide-react';
 
 const STAGE_COLORS = {
