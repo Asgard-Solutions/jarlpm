@@ -78,7 +78,7 @@ const Landing = () => {
   ];
 
   const stages = [
-    { name: 'Problem Capture', desc: 'Define the problem you\'re solving' },
+    { name: 'Problem Capture', desc: "Define the problem you're solving" },
     { name: 'Problem Confirmed', desc: 'Lock the problem statement', locked: true },
     { name: 'Outcome Capture', desc: 'Define success metrics' },
     { name: 'Outcome Confirmed', desc: 'Lock desired outcomes', locked: true },
