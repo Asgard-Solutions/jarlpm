@@ -172,7 +172,7 @@ const Landing = () => {
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <p className="text-muted-foreground text-center mb-4 max-w-2xl mx-auto">
-            Good products start with clear decisions. Great products don't revisit them.
+            Good products start with clear decisions. Great products don&apos;t revisit them.
           </p>
           <h2 className="text-3xl font-bold text-foreground text-center mb-12">Why JarlPM?</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
