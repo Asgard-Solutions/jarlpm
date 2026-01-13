@@ -155,6 +155,16 @@ const Dashboard = () => {
               <Button 
                 variant="outline"
                 size="sm"
+                onClick={() => navigate('/personas')}
+                className="text-violet-400 border-violet-500/30 hover:bg-violet-500/10"
+                data-testid="personas-nav-btn"
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Personas
+              </Button>
+              <Button 
+                variant="outline"
+                size="sm"
                 onClick={() => navigate('/stories')}
                 className="text-primary border-primary/30 hover:bg-primary/10"
                 data-testid="stories-nav-btn"
