@@ -151,6 +151,10 @@ class FeatureService:
         if not feature:
             return False
         
+        # Enable cascade delete for append-only tables by setting session variable
+        from sqlalchemy import text
+        await self.session.execute(text("SET LOCAL jarlpm.allow_cascade_delete = 'true'"))
+        
         await self.session.delete(feature)
         await self.session.commit()
         return True
