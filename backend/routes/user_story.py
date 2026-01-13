@@ -257,7 +257,7 @@ Story points should be 1, 2, 3, 5, or 8 based on complexity.
 
 Respond ONLY with the JSON array, no other text."""
 
-    user_prompt = f"Generate user stories to accomplish this feature. Aim for stories that are each completable in one sprint."
+    user_prompt = "Generate user stories to accomplish this feature. Aim for stories that are each completable in one sprint."
     
     async def generate():
         full_response = ""
