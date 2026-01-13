@@ -351,14 +351,35 @@ When an Epic is locked, users enter Feature Planning Mode:
   - Entity queries: GET /api/bugs/by-entity/{type}/{id}
   - AI assistance: POST /api/bugs/{id}/ai/refine-description, /ai/suggest-severity
 - **Frontend (/bugs page):**
-  - List view with status, severity, priority, link count badges
+  - List view with badges (status, severity, priority, link count)
   - Filters: status, severity, linked/standalone
-  - Sorting: updated, created, severity
-  - Create Bug dialog with optional fields
+  - Create Bug dialog with all fields
   - Bug Detail dialog with tabs (Details, Links, History)
   - Status transition control
-  - "Bugs" navigation button on Dashboard header
+  - "Bugs" button in Dashboard header
 - **Tests:** Backend 27/27 passed (100%), Frontend all flows working
+
+### 2026-01-13: AI-Assisted Bug Creation (COMPLETE)
+- **Conversational AI flow** for creating comprehensive bug reports
+- **AI guides users through questions:**
+  1. What is the problem?
+  2. How do you reproduce it (steps)?
+  3. What is the expected behavior?
+  4. What is the actual behavior?
+  5. What environment (browser, OS, device)?
+- **Streaming SSE response** for real-time AI chat
+- **AI generates proposal** with all bug fields when enough info gathered
+- **User approval flow:** Review proposal → Click "Create Bug" → Bug created
+- **API Endpoints:**
+  - POST /api/bugs/ai/chat - Conversational AI endpoint (streaming)
+  - POST /api/bugs/ai/create-from-proposal - Create bug from AI proposal
+- **Frontend:**
+  - "Report Bug with AI" button opens chat dialog
+  - Auto-starts conversation with greeting
+  - Shows streaming AI responses in real-time
+  - Proposal preview card with "Create Bug" button
+  - "Continue Refining" option if user wants more changes
+- **Tests:** Backend 10/10 passed (100%), Frontend all flows working
 
 ---
 
@@ -370,6 +391,5 @@ When an Epic is locked, users enter Feature Planning Mode:
 
 ### P2 - Future
 - Implement full Stripe subscription flow
-- Epic deletion with explicit confirmation
 - Export to Jira/Azure DevOps
 - Team collaboration features
