@@ -198,16 +198,20 @@ class TestPersonaGeneration:
         """POST /api/personas/epic/{epic_id}/generate - Requires completed (locked) epic"""
         # Get epics and find one that's not locked
         epics_response = authenticated_client.get(f"{BASE_URL}/api/epics")
-        epics = epics_response.json()
+        epics_data = epics_response.json()
+        
+        # Handle both list and dict response formats
+        epics = epics_data.get("epics", []) if isinstance(epics_data, dict) else epics_data
         
         # Find a non-locked epic
         non_locked_epic = None
         locked_epic = None
         for epic in epics:
-            if epic.get("current_stage") != "epic_locked":
-                non_locked_epic = epic
-            else:
-                locked_epic = epic
+            if isinstance(epic, dict):
+                if epic.get("current_stage") != "epic_locked":
+                    non_locked_epic = epic
+                else:
+                    locked_epic = epic
         
         if non_locked_epic:
             epic_id = non_locked_epic.get("epic_id")
@@ -218,6 +222,8 @@ class TestPersonaGeneration:
             # Should fail because epic is not locked
             # The error might come in SSE stream or as HTTP error
             print(f"✓ POST /api/personas/epic/{epic_id}/generate for non-locked epic returns {response.status_code}")
+        else:
+            print("⚠ No non-locked epics found to test")
         
         if locked_epic:
             print(f"✓ Found locked epic: {locked_epic.get('epic_id')} - can be used for persona generation")
