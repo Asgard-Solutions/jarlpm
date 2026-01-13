@@ -194,6 +194,8 @@ const CompletedEpic = () => {
     approvedStories === totalStories &&
     totalFeatures > 0 &&
     totalStories > 0;
+    
+  const canGeneratePersonas = epic.current_stage === 'epic_locked';
 
   return (
     <div className="min-h-screen bg-background">
