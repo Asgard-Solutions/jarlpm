@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { authAPI } from '@/api';
 import { useAuthStore } from '@/store';
@@ -7,38 +7,45 @@ import { Loader2 } from 'lucide-react';
 const ProtectedRoute = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, setUser, setLoading } = useAuthStore();
-  const [isChecking, setIsChecking] = useState(!location.state?.user);
+  const { user, setUser } = useAuthStore();
+  const [isChecking, setIsChecking] = useState(true);
+  const [authDone, setAuthDone] = useState(false);
 
-  useEffect(() => {
-    // If user data was passed from AuthCallback, skip auth check
+  const checkAuth = useCallback(async () => {
+    // If user data was passed from AuthCallback, use it
     if (location.state?.user) {
       setUser(location.state.user);
-      setIsChecking(false);
+      setAuthDone(true);
       return;
     }
 
-    // If we already have user, skip auth check
+    // If we already have user from store, skip API call
     if (user) {
-      setIsChecking(false);
+      setAuthDone(true);
       return;
     }
 
     // Server verification
-    const checkAuth = async () => {
-      try {
-        const response = await authAPI.getCurrentUser();
-        setUser(response.data);
-        setIsChecking(false);
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        setUser(null);
-        navigate('/', { replace: true });
-      }
-    };
+    try {
+      const response = await authAPI.getCurrentUser();
+      setUser(response.data);
+      setAuthDone(true);
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      setUser(null);
+      navigate('/', { replace: true });
+    }
+  }, [location.state, user, setUser, navigate]);
 
+  useEffect(() => {
     checkAuth();
-  }, [location.state, user, setUser, setLoading, navigate]);
+  }, [checkAuth]);
+
+  useEffect(() => {
+    if (authDone) {
+      setIsChecking(false);
+    }
+  }, [authDone]);
 
   if (isChecking) {
     return (
