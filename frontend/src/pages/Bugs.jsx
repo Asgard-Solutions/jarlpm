@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,13 +11,13 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useAuthStore } from '@/store';
-import { bugAPI, epicAPI, featureAPI } from '@/api';
+import { bugAPI } from '@/api';
 import { 
-  Bug, Plus, Search, Filter, ArrowLeft, Settings, 
+  Bug, Plus, Search, ArrowLeft, Settings, 
   AlertTriangle, AlertCircle, Info, CheckCircle2,
   Clock, Play, CheckCheck, Archive, Link2, Unlink,
   ChevronRight, Loader2, Trash2, Edit3, Sparkles,
-  ArrowUpDown, Calendar, User
+  ArrowUpDown, Calendar, User, Send, Bot, UserIcon, MessageSquare
 } from 'lucide-react';
 
 // Constants
