@@ -211,4 +211,33 @@ export const bugAPI = {
   createFromProposal: (proposal) => api.post('/bugs/ai/create-from-proposal', proposal),
 };
 
+// Persona API
+export const personaAPI = {
+  // Settings
+  getSettings: () => api.get('/personas/settings'),
+  updateSettings: (data) => api.put('/personas/settings', data),
+  
+  // Generate personas from epic
+  generateFromEpic: (epicId, count = 3) => {
+    return fetch(`${API}/personas/epic/${epicId}/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ count }),
+      credentials: 'include',
+    });
+  },
+  
+  // CRUD
+  list: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return api.get(`/personas${query ? `?${query}` : ''}`);
+  },
+  listForEpic: (epicId) => api.get(`/personas/epic/${epicId}`),
+  get: (personaId) => api.get(`/personas/${personaId}`),
+  update: (personaId, data) => api.put(`/personas/${personaId}`, data),
+  delete: (personaId) => api.delete(`/personas/${personaId}`),
+  regeneratePortrait: (personaId, prompt = null) => 
+    api.post(`/personas/${personaId}/regenerate-portrait`, { prompt }),
+};
+
 export default api;
