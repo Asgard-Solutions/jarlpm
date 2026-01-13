@@ -502,7 +502,7 @@ async def ai_refine_description(
     llm_service = LLMService(session)
     
     # Get user's active LLM config
-    config = await llm_service.get_active_config(user_id)
+    config = await llm_service.get_user_llm_config(user_id)
     if not config:
         raise HTTPException(status_code=400, detail="No LLM provider configured")
     
@@ -551,7 +551,7 @@ async def ai_suggest_severity(
     llm_service = LLMService(session)
     
     # Get user's active LLM config
-    config = await llm_service.get_active_config(user_id)
+    config = await llm_service.get_user_llm_config(user_id)
     if not config:
         raise HTTPException(status_code=400, detail="No LLM provider configured")
     
@@ -625,7 +625,7 @@ async def ai_bug_chat(
     llm_service = LLMService(session)
     
     # Get user's active LLM config
-    config = await llm_service.get_active_config(user_id)
+    config = await llm_service.get_user_llm_config(user_id)
     if not config:
         raise HTTPException(status_code=400, detail="No LLM provider configured")
     
