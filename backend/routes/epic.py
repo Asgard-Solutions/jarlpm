@@ -244,12 +244,16 @@ async def chat_with_epic(
     if not template:
         raise HTTPException(status_code=500, detail="Prompt template not found for stage")
     
-    # Render prompts
+    # Get user's delivery context for prompt injection
+    delivery_context = await prompt_service.get_delivery_context(user_id)
+    
+    # Render prompts with delivery context
     system_prompt, user_prompt = prompt_service.render_prompt(
         template,
         epic.title,
         body.content,
-        epic.snapshot
+        epic.snapshot,
+        delivery_context
     )
     
     # Get conversation history
