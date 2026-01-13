@@ -1,21 +1,54 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import ThemeToggle from '@/components/ThemeToggle';
+import { useAuthStore } from '@/store';
 import { 
   Layers, Zap, Shield, Users, ArrowRight, 
-  CheckCircle2, Brain, Lock, RefreshCw 
+  CheckCircle2, Brain, Lock, RefreshCw, Loader2, FlaskConical
 } from 'lucide-react';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const Landing = () => {
   const navigate = useNavigate();
+  const { setUser } = useAuthStore();
+  const [testLoading, setTestLoading] = useState(false);
 
   const handleGetStarted = () => {
     // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
     const redirectUrl = window.location.origin + '/dashboard';
     window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+  };
+
+  const handleTestLogin = async () => {
+    setTestLoading(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/auth/test-login`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUser({
+          user_id: data.user_id,
+          email: data.email,
+          name: data.name,
+          picture: null
+        });
+        navigate('/dashboard');
+      } else {
+        console.error('Test login failed');
+      }
+    } catch (error) {
+      console.error('Test login error:', error);
+    } finally {
+      setTestLoading(false);
+    }
   };
 
   const features = [
