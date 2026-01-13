@@ -52,8 +52,8 @@ const FEATURE_STAGES = {
 const Epic = () => {
   const { epicId } = useParams();
   const navigate = useNavigate();
-  const { isActive } = useSubscriptionStore();
-  const { activeProvider } = useLLMProviderStore();
+  const { isActive, setSubscription } = useSubscriptionStore();
+  const { activeProvider, setProviders } = useLLMProviderStore();
 
   const [epic, setEpic] = useState(null);
   const [transcript, setTranscript] = useState([]);
