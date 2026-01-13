@@ -556,7 +556,187 @@ const CompletedEpic = () => {
             </CardContent>
           </Card>
         )}
+        
+        {/* Personas Section */}
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <Users className="w-5 h-5 text-violet-400" />
+              User Personas
+              {personas.length > 0 && (
+                <Badge variant="outline" className="bg-violet-500/10 text-violet-400">
+                  {personas.length}
+                </Badge>
+              )}
+            </h2>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowGenerateDialog(true)}
+                className="text-violet-400 border-violet-500/30 hover:bg-violet-500/10"
+                data-testid="generate-personas-btn"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Generate Personas
+              </Button>
+              {personas.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/personas?epic=${epicId}`)}
+                  data-testid="view-all-personas-btn"
+                >
+                  View All
+                </Button>
+              )}
+            </div>
+          </div>
+          
+          {personas.length === 0 ? (
+            <Card className="border-dashed border-violet-500/30">
+              <CardContent className="py-8 text-center">
+                <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-foreground font-semibold mb-2">No personas generated yet</h3>
+                <p className="text-muted-foreground mb-4 text-sm max-w-md mx-auto">
+                  Generate AI-powered user personas based on your Epic, Features, and User Stories.
+                  Personas help your team understand who they&apos;re building for.
+                </p>
+                <Button
+                  onClick={() => setShowGenerateDialog(true)}
+                  className="bg-violet-500 hover:bg-violet-600"
+                  data-testid="generate-first-persona-btn"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Generate Personas
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {personas.slice(0, 6).map((persona) => (
+                <Card 
+                  key={persona.persona_id}
+                  className="cursor-pointer hover:border-violet-500/50 transition-colors overflow-hidden"
+                  onClick={() => navigate(`/personas?epic=${epicId}`)}
+                  data-testid={`persona-card-${persona.persona_id}`}
+                >
+                  <div className="flex">
+                    <div className="w-20 h-24 flex-shrink-0 bg-muted flex items-center justify-center overflow-hidden">
+                      {persona.portrait_image_base64 ? (
+                        <img 
+                          src={`data:image/png;base64,${persona.portrait_image_base64}`}
+                          alt={persona.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="w-8 h-8 text-muted-foreground" />
+                      )}
+                    </div>
+                    <CardContent className="p-3 flex-1 min-w-0">
+                      <h4 className="font-semibold text-foreground truncate">{persona.name}</h4>
+                      <p className="text-sm text-muted-foreground truncate">{persona.role}</p>
+                      {persona.representative_quote && (
+                        <p className="text-xs text-muted-foreground italic line-clamp-2 mt-1">
+                          &ldquo;{persona.representative_quote}&rdquo;
+                        </p>
+                      )}
+                    </CardContent>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+      
+      {/* Generate Personas Dialog */}
+      <Dialog open={showGenerateDialog} onOpenChange={setShowGenerateDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-violet-500" />
+              Generate User Personas
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              AI will analyze your Epic, Features, and User Stories to generate distinct user personas
+              that represent your target users.
+            </p>
+            
+            <div>
+              <Label htmlFor="persona-count">Number of Personas</Label>
+              <Select 
+                value={personaCount.toString()} 
+                onValueChange={(v) => setPersonaCount(parseInt(v))}
+                disabled={generating}
+              >
+                <SelectTrigger id="persona-count" data-testid="persona-count-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 persona</SelectItem>
+                  <SelectItem value="2">2 personas</SelectItem>
+                  <SelectItem value="3">3 personas (recommended)</SelectItem>
+                  <SelectItem value="4">4 personas</SelectItem>
+                  <SelectItem value="5">5 personas</SelectItem>
+                </SelectContent>
+              </Select>
+              {personaCount > 3 && (
+                <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  More personas may dilute focus. Consider 2-3 for clarity.
+                </p>
+              )}
+            </div>
+            
+            {generationStatus && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm text-foreground flex items-center gap-2">
+                  {generating && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {generationStatus}
+                </p>
+              </div>
+            )}
+            
+            {generationError && (
+              <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+                <p className="text-sm text-destructive">{generationError}</p>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-end gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowGenerateDialog(false)}
+              disabled={generating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleGeneratePersonas}
+              disabled={generating}
+              className="bg-violet-500 hover:bg-violet-600"
+              data-testid="confirm-generate-btn"
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Generate
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
