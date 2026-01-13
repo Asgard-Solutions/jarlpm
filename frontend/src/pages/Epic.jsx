@@ -139,39 +139,47 @@ const Epic = () => {
         const featuresData = featuresRes.data || [];
         setFeatures(featuresData);
         
-        // Check if epic is fully complete (all features approved with all stories approved)
-        if (featuresData.length > 0) {
-          const allFeaturesApproved = featuresData.every(f => f.current_stage === 'approved');
-          if (allFeaturesApproved) {
-            // Check all stories for all features
-            let allStoriesApproved = true;
-            let hasStories = false;
-            for (const feature of featuresData) {
-              try {
-                const storiesRes = await userStoryAPI.listForFeature(feature.feature_id);
-                const stories = storiesRes.data || [];
-                if (stories.length > 0) {
-                  hasStories = true;
-                  if (!stories.every(s => s.current_stage === 'approved')) {
-                    allStoriesApproved = false;
-                    break;
-                  }
-                } else {
-                  allStoriesApproved = false;
-                  break;
+        // Fetch story counts for approved features
+        const storyCounts = {};
+        let allFeaturesComplete = true;
+        let hasAnyStories = false;
+        
+        for (const feature of featuresData) {
+          if (feature.current_stage === 'approved') {
+            try {
+              const storiesRes = await userStoryAPI.listForFeature(feature.feature_id);
+              const stories = storiesRes.data || [];
+              const approvedCount = stories.filter(s => s.current_stage === 'approved').length;
+              storyCounts[feature.feature_id] = {
+                total: stories.length,
+                approved: approvedCount,
+                allApproved: stories.length > 0 && approvedCount === stories.length
+              };
+              
+              if (stories.length > 0) {
+                hasAnyStories = true;
+                if (approvedCount !== stories.length) {
+                  allFeaturesComplete = false;
                 }
-              } catch (e) {
-                allStoriesApproved = false;
-                break;
+              } else {
+                allFeaturesComplete = false;
               }
+            } catch (e) {
+              storyCounts[feature.feature_id] = { total: 0, approved: 0, allApproved: false };
+              allFeaturesComplete = false;
             }
-            
-            // If fully complete, redirect to review page
-            if (allStoriesApproved && hasStories) {
-              navigate(`/epic/${epicId}/review`);
-              return;
-            }
+          } else {
+            // Non-approved features mean not complete
+            allFeaturesComplete = false;
           }
+        }
+        
+        setFeatureStoryCounts(storyCounts);
+        
+        // If fully complete (all features approved, all have approved stories), redirect to review
+        if (featuresData.length > 0 && allFeaturesComplete && hasAnyStories) {
+          navigate(`/epic/${epicId}/review`);
+          return;
         }
       }
     } catch (err) {
