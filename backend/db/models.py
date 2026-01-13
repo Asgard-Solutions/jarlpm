@@ -219,6 +219,15 @@ class Epic(Base):
     # Pending proposal (JSON for flexibility)
     pending_proposal: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     
+    # Lock confirmation metadata (required before locking)
+    lock_confirmed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    lock_confirmed_by: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    lock_confirmation_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # Hash of anchors at confirmation
+    
+    # Lock metadata (set when epic_locked)
+    locked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    locked_by: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
