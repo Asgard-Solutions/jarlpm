@@ -134,20 +134,21 @@ class PersonaService:
         features = epic_data["features"]
         stories = epic_data["stories"]
         
-        # Build stories by feature map
+        # Build stories by feature map (using dict access since we converted to dicts)
         stories_by_feature = {}
         for story in stories:
-            if story.feature_id not in stories_by_feature:
-                stories_by_feature[story.feature_id] = []
-            stories_by_feature[story.feature_id].append(story)
+            fid = story["feature_id"]
+            if fid not in stories_by_feature:
+                stories_by_feature[fid] = []
+            stories_by_feature[fid].append(story)
         
         context_parts = []
         
-        # Epic info
+        # Epic info (accessing as dict now)
         context_parts.append("=== EPIC ===")
-        context_parts.append(f"Title: {epic.title}")
-        if epic.snapshot:
-            snapshot = epic.snapshot if isinstance(epic.snapshot, dict) else json.loads(epic.snapshot) if epic.snapshot else {}
+        context_parts.append(f"Title: {epic['title']}")
+        if epic.get("snapshot"):
+            snapshot = epic["snapshot"] if isinstance(epic["snapshot"], dict) else json.loads(epic["snapshot"]) if epic["snapshot"] else {}
             if snapshot.get("problem_statement"):
                 context_parts.append(f"Problem Statement: {snapshot.get('problem_statement')}")
             if snapshot.get("desired_outcomes"):
@@ -157,26 +158,28 @@ class PersonaService:
                 for ac in snapshot.get("acceptance_criteria", []):
                     context_parts.append(f"  - {ac}")
         
-        # Features and their stories
+        # Features and their stories (accessing as dicts)
         context_parts.append("\n=== FEATURES ===")
         for feature in features:
-            context_parts.append(f"\nFeature: {feature.title}")
-            if feature.description:
-                context_parts.append(f"Description: {feature.description}")
-            if feature.acceptance_criteria:
+            context_parts.append(f"\nFeature: {feature['title']}")
+            if feature.get("description"):
+                context_parts.append(f"Description: {feature['description']}")
+            if feature.get("acceptance_criteria"):
                 context_parts.append("Acceptance Criteria:")
-                for ac in feature.acceptance_criteria:
+                for ac in feature["acceptance_criteria"]:
                     context_parts.append(f"  - {ac}")
             
             # Stories for this feature
-            feature_stories = stories_by_feature.get(feature.feature_id, [])
+            feature_stories = stories_by_feature.get(feature["feature_id"], [])
             if feature_stories:
                 context_parts.append("User Stories:")
                 for story in feature_stories:
-                    context_parts.append(f"  - {story.story_text}")
-                    if story.acceptance_criteria:
-                        for sac in story.acceptance_criteria[:2]:  # Limit to 2 for brevity
+                    context_parts.append(f"  - {story['story_text']}")
+                    if story.get("acceptance_criteria"):
+                        for sac in story["acceptance_criteria"][:2]:  # Limit to 2 for brevity
                             context_parts.append(f"      • {sac}")
+        
+        return "\n".join(context_parts)
         
         return "\n".join(context_parts)
     
