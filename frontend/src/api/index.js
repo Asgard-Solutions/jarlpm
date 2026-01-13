@@ -168,6 +168,17 @@ export const bugAPI = {
     });
   },
   suggestSeverity: (bugId) => api.post(`/bugs/${bugId}/ai/suggest-severity`),
+  
+  // AI-assisted bug creation
+  aiChat: (content, conversationHistory = []) => {
+    return fetch(`${API}/bugs/ai/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, conversation_history: conversationHistory }),
+      credentials: 'include',
+    });
+  },
+  createFromProposal: (proposal) => api.post('/bugs/ai/create-from-proposal', proposal),
 };
 
 export default api;
