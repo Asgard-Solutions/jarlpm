@@ -332,13 +332,41 @@ When an Epic is locked, users enter Feature Planning Mode:
 - Dynamic content: Shows feature count on Features step, stories ready count on User Stories step
 - Frontend tests: 9/9 passed (100%)
 
+### 2026-01-13: Bug Tracking System (COMPLETE)
+- **Full lifecycle management:** Draft → Confirmed → In Progress → Resolved → Closed
+  - Server-enforced transitions (no skipping states)
+  - Status history with timestamps preserved
+- **Data Model:**
+  - Bug entity with title, description, severity, status, and optional fields
+  - BugLink polymorphic join table for linking to Epics/Features/Stories
+  - BugStatusHistory for tracking status changes
+  - BugConversationEvent for AI assistance (optional)
+- **Standalone support:** Bugs can exist with zero links (standalone is valid)
+- **Optional linking:** Bugs can link to multiple Epics, Features, or User Stories
+- **API Endpoints:**
+  - CRUD: POST/GET/PATCH/DELETE /api/bugs
+  - Transitions: POST /api/bugs/{id}/transition
+  - History: GET /api/bugs/{id}/history
+  - Links: POST/DELETE/GET /api/bugs/{id}/links
+  - Entity queries: GET /api/bugs/by-entity/{type}/{id}
+  - AI assistance: POST /api/bugs/{id}/ai/refine-description, /ai/suggest-severity
+- **Frontend (/bugs page):**
+  - List view with status, severity, priority, link count badges
+  - Filters: status, severity, linked/standalone
+  - Sorting: updated, created, severity
+  - Create Bug dialog with optional fields
+  - Bug Detail dialog with tabs (Details, Links, History)
+  - Status transition control
+  - "Bugs" navigation button on Dashboard header
+- **Tests:** Backend 27/27 passed (100%), Frontend all flows working
+
 ---
 
 ## Backlog
 
 ### P1 - Upcoming
-- Bug creation stage (children of Features) - follows Feature/Story lifecycle pattern
-- Full E2E workflow test with locking model
+- Full E2E workflow test with all features combined
+- Contextual bug linking from Epic/Feature/Story pages
 
 ### P2 - Future
 - Implement full Stripe subscription flow
