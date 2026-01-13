@@ -69,6 +69,14 @@ const CompletedEpic = () => {
       const expanded = {};
       featuresData.forEach(f => { expanded[f.feature_id] = true; });
       setExpandedFeatures(expanded);
+      
+      // Load existing personas for this epic
+      try {
+        const personasRes = await personaAPI.listForEpic(epicId);
+        setPersonas(personasRes.data || []);
+      } catch (err) {
+        console.error('Failed to load personas:', err);
+      }
 
     } catch (err) {
       if (err.response?.status === 404) {
