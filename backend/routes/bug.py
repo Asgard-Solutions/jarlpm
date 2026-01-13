@@ -20,7 +20,6 @@ from db.models import (
 )
 from services.bug_service import BugService
 from services.llm_service import LLMService
-from services.prompt_service import PromptService
 from routes.auth import get_current_user_id
 
 router = APIRouter(prefix="/bugs", tags=["bugs"])
