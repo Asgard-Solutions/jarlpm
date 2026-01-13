@@ -2,67 +2,79 @@ from typing import Optional, List
 from datetime import datetime, timezone
 import re
 
-from models.epic import (
+from sqlalchemy import select, delete, and_
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from db.models import (
     Epic, EpicStage, EpicSnapshot, EpicTranscriptEvent,
-    EpicDecision, PendingProposal, STAGE_ORDER, LOCKED_STAGES
+    EpicDecision, Subscription, SubscriptionStatus, STAGE_ORDER
 )
-from models.subscription import SubscriptionStatus
 
 
 class EpicService:
     """Service for Epic lifecycle management with server-side enforcement"""
     
-    def __init__(self, db):
-        self.db = db
+    def __init__(self, session: AsyncSession):
+        self.session = session
     
     async def check_subscription_active(self, user_id: str) -> bool:
         """Check if user has an active subscription"""
-        sub_doc = await self.db.subscriptions.find_one(
-            {"user_id": user_id},
-            {"_id": 0}
+        result = await self.session.execute(
+            select(Subscription).where(Subscription.user_id == user_id)
         )
-        if not sub_doc:
-            return False
-        return sub_doc.get("status") == SubscriptionStatus.ACTIVE.value
+        sub = result.scalar_one_or_none()
+        return sub is not None and sub.status == SubscriptionStatus.ACTIVE
     
     async def create_epic(self, user_id: str, title: str) -> Epic:
-        """Create a new epic"""
+        """Create a new epic with initial snapshot"""
         epic = Epic(user_id=user_id, title=title)
-        await self.db.epics.insert_one(epic.model_dump())
+        self.session.add(epic)
+        await self.session.flush()  # Get the epic_id
+        
+        # Create empty snapshot
+        snapshot = EpicSnapshot(epic_id=epic.epic_id)
+        self.session.add(snapshot)
+        
+        await self.session.commit()
+        await self.session.refresh(epic)
         return epic
     
     async def get_epic(self, epic_id: str, user_id: str) -> Optional[Epic]:
         """Get an epic by ID (with ownership check)"""
-        epic_doc = await self.db.epics.find_one(
-            {"epic_id": epic_id, "user_id": user_id},
-            {"_id": 0}
+        result = await self.session.execute(
+            select(Epic)
+            .options(selectinload(Epic.snapshot))
+            .where(and_(Epic.epic_id == epic_id, Epic.user_id == user_id))
         )
-        if epic_doc:
-            return Epic(**epic_doc)
-        return None
+        return result.scalar_one_or_none()
     
     async def get_user_epics(self, user_id: str) -> List[Epic]:
         """Get all epics for a user"""
-        cursor = self.db.epics.find(
-            {"user_id": user_id},
-            {"_id": 0}
-        ).sort("updated_at", -1)
-        epics = await cursor.to_list(1000)
-        return [Epic(**e) for e in epics]
+        result = await self.session.execute(
+            select(Epic)
+            .options(selectinload(Epic.snapshot))
+            .where(Epic.user_id == user_id)
+            .order_by(Epic.updated_at.desc())
+        )
+        return list(result.scalars().all())
     
     async def delete_epic(self, epic_id: str, user_id: str) -> bool:
-        """Delete an epic and all related data (hard delete)"""
-        # Verify ownership
+        """Delete an epic and all related data (hard delete with cascade)"""
         epic = await self.get_epic(epic_id, user_id)
         if not epic:
             return False
         
-        # Delete epic and cascade to related collections
-        await self.db.epics.delete_one({"epic_id": epic_id})
-        await self.db.epic_transcript_events.delete_many({"epic_id": epic_id})
-        await self.db.epic_decisions.delete_many({"epic_id": epic_id})
-        await self.db.epic_artifacts.delete_many({"epic_id": epic_id})
+        # Enable cascade delete for append-only tables
+        await self.session.execute(
+            select(1).execution_options(
+                schema_translate_map={"jarlpm.allow_cascade_delete": "true"}
+            )
+        )
         
+        # Delete will cascade to all related tables
+        await self.session.delete(epic)
+        await self.session.commit()
         return True
     
     async def add_transcript_event(
@@ -81,28 +93,36 @@ class EpicService:
             stage=stage,
             metadata=metadata
         )
-        await self.db.epic_transcript_events.insert_one(event.model_dump())
+        self.session.add(event)
+        await self.session.commit()
+        await self.session.refresh(event)
         return event
     
     async def get_transcript(self, epic_id: str) -> List[EpicTranscriptEvent]:
         """Get full transcript for an epic"""
-        cursor = self.db.epic_transcript_events.find(
-            {"epic_id": epic_id},
-            {"_id": 0}
-        ).sort("created_at", 1)
-        events = await cursor.to_list(10000)
-        return [EpicTranscriptEvent(**e) for e in events]
+        result = await self.session.execute(
+            select(EpicTranscriptEvent)
+            .where(EpicTranscriptEvent.epic_id == epic_id)
+            .order_by(EpicTranscriptEvent.created_at.asc())
+        )
+        return list(result.scalars().all())
     
     async def get_conversation_history(self, epic_id: str, limit: int = 20) -> List[dict]:
         """Get recent conversation history for LLM context"""
-        cursor = self.db.epic_transcript_events.find(
-            {"epic_id": epic_id, "role": {"$in": ["user", "assistant"]}},
-            {"_id": 0}
-        ).sort("created_at", -1).limit(limit)
-        events = await cursor.to_list(limit)
+        result = await self.session.execute(
+            select(EpicTranscriptEvent)
+            .where(
+                and_(
+                    EpicTranscriptEvent.epic_id == epic_id,
+                    EpicTranscriptEvent.role.in_(['user', 'assistant'])
+                )
+            )
+            .order_by(EpicTranscriptEvent.created_at.desc())
+            .limit(limit)
+        )
+        events = list(result.scalars().all())
         events.reverse()  # Oldest first
-        
-        return [{"role": e["role"], "content": e["content"]} for e in events]
+        return [{"role": e.role, "content": e.content} for e in events]
     
     async def add_decision(
         self,
@@ -124,23 +144,24 @@ class EpicService:
             proposal_id=proposal_id,
             content_snapshot=content_snapshot
         )
-        await self.db.epic_decisions.insert_one(decision.model_dump())
+        self.session.add(decision)
+        await self.session.commit()
+        await self.session.refresh(decision)
         return decision
     
     async def get_decisions(self, epic_id: str) -> List[EpicDecision]:
         """Get all decisions for an epic"""
-        cursor = self.db.epic_decisions.find(
-            {"epic_id": epic_id},
-            {"_id": 0}
-        ).sort("created_at", 1)
-        decisions = await cursor.to_list(1000)
-        return [EpicDecision(**d) for d in decisions]
+        result = await self.session.execute(
+            select(EpicDecision)
+            .where(EpicDecision.epic_id == epic_id)
+            .order_by(EpicDecision.created_at.asc())
+        )
+        return list(result.scalars().all())
     
     def can_advance_stage(self, current_stage: EpicStage, target_stage: EpicStage) -> bool:
         """Check if stage advancement is valid (monotonic progression only)"""
         current_order = STAGE_ORDER.get(current_stage, -1)
         target_order = STAGE_ORDER.get(target_stage, -1)
-        
         # Can only advance forward by exactly one stage
         return target_order == current_order + 1
     
@@ -159,88 +180,90 @@ class EpicService:
         field: str,
         content: str,
         target_stage: EpicStage
-    ) -> PendingProposal:
+    ) -> dict:
         """Set a pending proposal on an epic"""
         epic = await self.get_epic(epic_id, user_id)
         if not epic:
             raise ValueError("Epic not found")
         
-        proposal = PendingProposal(
-            field=field,
-            proposed_content=content,
-            target_stage=target_stage
-        )
+        import uuid
+        proposal = {
+            "proposal_id": f"prop_{uuid.uuid4().hex[:12]}",
+            "field": field,
+            "proposed_content": content,
+            "proposed_at": datetime.now(timezone.utc).isoformat(),
+            "target_stage": target_stage.value
+        }
         
-        await self.db.epics.update_one(
-            {"epic_id": epic_id},
-            {
-                "$set": {
-                    "pending_proposal": proposal.model_dump(),
-                    "updated_at": datetime.now(timezone.utc)
-                }
-            }
-        )
+        epic.pending_proposal = proposal
+        epic.updated_at = datetime.now(timezone.utc)
+        await self.session.commit()
         
         return proposal
     
     async def confirm_proposal(self, epic_id: str, user_id: str, proposal_id: str) -> Epic:
-        """Confirm a pending proposal and advance the stage"""
-        epic = await self.get_epic(epic_id, user_id)
-        if not epic:
-            raise ValueError("Epic not found")
+        """Confirm a pending proposal and advance the stage (TRANSACTIONAL)"""
+        async with self.session.begin_nested():
+            epic = await self.get_epic(epic_id, user_id)
+            if not epic:
+                raise ValueError("Epic not found")
+            
+            if not epic.pending_proposal:
+                raise ValueError("No pending proposal to confirm")
+            
+            if epic.pending_proposal.get("proposal_id") != proposal_id:
+                raise ValueError("Proposal ID mismatch")
+            
+            proposal = epic.pending_proposal
+            target_stage = EpicStage(proposal["target_stage"])
+            
+            # Validate stage advancement (also enforced by DB trigger)
+            if not self.can_advance_stage(epic.current_stage, target_stage):
+                raise ValueError(f"Cannot advance from {epic.current_stage} to {target_stage}")
+            
+            # Get or create snapshot
+            snapshot = epic.snapshot
+            if not snapshot:
+                snapshot = EpicSnapshot(epic_id=epic.epic_id)
+                self.session.add(snapshot)
+            
+            # Update snapshot based on field
+            field = proposal["field"]
+            content = proposal["proposed_content"]
+            now = datetime.now(timezone.utc)
+            
+            if field == "problem_statement":
+                snapshot.problem_statement = content
+                snapshot.problem_confirmed_at = now
+            elif field == "desired_outcome":
+                snapshot.desired_outcome = content
+                snapshot.outcome_confirmed_at = now
+            elif field == "epic_final":
+                parsed = self._parse_epic_final(content)
+                snapshot.epic_summary = parsed.get("summary", content)
+                snapshot.acceptance_criteria = parsed.get("criteria", [])
+                snapshot.epic_locked_at = now
+            
+            # Advance stage (enforced by DB trigger for monotonic progression)
+            epic.current_stage = target_stage
+            epic.pending_proposal = None
+            epic.updated_at = now
+            
+            # Record decision (append-only)
+            decision = EpicDecision(
+                epic_id=epic_id,
+                user_id=user_id,
+                decision_type="confirm_proposal",
+                from_stage=EpicStage(proposal["target_stage"]),  # Previous stage
+                to_stage=target_stage,
+                proposal_id=proposal_id,
+                content_snapshot=content
+            )
+            self.session.add(decision)
         
-        if not epic.pending_proposal:
-            raise ValueError("No pending proposal to confirm")
-        
-        if epic.pending_proposal.proposal_id != proposal_id:
-            raise ValueError("Proposal ID mismatch")
-        
-        proposal = epic.pending_proposal
-        
-        # Validate stage advancement
-        if not self.can_advance_stage(epic.current_stage, proposal.target_stage):
-            raise ValueError(f"Cannot advance from {epic.current_stage} to {proposal.target_stage}")
-        
-        # Build update based on field
-        snapshot_update = {}
-        if proposal.field == "problem_statement":
-            snapshot_update["snapshot.problem_statement"] = proposal.proposed_content
-            snapshot_update["snapshot.problem_confirmed_at"] = datetime.now(timezone.utc)
-        elif proposal.field == "desired_outcome":
-            snapshot_update["snapshot.desired_outcome"] = proposal.proposed_content
-            snapshot_update["snapshot.outcome_confirmed_at"] = datetime.now(timezone.utc)
-        elif proposal.field == "epic_final":
-            # Parse epic summary and acceptance criteria
-            parsed = self._parse_epic_final(proposal.proposed_content)
-            snapshot_update["snapshot.epic_summary"] = parsed.get("summary", proposal.proposed_content)
-            snapshot_update["snapshot.acceptance_criteria"] = parsed.get("criteria", [])
-            snapshot_update["snapshot.epic_locked_at"] = datetime.now(timezone.utc)
-        
-        # Update epic
-        await self.db.epics.update_one(
-            {"epic_id": epic_id},
-            {
-                "$set": {
-                    **snapshot_update,
-                    "current_stage": proposal.target_stage.value,
-                    "pending_proposal": None,
-                    "updated_at": datetime.now(timezone.utc)
-                }
-            }
-        )
-        
-        # Record decision
-        await self.add_decision(
-            epic_id=epic_id,
-            user_id=user_id,
-            decision_type="confirm_proposal",
-            from_stage=epic.current_stage,
-            to_stage=proposal.target_stage,
-            proposal_id=proposal_id,
-            content_snapshot=proposal.proposed_content
-        )
-        
-        return await self.get_epic(epic_id, user_id)
+        await self.session.commit()
+        await self.session.refresh(epic)
+        return epic
     
     async def reject_proposal(self, epic_id: str, user_id: str, proposal_id: str) -> Epic:
         """Reject a pending proposal"""
@@ -251,31 +274,29 @@ class EpicService:
         if not epic.pending_proposal:
             raise ValueError("No pending proposal to reject")
         
-        if epic.pending_proposal.proposal_id != proposal_id:
+        if epic.pending_proposal.get("proposal_id") != proposal_id:
             raise ValueError("Proposal ID mismatch")
         
-        # Clear proposal
-        await self.db.epics.update_one(
-            {"epic_id": epic_id},
-            {
-                "$set": {
-                    "pending_proposal": None,
-                    "updated_at": datetime.now(timezone.utc)
-                }
-            }
-        )
+        content = epic.pending_proposal.get("proposed_content", "")
         
-        # Record decision
-        await self.add_decision(
+        # Record rejection decision
+        decision = EpicDecision(
             epic_id=epic_id,
             user_id=user_id,
             decision_type="reject_proposal",
             from_stage=epic.current_stage,
             proposal_id=proposal_id,
-            content_snapshot=epic.pending_proposal.proposed_content
+            content_snapshot=content
         )
+        self.session.add(decision)
         
-        return await self.get_epic(epic_id, user_id)
+        # Clear proposal
+        epic.pending_proposal = None
+        epic.updated_at = datetime.now(timezone.utc)
+        
+        await self.session.commit()
+        await self.session.refresh(epic)
+        return epic
     
     def _parse_epic_final(self, content: str) -> dict:
         """Parse epic final proposal into summary and criteria"""
@@ -292,8 +313,7 @@ class EpicService:
         criteria_match = re.search(r'Acceptance Criteria:\s*(.+)', content, re.DOTALL | re.IGNORECASE)
         if criteria_match:
             criteria_text = criteria_match.group(1).strip()
-            # Split by lines starting with - or numbers
-            criteria = re.findall(r'^\s*[-\d.]+\s*(.+)$', criteria_text, re.MULTILINE)
+            criteria = re.findall(r'^\\s*[-\\d.]+\\s*(.+)$', criteria_text, re.MULTILINE)
             result["criteria"] = [c.strip() for c in criteria if c.strip()]
         
         return result
