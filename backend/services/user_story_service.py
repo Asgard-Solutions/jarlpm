@@ -145,7 +145,7 @@ class UserStoryService:
         story_points: Optional[int] = None,
         source: str = "ai_generated"
     ) -> UserStory:
-        """Create a new user story in draft stage"""
+        """Create a new user story in draft stage (feature-bound)"""
         # Build the standard user story text
         story_text = f"As a {persona}, I want to {action} so that {benefit}."
         
@@ -158,6 +158,7 @@ class UserStoryService:
             acceptance_criteria=acceptance_criteria,
             story_points=story_points,
             source=source,
+            is_standalone=False,
             current_stage=UserStoryStage.DRAFT.value
         )
         self.session.add(story)
