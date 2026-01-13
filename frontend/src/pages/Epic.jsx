@@ -3,23 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { epicAPI } from '@/api';
 import { useSubscriptionStore, useLLMProviderStore } from '@/store';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ThemeToggle from '@/components/ThemeToggle';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { 
   ArrowLeft, Send, Loader2, Lock, CheckCircle2, 
   XCircle, FileText, History, AlertCircle, Layers,
@@ -61,8 +49,20 @@ const Epic = () => {
   const [confirmingProposal, setConfirmingProposal] = useState(false);
   const [error, setError] = useState('');
 
-  const scrollRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
   const textareaRef = useRef(null);
+
+  // Auto-scroll to bottom when messages change
+  const scrollToBottom = useCallback(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [transcript, streamingContent, scrollToBottom]);
 
   const loadEpic = useCallback(async () => {
     try {
@@ -85,12 +85,6 @@ const Epic = () => {
   }, [epicId, navigate]);
 
   useEffect(() => { loadEpic(); }, [loadEpic]);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [transcript, streamingContent]);
 
   const handleSendMessage = async () => {
     if (!message.trim() || sending) return;
@@ -202,11 +196,11 @@ const Epic = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
+      {/* Fixed Header */}
+      <header className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur-sm z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="text-muted-foreground hover:text-foreground" data-testid="back-to-dashboard-btn"><ArrowLeft className="w-5 h-5" /></Button>
               <div><h1 className="text-lg font-semibold text-foreground line-clamp-1">{epic.title}</h1><p className="text-xs text-muted-foreground">Epic</p></div>
@@ -219,9 +213,9 @@ const Epic = () => {
         </div>
       </header>
 
-      {/* Stage Progress */}
-      <div className="border-b border-border bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      {/* Fixed Stage Progress */}
+      <div className="flex-shrink-0 border-b border-border bg-muted/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between gap-2">
             {STAGES.map((stage, index) => {
               const currentIndex = getCurrentStageIndex();
@@ -237,9 +231,9 @@ const Epic = () => {
                     }`}>
                       {isCompleted ? (isLocked ? <Lock className="w-3 h-3" /> : <CheckCircle2 className="w-4 h-4" />) : (index + 1)}
                     </div>
-                    <span className={`text-xs mt-1 hidden sm:block ${isCurrent ? 'text-primary' : 'text-muted-foreground'}`}>{stage.label}</span>
+                    <span className={`text-xs mt-1 hidden sm:block ${isCurrent ? 'text-primary font-medium' : 'text-muted-foreground'}`}>{stage.label}</span>
                   </div>
-                  {index < STAGES.length - 1 && (<div className={`flex-1 h-1 rounded ${index < currentIndex ? 'bg-success' : 'bg-muted'}`} />)}
+                  {index < STAGES.length - 1 && (<div className={`flex-1 h-1 rounded ${index < currentIndex ? 'bg-success' : 'bg-border'}`} />)}
                 </React.Fragment>
               );
             })}
@@ -247,11 +241,16 @@ const Epic = () => {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content Area - fills remaining space */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
-          <ScrollArea ref={scrollRef} className="flex-1 p-4" data-testid="chat-messages">
+        {/* Chat Area - scrollable */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Scrollable Messages */}
+          <div 
+            ref={chatContainerRef}
+            className="flex-1 overflow-y-auto p-4"
+            data-testid="chat-messages"
+          >
             <div className="max-w-3xl mx-auto">
               {transcript.length === 0 && !streamingContent ? (
                 <div className="text-center py-20">
@@ -273,19 +272,21 @@ const Epic = () => {
                   )}
                 </>
               )}
+              {/* Scroll anchor */}
+              <div ref={messagesEndRef} />
             </div>
-          </ScrollArea>
+          </div>
 
-          {/* Pending Proposal */}
+          {/* Pending Proposal - fixed above input */}
           {pendingProposal && (
-            <div className="border-t border-warning/30 bg-warning/10 p-4">
+            <div className="flex-shrink-0 border-t border-warning/30 bg-warning/10 p-4">
               <div className="max-w-3xl mx-auto">
                 <div className="flex items-start gap-4">
                   <AlertCircle className="w-6 h-6 text-warning flex-shrink-0 mt-1" />
                   <div className="flex-1">
                     <h4 className="text-foreground font-medium mb-2">Pending Proposal</h4>
                     <p className="text-muted-foreground text-sm mb-3">The AI has proposed the following. Do you want to confirm it?</p>
-                    <div className="bg-card rounded-lg p-4 mb-4 border border-warning/30">
+                    <div className="bg-card rounded-lg p-4 mb-4 border border-warning/30 max-h-48 overflow-y-auto">
                       <p className="text-foreground whitespace-pre-wrap text-sm">{pendingProposal.content}</p>
                     </div>
                     <div className="flex gap-3">
@@ -304,7 +305,7 @@ const Epic = () => {
 
           {/* Error Message */}
           {error && (
-            <div className="border-t border-destructive/30 bg-destructive/10 p-4">
+            <div className="flex-shrink-0 border-t border-destructive/30 bg-destructive/10 p-4">
               <div className="max-w-3xl mx-auto flex items-center gap-3">
                 <AlertCircle className="w-5 h-5 text-destructive" />
                 <p className="text-destructive text-sm">{error}</p>
@@ -313,8 +314,8 @@ const Epic = () => {
             </div>
           )}
 
-          {/* Input Area */}
-          <div className="border-t border-border p-4 bg-muted/30">
+          {/* Fixed Input Area */}
+          <div className="flex-shrink-0 border-t border-border p-4 bg-background">
             <div className="max-w-3xl mx-auto">
               {epic.current_stage === 'epic_locked' ? (
                 <div className="flex items-center justify-center gap-3 py-4">
@@ -333,15 +334,15 @@ const Epic = () => {
           </div>
         </div>
 
-        {/* Side Panel */}
-        <div className="w-80 border-l border-border bg-card/50 hidden lg:block">
-          <Tabs defaultValue="snapshot" className="h-full flex flex-col">
-            <TabsList className="bg-transparent border-b border-border rounded-none p-0 h-auto">
+        {/* Fixed Side Panel */}
+        <div className="w-80 flex-shrink-0 border-l border-border bg-card/50 hidden lg:flex lg:flex-col overflow-hidden">
+          <Tabs defaultValue="snapshot" className="flex-1 flex flex-col overflow-hidden">
+            <TabsList className="flex-shrink-0 bg-transparent border-b border-border rounded-none p-0 h-auto">
               <TabsTrigger value="snapshot" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent py-3"><FileText className="w-4 h-4 mr-2" /> Snapshot</TabsTrigger>
               <TabsTrigger value="history" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent py-3"><History className="w-4 h-4 mr-2" /> Decisions</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="snapshot" className="flex-1 m-0 overflow-auto">
+            <TabsContent value="snapshot" className="flex-1 m-0 overflow-y-auto">
               <div className="p-4 space-y-4">
                 <div>
                   <div className="flex items-center gap-2 mb-2"><h4 className="text-sm font-medium text-foreground">Problem Statement</h4>{epic.snapshot?.problem_statement && (<Lock className="w-3 h-3 text-success" />)}</div>
@@ -361,7 +362,7 @@ const Epic = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="history" className="flex-1 m-0 overflow-auto">
+            <TabsContent value="history" className="flex-1 m-0 overflow-y-auto">
               <div className="p-4 space-y-4">
                 {decisions.length === 0 ? (<p className="text-sm text-muted-foreground italic text-center py-8">No decisions recorded yet</p>) : (
                   decisions.map((decision) => (
@@ -370,7 +371,7 @@ const Epic = () => {
                         {decision.decision_type === 'confirm_proposal' ? (<CheckCircle2 className="w-4 h-4 text-success" />) : (<XCircle className="w-4 h-4 text-destructive" />)}
                         <span className="text-sm font-medium text-foreground capitalize">{decision.decision_type.replace('_', ' ')}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">{decision.from_stage} → {decision.to_stage || 'same'}</p>
+                      <p className="text-xs text-muted-foreground">{decision.from_stage?.replace('_', ' ')} → {decision.to_stage?.replace('_', ' ') || 'same'}</p>
                       <p className="text-xs text-muted-foreground mt-1">{new Date(decision.created_at).toLocaleString()}</p>
                     </div>
                   ))
