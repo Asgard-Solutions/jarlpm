@@ -9,18 +9,20 @@ The user wants to build **JarlPM**, an AI-agnostic, conversation-driven Product 
 4.  **Epic Lifecycle (Monotonic State Machine):** An Epic must progress through defined stages without regression.
 5.  **Sacred Invariants:** Confirmed decisions, conversation history, and user intent are immutable.
 6.  **Database Migration (MongoDB to PostgreSQL):** COMPLETED.
-7.  **Data Model (PostgreSQL):** Includes tables for , , , , , etc.
-8.  **Frontend Requirements:** An Epic Page, a Story Planning Page, a Completed Epic view, and settings. Authentication via Google OAuth and a test login.
-9.  **UI/Branding (Nordic Theme):** A muted, professional, calm Nordic color palette, supporting both light and dark modes, with a custom logo.
-10. **State-Driven Locking Model:** Implement a decision-discipline locking model across Epics, Features, and User Stories. Epic anchors (Problem + Desired Outcome) become immutable after the start. Features and User Stories become non-editable when the parent Epic is locked. This enforcement must exist at the DB, service, API, and UI layers.
+7.  **Data Model (PostgreSQL):** Includes tables for , , , , , , etc.
+8.  **Frontend Requirements:** An Epic Page, a Story Planning Page, a Bugs Page, a Completed Epic view, and settings. Authentication via Google OAuth and a test login.
+9.  **UI/Branding (Nordic Theme):** A muted, professional, calm Nordic color palette, supporting both light and dark modes, with custom logos.
+10. **State-Driven Locking Model:** Implement a decision-discipline locking model across Epics, Features, and User Stories.
+11. **Bug Tracking System:** A first-class bug tracking system that supports standalone bugs and optional linking to other entities (Epics, Features, Stories). Includes AI assistance for creation.
+12. **Standalone User Stories:** Ability to create user stories that are not tied to a specific feature, with AI assistance.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack app with a FastAPI backend, React frontend, and a PostgreSQL database. The core workflow for creating Epics, Features, and User Stories is fully implemented, following a pattern of AI-suggestion and user confirmation/refinement. This includes dedicated pages for epic creation (), user story planning (), and a read-only review page for completed epics (). The UI has been updated with a Nordic theme, a custom logo/favicon that adapts to light/dark modes, and new landing page copy reflecting the product's brand identity. A Test Login button allows for easy access to a pre-configured test environment.
+The application is a full-stack app with a FastAPI backend, React frontend, and PostgreSQL database. Core workflows for Epics, Features, and linked User Stories are implemented. A state-driven locking model ensures data integrity. A complete, end-to-end bug tracking system has been built, featuring a dedicated UI, standalone bug creation, optional entity linking, and a conversational AI assistant for drafting bug reports. The UI has a Nordic theme with custom, theme-aware logos, and includes a visual workflow stepper for better user guidance. A Test Login provides easy access to a pre-configured test environment.
 
 **Last working item**:
-    - Last item agent was working on: The agent began a major architectural refactor to implement a state-driven locking model across Epics, Features, and User Stories. The goal is to make Epic anchors (Problem, Outcome) immutable after they are set, and enforce locking rules down the hierarchy. The agent started by creating a new  and updating the  file to include versioning for User Stories and locking metadata for Epics.
+    - Last item agent was working on: The agent began implementing standalone user stories. The first step was to update the  model in  by making the  optional and adding a  to handle ownership for stories not linked to a feature.
     - Status: IN PROGRESS
     - Agent Testing Done: N
     - Which testing method agent to use? both
@@ -31,7 +33,7 @@ The application is a full-stack app with a FastAPI backend, React frontend, and 
   
   Issues Detail:
   - Issue 1: Authenticated Screenshot Failures
-     - Attempted fixes: None. This is a known issue from a previous session.
+     - Attempted fixes: None. This is a known issue from previous sessions.
      - Next debug checklist: The screenshot tool fails on authenticated pages because the session cookie is set for , but the tool navigates to the preview domain. The fix likely involves configuring the screenshot tool to use cookies for the correct domain or finding a way to pass the session token.
      - Why fix this issue and what will be achieved with the fix? Solving this will enable visual verification of authenticated frontend pages, improving testing efficiency for UI changes.
      - Status:  NOT STARTED
@@ -40,37 +42,39 @@ The application is a full-stack app with a FastAPI backend, React frontend, and 
      - Blocked on other issue: None
 
 **In progress Task List**:
-  - Task 1:  Implement State-Driven Locking Model (Priority: P0)
-     - Where to resume: The agent has modified  with versioning for  and locking metadata for . The next immediate step is to update  to ensure these new models/fields are correctly initialized with the database. After that, continue implementing the backend policy enforcement in the new  and apply it across all relevant API routes (, , ).
-     - What will be achieved with this? A robust, state-driven locking mechanism that prevents unintended edits to locked Epics, Features, and User Stories, ensuring data integrity and decision immutability as per the user's explicit request.
+  - Task 1:  Implement Standalone User Stories with AI Assistance (Priority: P0)
+     - Where to resume: The database model () has been updated. The next steps are:
+        1.  **Backend:** Update  to handle logic for standalone stories. Create API routes (e.g., in  or a new file) for creating, listing, and managing standalone stories, including an endpoint for the AI conversational creation flow (similar to the bug creation flow).
+        2.  **Frontend:** Create a new page (e.g., ) to list all user stories (both linked and standalone). Add a link to this page in the main navigation (e.g., Dashboard). Implement a new AI-powered conversational dialog for creating standalone user stories.
+     - What will be achieved with this? Users will be able to create user stories conversationally with an AI, without needing to link them to a feature, providing more flexibility.
      - Status:  IN PROGRESS
      - Should Test frontend/backend/both after fix? both
      - Blocked on something: None
 
 **Upcoming and Future Tasks**
     Upcoming Tasks:
-    - **P1: Bug Creation Stage:** Implement a creation flow for Bugs, which can be children of Features, following the same lifecycle pattern.
-    - **P1: Full E2E Workflow Test:** After the locking model is in place, perform a comprehensive end-to-end test of the entire application.
+    - **P1: Full E2E Workflow Test:** After standalone stories are implemented, perform a comprehensive end-to-end test of the entire application.
 
     Future Tasks:
-    - **P2: Implement Stripe Subscription:** Fully implement the Stripe integration to handle real user subscriptions.
+    - **P2: Implement Stripe Subscription:** Fully implement the Stripe integration for the 0/month plan.
     - **P2: Implement Deletion Semantics:** Implement hard-delete functionality for Epics with user confirmation.
     - **P2: Export to Jira/Azure DevOps:** Add functionality to export locked epics and their children.
     - **P2: Team Collaboration:** Introduce features for multiple users to collaborate on the same epic.
     - **P2: Markdown Export:** Create a feature to export a completed epic hierarchy as a Markdown document.
 
 **Completed work in this session**
-- **Improved Feature Creation Workflow (DONE):** Refactored the entire feature creation process to be AI-driven with a proposal/approval/refinement loop, including a full lifecycle and mini-conversations for each feature.
-- **User Story Creation Workflow (DONE):** Implemented the full lifecycle for user stories, generated from features, following the established pattern of AI-suggestion and user refinement.
-- **Completed Epic Review Page (DONE):** Created a read-only, expandable tree-view page () for reviewing a fully completed epic with its features and user stories.
-- **Landing Page Copy & Branding Update (DONE):** Completely rewrote the landing page content to align with the Senior PM brand identity and removed the Test Login button from the public view.
-- **Logo & Favicon Integration (DONE):** Added user-provided logo and favicon images, with support for light/dark themes, across the application including the landing page and dashboard.
-- **Frontend State Loading Fix (DONE):** Fixed a recurring bug where auth/provider state was not loaded correctly when navigating directly to protected pages like  and .
+- **State-Driven Locking Model (DONE):** Successfully implemented and tested the backend locking policy and integrated it into all relevant API routes.
+- **Logo and Favicon Update (DONE):** Replaced all application logos and favicons with new user-provided assets, with separate versions for light and dark themes.
+- **Bug Fix: No LLM Configured (DONE):** Fixed a frontend bug where the API response for LLM providers was being parsed incorrectly, causing an error message for the test user.
+- **Feature-to-Story UX Redesign (DONE):** Improved the user flow between creating features and user stories by adding status indicators on the Feature page and providing clearer navigation and context on the Story Planning page.
+- **Visual Workflow Stepper (DONE):** Added a visual stepper component to the Epic and Story Planning pages to clearly indicate the user's current stage in the development lifecycle (Epic Definition → Features → User Stories → Complete).
+- **Bug Tracking System (E2E) (DONE):** Implemented a complete bug tracking feature, including backend models, services, and API routes for CRUD, lifecycle management, and optional linking. The frontend includes a dedicated  page with filtering, sorting, and a detail view.
+- **AI-Assisted Bug Creation (DONE):** Implemented a conversational AI flow that guides users through creating a detailed bug report by asking for the problem, steps to reproduce, and expected/actual behavior.
 
 **Earlier issues found/mentioned but not fixed**
    - Issue 1: Authenticated Screenshot Failures
-     - Debug checklist: The screenshot tool fails on authenticated pages because the session cookie is set for , but the tool navigates to the preview domain. A potential fix is to configure the screenshot tool to use cookies for the correct domain.
-     - Why to solve this issue and what will be achieved with this? Solving this will enable visual verification of authenticated frontend pages, improving testing efficiency.
+     - Debug checklist: The screenshot tool fails on authenticated pages due to a domain mismatch for cookies. A potential fix is to configure the tool to use cookies for the correct preview domain.
+     - Why to solve this issue and what will be achieved with this? Solving this will enable visual verification of authenticated frontend pages.
      - Should Test frontend/backend/both after fix: frontend
      - Is recurring issue? Y
 
@@ -83,79 +87,89 @@ The application is a full-stack app with a FastAPI backend, React frontend, and 
 **Key Technical Concepts**
 - **Backend:** FastAPI, PostgreSQL (Neon), SQLAlchemy (ORM)
 - **Frontend:** React, Tailwind CSS, Zustand (State Management)
-- **Authentication:** Google OAuth, Test User JWT
+- **Authentication:** Test User JWT
 - **Architecture:** AI-agnostic, Server-side agent pattern, Monotonic state machine
 
 **key DB schema**
-  - **Epic:** uid=0(root) gid=0(root) groups=0(root), , , ,  (new),  (new),  (new),  (new)
-  - **Feature:** uid=0(root) gid=0(root) groups=0(root), , , 
-  - **UserStory:** uid=0(root) gid=0(root) groups=0(root), , , ,  (new),  (new)
+  - **UserStory:** uid=0(root) gid=0(root) groups=0(root),  (nullable),  (new), , , , 
+  - **Bug:** uid=0(root) gid=0(root) groups=0(root), , , , , , etc.
+  - **BugLink:** uid=0(root) gid=0(root) groups=0(root), ,  (Epic, Feature, Story), 
+  - **BugStatusHistory:** uid=0(root) gid=0(root) groups=0(root), , , , 
   - ...and other related tables as defined in .
 
 **changes in tech stack**
   - None.
 
 **All files of reference**
-- : Updated to include  and  models, and new fields for locking and versioning.
-- : New service created to handle the locking logic (implementation in progress).
-- , : New route files for managing features and user stories.
-- , : New service files for business logic.
-- : Major refactor for the new feature workflow and to add navigation to the user story planning.
-- : New page for creating and managing user stories for a specific feature.
-- : New page to display the full, read-only hierarchy of a completed epic.
-- : Completely rewritten for new branding, copy, and logo integration.
-- : New logo and favicon assets added.
-- : Updated with routes for  and .
+- : Updated to allow standalone stories.
+- : Updated with Bug, BugLink, and BugStatusHistory models.
+- : New service for bug business logic.
+- : New routes for bug CRUD, lifecycle, linking, and AI assistance.
+- : Updated to include bug routes.
+- : Implemented and integrated.
+- : New page for the Bug Tracking System.
+- : Updated with workflow stepper and improved UX for story creation.
+- : Updated with workflow stepper and improved UX.
+- : Updated with bug-related API calls.
+- : Updated with the  route.
+- : Updated with a link to the bug tracker.
+- : All logo and favicon files were replaced.
+- : Updated to reflect completed work.
 
 **Areas that need refactoring**:
-- An  comment in  from a previous session could be reviewed for a cleaner solution.
+- An  comment in  could be reviewed for a cleaner solution.
 
 **key api endpoints**
-- : To manage features for an epic.
-- : To manage user stories for a feature.
-- : One-click test user login.
-- : GET/POST for managing the Product Delivery Context.
+- : GET permissions for an epic.
+- : CRUD endpoints for bugs.
+- : Transition bug status.
+- : Add/remove links from a bug.
+- : Conversational endpoint for AI-assisted bug creation.
 
 **Critical Info for New Agent**
-Your top priority is to continue the implementation of the state-driven locking mechanism. The data models have been updated, but the core logic is not yet implemented or enforced.
-1.  **Resume Locking Model:** Start by updating  to register the model changes.
-2.  **Implement Backend Policy:** Flesh out the  and integrate it into the , , and  API routes to enforce the rules specified by the user. This includes preventing edits to locked items and handling versioning for user stories.
-3.  **Update Frontend UI:** Modify the , , and  pages to reflect the locked/unlocked states (e.g., disabling buttons, showing read-only fields).
-4.  **Use Test Login:** Continue using the Test Login button for all development and testing.
+Your top priority is to complete the implementation of **standalone user stories with AI assistance**.
+1.  **Resume Implementation:** The database model is already updated. Your next step is to build out the backend service logic and API endpoints for creating and managing standalone stories.
+2.  **Follow Existing Patterns:** The implementation should closely follow the recently completed bug tracking system, especially the conversational AI creation flow () and the dedicated frontend page ().
+3.  **Create Frontend:** Build a new page for listing all stories (e.g., ) and implement the AI chat dialog for creation.
+4.  **Thorough Testing:** Use the testing agent to perform comprehensive tests on the new feature once the implementation is complete.
 
 **documents and test reports created in this job**
 -  (updated multiple times)
 - 
 - 
 - 
+- 
+- 
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Provided detailed specifications for the state-driven locking model. (PENDING IMPLEMENTATION)
-2.  **User:** Requested a Completed Epic page with an expandable tree view. (COMPLETED)
-3.  **User:** Requested the User Story creation workflow. (COMPLETED)
-4.  **User:** Requested new logos and favicons. (COMPLETED)
-5.  **User:** Provided detailed copy and branding updates for the landing page. (COMPLETED)
-6.  **User:** Clarified that features should have their own mini-conversations for refinement. (COMPLETED)
-7.  **User:** Provided initial feedback on the feature creation flow, leading to the current improved design. (COMPLETED)
-... (Older messages are resolved bug reports and feature refinements from the previous session)
+1. **User:** Requested the implementation of standalone user stories using conversational AI. (IN PROGRESS)
+2. **Agent:** Finished AI-assisted bug creation and suggested next steps.
+3. **User:** Requested that the AI guide the user through bug creation with a conversation. (COMPLETED)
+4. **Agent:** Finished the initial bug tracking system.
+5. **User:** Provided detailed requirements for the Bug Tracking System. (COMPLETED)
+6. **Agent:** Asked for clarification on bug requirements.
+7. **User:** Requested the implementation of bugs as standalone cases. (COMPLETED)
+8. **Agent:** Finished the visual workflow stepper.
+9. **User:** Approved the implementation of the visual workflow stepper. (COMPLETED)
+10. **Agent:** Suggested adding a visual workflow stepper for clarity.
 
 **Project Health Check:**
 - **Broken:** None. The application is in a runnable state.
 - **Mocked:** The Stripe subscription flow is planned but not implemented.
 
 **3rd Party Integrations**
-- **Google OAuth:** Implemented for user authentication.
+- **Google OAuth:** Planned, but current implementation uses a Test User JWT flow.
 - **OpenAI:** Integrated and pre-configured for the test user. The system is AI-agnostic.
 - **Stripe:** Planned for subscriptions, but not yet implemented.
 
 **Testing status**
-  - Testing agent used after significant changes: YES (3 times, for features, user stories, and completed view)
+  - Testing agent used after significant changes: YES (5 times this session for locking, UX, stepper, and bug features).
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: The testing agent generated comprehensive backend tests for the new features in  directory.
+  - Test files created: The testing agent generated and updated comprehensive backend and frontend tests in the  directory and within its own test suites.
   - Known regressions: None.
 
 **Credentials to test flow:**
 Use the Test Login button on the landing page. This logs in a test user with a valid session, active subscription, and pre-configured settings.
 
 **What agent forgot to execute**
-The agent has been diligent in following user requests. The current task (state-driven locking) is a large, multi-step process that was correctly started and is now the main pending item.</analysis>
+The agent has diligently followed all user requests in a systematic order. No tasks have been forgotten.</analysis>
