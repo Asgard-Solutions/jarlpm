@@ -47,6 +47,7 @@ export const epicAPI = {
   create: (title) => api.post('/epics', { title }),
   get: (epicId) => api.get(`/epics/${epicId}`),
   delete: (epicId) => api.delete(`/epics/${epicId}`),
+  getPermissions: (epicId) => api.get(`/epics/${epicId}/permissions`),
   chat: (epicId, content) => {
     // Return fetch for streaming
     return fetch(`${API}/epics/${epicId}/chat`, {
