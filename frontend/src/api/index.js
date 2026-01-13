@@ -99,4 +99,38 @@ export const featureAPI = {
   },
 };
 
+// User Story API (lifecycle-based stories from features)
+export const userStoryAPI = {
+  // Feature-level operations
+  listForFeature: (featureId) => api.get(`/stories/feature/${featureId}`),
+  create: (featureId, data) => api.post(`/stories/feature/${featureId}`, data),
+  generate: (featureId, count = 5) => {
+    // Return fetch for streaming
+    return fetch(`${API}/stories/feature/${featureId}/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ count }),
+      credentials: 'include',
+    });
+  },
+  
+  // Individual story operations
+  get: (storyId) => api.get(`/stories/${storyId}`),
+  update: (storyId, data) => api.put(`/stories/${storyId}`, data),
+  delete: (storyId) => api.delete(`/stories/${storyId}`),
+  approve: (storyId) => api.post(`/stories/${storyId}/approve`),
+  
+  // Story conversation
+  getConversation: (storyId) => api.get(`/stories/${storyId}/conversation`),
+  chat: (storyId, content) => {
+    // Return fetch for streaming
+    return fetch(`${API}/stories/${storyId}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+      credentials: 'include',
+    });
+  },
+};
+
 export default api;
