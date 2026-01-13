@@ -30,8 +30,6 @@ class PersonaService:
     
     async def get_epic_with_children(self, epic_id: str, user_id: str) -> Optional[Dict[str, Any]]:
         """Get a completed epic with all its features and user stories"""
-        from sqlalchemy.orm import selectinload
-        
         # Get epic with snapshot eagerly loaded
         result = await self.session.execute(
             select(Epic)
