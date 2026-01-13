@@ -236,7 +236,7 @@ class PromptService:
         # First check database for custom prompts
         result = await self.session.execute(
             select(PromptTemplate)
-            .where(PromptTemplate.stage == stage_value, PromptTemplate.is_active == True)
+            .where(PromptTemplate.stage == stage_value, PromptTemplate.is_active.is_(True))
         )
         prompt = result.scalar_one_or_none()
         

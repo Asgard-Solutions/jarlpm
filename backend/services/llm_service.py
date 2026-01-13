@@ -21,7 +21,7 @@ class LLMService:
         """Get the active LLM configuration for a user"""
         result = await self.session.execute(
             select(LLMProviderConfig)
-            .where(LLMProviderConfig.user_id == user_id, LLMProviderConfig.is_active == True)
+            .where(LLMProviderConfig.user_id == user_id, LLMProviderConfig.is_active.is_(True))
         )
         return result.scalar_one_or_none()
     
