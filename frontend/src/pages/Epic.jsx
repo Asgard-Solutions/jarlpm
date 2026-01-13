@@ -99,26 +99,22 @@ const Epic = () => {
     scrollToBottom();
   }, [transcript, streamingContent, scrollToBottom]);
 
-  // Fetch subscription and LLM providers if not already loaded (for direct navigation)
+  // Always fetch subscription and LLM providers on mount (for direct navigation)
   useEffect(() => {
     const fetchUserSettings = async () => {
       try {
-        // Fetch subscription if not loaded
-        if (!isActive) {
-          const subRes = await subscriptionAPI.getStatus();
-          setSubscription(subRes.data);
-        }
-        // Fetch LLM providers if not loaded
-        if (!activeProvider) {
-          const llmRes = await llmProviderAPI.list();
-          setProviders(llmRes.data.configs || []);
-        }
+        const [subRes, llmRes] = await Promise.all([
+          subscriptionAPI.getStatus(),
+          llmProviderAPI.list()
+        ]);
+        setSubscription(subRes.data);
+        setProviders(llmRes.data.configs || []);
       } catch (err) {
         console.error('Failed to fetch user settings:', err);
       }
     };
     fetchUserSettings();
-  }, [isActive, activeProvider, setSubscription, setProviders]);
+  }, [setSubscription, setProviders]);
 
   const loadEpic = useCallback(async () => {
     try {
