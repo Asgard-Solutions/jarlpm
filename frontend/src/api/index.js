@@ -35,6 +35,12 @@ export const llmProviderAPI = {
   activate: (configId) => api.put(`/llm-providers/${configId}/activate`),
 };
 
+// Product Delivery Context API
+export const deliveryContextAPI = {
+  get: () => api.get('/delivery-context'),
+  update: (data) => api.put('/delivery-context', data),
+};
+
 // Epic API
 export const epicAPI = {
   list: () => api.get('/epics'),
