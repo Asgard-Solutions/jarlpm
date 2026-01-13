@@ -215,6 +215,12 @@ class EpicService:
         
         return proposal
     
+    # Transitional stages that should auto-advance to the next capture stage
+    TRANSITIONAL_STAGES = {
+        'problem_confirmed': 'outcome_capture',
+        'outcome_confirmed': 'epic_drafted',
+    }
+    
     async def confirm_proposal(self, epic_id: str, user_id: str, proposal_id: str) -> Epic:
         """Confirm a pending proposal and advance the stage (TRANSACTIONAL)"""
         async with self.session.begin_nested():
@@ -259,7 +265,7 @@ class EpicService:
                 snapshot.acceptance_criteria = parsed.get("criteria", [])
                 snapshot.epic_locked_at = now
             
-            # Advance stage (enforced by DB trigger for monotonic progression)
+            # Advance to target stage first
             epic.current_stage = target_stage_value
             epic.pending_proposal = None
             epic.updated_at = now
@@ -275,6 +281,23 @@ class EpicService:
                 content_snapshot=content
             )
             self.session.add(decision)
+            
+            # Auto-advance past transitional stages to the next capture stage
+            if target_stage_value in self.TRANSITIONAL_STAGES:
+                next_stage = self.TRANSITIONAL_STAGES[target_stage_value]
+                epic.current_stage = next_stage
+                epic.updated_at = now
+                
+                # Record the auto-advance decision
+                auto_decision = EpicDecision(
+                    epic_id=epic_id,
+                    user_id=user_id,
+                    decision_type="auto_advance",
+                    from_stage=target_stage_value,
+                    to_stage=next_stage,
+                    content_snapshot=f"Auto-advanced from {target_stage_value} to {next_stage}"
+                )
+                self.session.add(auto_decision)
         
         await self.session.commit()
         await self.session.refresh(epic)
