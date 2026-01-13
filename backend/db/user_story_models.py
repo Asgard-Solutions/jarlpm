@@ -2,6 +2,7 @@
 User Story Models for JarlPM
 User Stories have their own lifecycle stages and conversation threads
 Stories are created from Features and follow the standard user story format
+Includes versioning support for edit history tracking
 """
 from datetime import datetime, timezone
 from typing import Optional, List
@@ -39,7 +40,7 @@ USER_STORY_STAGE_ORDER = {
 
 
 class UserStory(Base):
-    """User Story entity with its own lifecycle"""
+    """User Story entity with its own lifecycle and versioning"""
     __tablename__ = "user_stories"
     
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -69,6 +70,11 @@ class UserStory(Base):
     # Priority order within feature
     priority: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     
+    # Versioning support
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    parent_story_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # Lineage for versions
+    is_frozen: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)  # Derived from Epic lock but stored for performance
+    
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
@@ -76,14 +82,46 @@ class UserStory(Base):
     
     # Relationships
     conversation_events: Mapped[List["UserStoryConversationEvent"]] = relationship(back_populates="user_story", cascade="all, delete-orphan")
+    versions: Mapped[List["UserStoryVersion"]] = relationship(back_populates="story", cascade="all, delete-orphan")
     
     __table_args__ = (
         Index('idx_user_stories_feature_id', 'feature_id'),
         Index('idx_user_stories_stage', 'current_stage'),
+        Index('idx_user_stories_parent', 'parent_story_id'),
         CheckConstraint(
             "current_stage IN ('draft', 'refining', 'approved')",
             name='ck_user_story_valid_stage'
         ),
+    )
+
+
+class UserStoryVersion(Base):
+    """
+    Append-only version history for user stories.
+    Created whenever a story is edited in IN_PROGRESS epic status.
+    """
+    __tablename__ = "user_story_versions"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    version_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("sver_"))
+    story_id: Mapped[str] = mapped_column(String(50), ForeignKey("user_stories.story_id", ondelete="CASCADE"), nullable=False)
+    
+    # Version number (1, 2, 3, ...)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    
+    # Full snapshot of the story at this version
+    snapshot_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    
+    # Who created this version
+    created_by: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    story: Mapped["UserStory"] = relationship(back_populates="versions")
+    
+    __table_args__ = (
+        Index('idx_story_versions_story_id', 'story_id'),
+        Index('idx_story_versions_version', 'story_id', 'version'),
     )
 
 
@@ -108,3 +146,4 @@ class UserStoryConversationEvent(Base):
         Index('idx_user_story_conv_story_id', 'story_id'),
         CheckConstraint("role IN ('user', 'assistant', 'system')", name='ck_user_story_conv_valid_role'),
     )
+
