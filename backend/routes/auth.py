@@ -1,17 +1,24 @@
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, HTTPException, Request, Response, Depends
 from pydantic import BaseModel
 import httpx
 from datetime import datetime, timezone, timedelta
 import logging
+import uuid
+
+from sqlalchemy import select, delete
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from db import get_db
+from db.models import User, UserSession, Subscription, SubscriptionStatus
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
 
 class SessionExchangeRequest(BaseModel):
     session_id: str
+
 
 class UserResponse(BaseModel):
     user_id: str
@@ -21,10 +28,12 @@ class UserResponse(BaseModel):
 
 
 @router.post("/session")
-async def exchange_session(request: Request, body: SessionExchangeRequest, response: Response):
+async def exchange_session(
+    body: SessionExchangeRequest, 
+    response: Response,
+    session: AsyncSession = Depends(get_db)
+):
     """Exchange Emergent session_id for session_token and user data"""
-    db = request.app.state.db
-    
     try:
         # Call Emergent auth API to get user data
         async with httpx.AsyncClient() as client:
@@ -50,58 +59,49 @@ async def exchange_session(request: Request, body: SessionExchangeRequest, respo
         raise HTTPException(status_code=401, detail="Invalid session data")
     
     # Check if user exists
-    user_doc = await db.users.find_one({"email": email}, {"_id": 0})
+    result = await session.execute(select(User).where(User.email == email))
+    user = result.scalar_one_or_none()
     
-    if user_doc:
+    if user:
         # Update existing user
-        user_id = user_doc["user_id"]
-        await db.users.update_one(
-            {"email": email},
-            {
-                "$set": {
-                    "name": auth_data.get("name", user_doc.get("name")),
-                    "picture": auth_data.get("picture"),
-                    "updated_at": datetime.now(timezone.utc)
-                }
-            }
-        )
+        user.name = auth_data.get("name", user.name)
+        user.picture = auth_data.get("picture")
+        user.updated_at = datetime.now(timezone.utc)
+        user_id = user.user_id
     else:
         # Create new user
-        import uuid
         user_id = f"user_{uuid.uuid4().hex[:12]}"
-        user_doc = {
-            "user_id": user_id,
-            "email": email,
-            "name": auth_data.get("name", email.split("@")[0]),
-            "picture": auth_data.get("picture"),
-            "created_at": datetime.now(timezone.utc),
-            "updated_at": datetime.now(timezone.utc)
-        }
-        await db.users.insert_one(user_doc)
+        user = User(
+            user_id=user_id,
+            email=email,
+            name=auth_data.get("name", email.split("@")[0]),
+            picture=auth_data.get("picture")
+        )
+        session.add(user)
+        await session.flush()
         
         # Create inactive subscription for new user
-        sub_doc = {
-            "subscription_id": f"sub_{uuid.uuid4().hex[:12]}",
-            "user_id": user_id,
-            "status": "inactive",
-            "created_at": datetime.now(timezone.utc),
-            "updated_at": datetime.now(timezone.utc)
-        }
-        await db.subscriptions.insert_one(sub_doc)
-    
-    # Store session
-    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
-    session_doc = {
-        "session_id": f"sess_{uuid.uuid4().hex}" if 'uuid' not in dir() else f"sess_{__import__('uuid').uuid4().hex}",
-        "user_id": user_id,
-        "session_token": session_token,
-        "expires_at": expires_at,
-        "created_at": datetime.now(timezone.utc)
-    }
+        subscription = Subscription(
+            user_id=user_id,
+            status=SubscriptionStatus.INACTIVE
+        )
+        session.add(subscription)
     
     # Remove old sessions for this user
-    await db.user_sessions.delete_many({"user_id": user_id})
-    await db.user_sessions.insert_one(session_doc)
+    await session.execute(
+        delete(UserSession).where(UserSession.user_id == user_id)
+    )
+    
+    # Store new session
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    user_session = UserSession(
+        user_id=user_id,
+        session_token=session_token,
+        expires_at=expires_at
+    )
+    session.add(user_session)
+    
+    await session.commit()
     
     # Set httpOnly cookie
     response.set_cookie(
@@ -123,64 +123,40 @@ async def exchange_session(request: Request, body: SessionExchangeRequest, respo
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user(request: Request):
+async def get_current_user(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
     """Get current user from session token"""
-    db = request.app.state.db
+    user_id = await get_current_user_id(request, session)
     
-    # Get session token from cookie or header
-    session_token = request.cookies.get("session_token")
-    if not session_token:
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            session_token = auth_header[7:]
+    result = await session.execute(select(User).where(User.user_id == user_id))
+    user = result.scalar_one_or_none()
     
-    if not session_token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    # Find session
-    session_doc = await db.user_sessions.find_one(
-        {"session_token": session_token},
-        {"_id": 0}
-    )
-    
-    if not session_doc:
-        raise HTTPException(status_code=401, detail="Invalid session")
-    
-    # Check expiry
-    expires_at = session_doc["expires_at"]
-    if isinstance(expires_at, str):
-        expires_at = datetime.fromisoformat(expires_at)
-    if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
-    
-    if expires_at < datetime.now(timezone.utc):
-        raise HTTPException(status_code=401, detail="Session expired")
-    
-    # Get user
-    user_doc = await db.users.find_one(
-        {"user_id": session_doc["user_id"]},
-        {"_id": 0}
-    )
-    
-    if not user_doc:
+    if not user:
         raise HTTPException(status_code=401, detail="User not found")
     
     return UserResponse(
-        user_id=user_doc["user_id"],
-        email=user_doc["email"],
-        name=user_doc["name"],
-        picture=user_doc.get("picture")
+        user_id=user.user_id,
+        email=user.email,
+        name=user.name,
+        picture=user.picture
     )
 
 
 @router.post("/logout")
-async def logout(request: Request, response: Response):
+async def logout(
+    request: Request, 
+    response: Response,
+    session: AsyncSession = Depends(get_db)
+):
     """Logout and clear session"""
-    db = request.app.state.db
-    
     session_token = request.cookies.get("session_token")
     if session_token:
-        await db.user_sessions.delete_many({"session_token": session_token})
+        await session.execute(
+            delete(UserSession).where(UserSession.session_token == session_token)
+        )
+        await session.commit()
     
     response.delete_cookie(
         key="session_token",
@@ -193,10 +169,8 @@ async def logout(request: Request, response: Response):
 
 
 # Helper function to get current user (for use in other routes)
-async def get_current_user_id(request: Request) -> str:
+async def get_current_user_id(request: Request, session: AsyncSession) -> str:
     """Extract and validate current user ID from request"""
-    db = request.app.state.db
-    
     session_token = request.cookies.get("session_token")
     if not session_token:
         auth_header = request.headers.get("Authorization")
@@ -206,21 +180,16 @@ async def get_current_user_id(request: Request) -> str:
     if not session_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    session_doc = await db.user_sessions.find_one(
-        {"session_token": session_token},
-        {"_id": 0}
+    result = await session.execute(
+        select(UserSession).where(UserSession.session_token == session_token)
     )
+    user_session = result.scalar_one_or_none()
     
-    if not session_doc:
+    if not user_session:
         raise HTTPException(status_code=401, detail="Invalid session")
     
-    expires_at = session_doc["expires_at"]
-    if isinstance(expires_at, str):
-        expires_at = datetime.fromisoformat(expires_at)
-    if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
-    
-    if expires_at < datetime.now(timezone.utc):
+    # Check expiry
+    if user_session.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
         raise HTTPException(status_code=401, detail="Session expired")
     
-    return session_doc["user_id"]
+    return user_session.user_id
