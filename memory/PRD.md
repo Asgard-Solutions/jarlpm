@@ -211,6 +211,16 @@ When an Epic is locked, users enter Feature Planning Mode:
 
 ## Changelog
 
+### 2026-01-13: Completed Epic Review Page (COMPLETE)
+- New `/epic/:epicId/review` route for completed epic review
+- Expandable tree view: Epic → Features → User Stories
+- Stats display: total features, stories, story points
+- Expand All / Collapse All buttons
+- Auto-redirect from Epic page when fully complete (all features & stories approved)
+- Dashboard navigates locked epics directly to review page
+- "Epic Complete!" celebration message with Trophy badge
+- Feature and story cards show locked/approved status with badges
+
 ### 2026-01-13: User Story Planning Feature (COMPLETE)
 - Added `UserStory` model with standard format: "As a [persona], I want to [action] so that [benefit]"
 - Added `UserStoryConversationEvent` model for append-only refinement conversations
