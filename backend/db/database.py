@@ -100,6 +100,26 @@ async def init_db():
     from .models import Base
     
     async with engine.begin() as conn:
+        # Drop all existing tables and types for clean start (development only)
+        await conn.execute(text("DROP TABLE IF EXISTS epic_artifacts CASCADE"))
+        await conn.execute(text("DROP TABLE IF EXISTS epic_decisions CASCADE"))
+        await conn.execute(text("DROP TABLE IF EXISTS epic_transcript_events CASCADE"))
+        await conn.execute(text("DROP TABLE IF EXISTS epic_snapshots CASCADE"))
+        await conn.execute(text("DROP TABLE IF EXISTS epics CASCADE"))
+        await conn.execute(text("DROP TABLE IF EXISTS llm_provider_configs CASCADE"))
+        await conn.execute(text("DROP TABLE IF EXISTS subscriptions CASCADE"))
+        await conn.execute(text("DROP TABLE IF EXISTS user_sessions CASCADE"))
+        await conn.execute(text("DROP TABLE IF EXISTS payment_transactions CASCADE"))
+        await conn.execute(text("DROP TABLE IF EXISTS prompt_templates CASCADE"))
+        await conn.execute(text("DROP TABLE IF EXISTS users CASCADE"))
+        
+        # Drop existing enums
+        await conn.execute(text("DROP TYPE IF EXISTS epicstage CASCADE"))
+        await conn.execute(text("DROP TYPE IF EXISTS subscriptionstatus CASCADE"))
+        await conn.execute(text("DROP TYPE IF EXISTS llmprovider CASCADE"))
+        await conn.execute(text("DROP TYPE IF EXISTS artifacttype CASCADE"))
+        await conn.execute(text("DROP TYPE IF EXISTS paymentstatus CASCADE"))
+        
         # Create all tables
         await conn.run_sync(Base.metadata.create_all)
         
