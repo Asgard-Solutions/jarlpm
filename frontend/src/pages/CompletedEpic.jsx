@@ -110,73 +110,29 @@ const CompletedEpic = () => {
   const handleGeneratePersonas = async () => {
     setGenerating(true);
     setGenerationError(null);
-    setGenerationStatus('Starting persona generation...');
+    setGenerationStatus('Generating personas with AI...');
     
     try {
       const response = await personaAPI.generateFromEpic(epicId, personaCount);
       
-      // Check content-type to determine if it's streaming or JSON error
-      const contentType = response.headers.get('content-type') || '';
-      
-      if (!response.ok || !contentType.includes('text/event-stream')) {
-        // Non-streaming response (likely an error)
-        let errorMessage = `HTTP ${response.status}: Failed to generate personas`;
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.detail || errorMessage;
-        } catch (e) {
-          // Couldn't parse as JSON, use default message
-        }
-        throw new Error(errorMessage);
-      }
-      
-      // Streaming response
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      const newPersonas = [];
-      let streamError = null;
-      
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      if (response.data.success) {
+        // Add new personas to state
+        setPersonas(prev => [...prev, ...response.data.personas]);
+        setGenerationStatus(`✅ Created ${response.data.count} personas!`);
         
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-        
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              if (data.type === 'status') {
-                setGenerationStatus(data.message);
-              } else if (data.type === 'warning') {
-                setGenerationStatus(`⚠️ ${data.message}`);
-              } else if (data.type === 'persona_created') {
-                newPersonas.push(data.persona);
-                setPersonas(prev => [...prev, data.persona]);
-              } else if (data.type === 'error') {
-                streamError = data.message;
-              } else if (data.type === 'done') {
-                setGenerationStatus(`✅ Generated ${data.count} personas!`);
-                setTimeout(() => {
-                  setShowGenerateDialog(false);
-                  setGenerationStatus('');
-                }, 1500);
-              }
-            } catch (parseErr) {
-              console.debug('SSE parse error:', parseErr);
-            }
-          }
-        }
-      }
-      
-      if (streamError) {
-        throw new Error(streamError);
+        // Close dialog after brief delay
+        setTimeout(() => {
+          setShowGenerateDialog(false);
+          setGenerationStatus('');
+        }, 1500);
+      } else {
+        throw new Error(response.data.message || 'Failed to generate personas');
       }
       
     } catch (err) {
       console.error('Persona generation error:', err);
-      setGenerationError(err.message || 'An unexpected error occurred');
+      const errorMsg = err.response?.data?.detail || err.message || 'An unexpected error occurred';
+      setGenerationError(errorMsg);
       setGenerationStatus('');
     } finally {
       setGenerating(false);
