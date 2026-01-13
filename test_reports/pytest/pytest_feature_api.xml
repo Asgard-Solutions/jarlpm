@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="1" skipped="0" tests="24" time="33.701" timestamp="2026-01-13T04:24:38.852251+00:00" hostname="agent-env-2f1d8d59-fe6c-4ad7-bc68-4b35d1981234"><testcase classname="tests.test_feature_api.TestFeatureListEndpoint" name="test_list_features_for_locked_epic" time="2.475" /><testcase classname="tests.test_feature_api.TestFeatureListEndpoint" name="test_list_features_nonexistent_epic" time="0.285" /><testcase classname="tests.test_feature_api.TestFeatureListEndpoint" name="test_list_features_unauthenticated" time="0.041" /><testcase classname="tests.test_feature_api.TestFeatureCreateEndpoint" name="test_create_feature_manual" time="1.456" /><testcase classname="tests.test_feature_api.TestFeatureCreateEndpoint" name="test_create_feature_ai_generated" time="0.911" /><testcase classname="tests.test_feature_api.TestFeatureCreateEndpoint" name="test_create_feature_without_criteria" time="0.844" /><testcase classname="tests.test_feature_api.TestFeatureCreateEndpoint" name="test_create_feature_missing_title" time="0.042" /><testcase classname="tests.test_feature_api.TestFeatureCreateEndpoint" name="test_create_feature_missing_description" time="0.040" /><testcase classname="tests.test_feature_api.TestFeatureGetEndpoint" name="test_get_feature" time="1.241" /><testcase classname="tests.test_feature_api.TestFeatureGetEndpoint" name="test_get_nonexistent_feature" time="0.253" /><testcase classname="tests.test_feature_api.TestFeatureUpdateEndpoint" name="test_update_feature" time="1.837" /><testcase classname="tests.test_feature_api.TestFeatureUpdateEndpoint" name="test_update_partial" time="1.470" /><testcase classname="tests.test_feature_api.TestFeatureDeleteEndpoint" name="test_delete_feature" time="1.180" /><testcase classname="tests.test_feature_api.TestFeatureDeleteEndpoint" name="test_delete_nonexistent_feature" time="0.262" /><testcase classname="tests.test_feature_api.TestFeatureApproveEndpoint" name="test_approve_feature" time="2.161" /><testcase classname="tests.test_feature_api.TestFeatureApproveEndpoint" name="test_approve_already_approved_feature" time="2.295" /><testcase classname="tests.test_feature_api.TestFeatureApproveEndpoint" name="test_cannot_update_approved_feature" time="2.348" /><testcase classname="tests.test_feature_api.TestFeatureConversationEndpoint" name="test_get_conversation_empty" time="1.138" /><testcase classname="tests.test_feature_api.TestFeatureLifecycle" name="test_full_lifecycle" time="2.727"><failure message="assert 520 == 200&#10; +  where 520 = &lt;Response [520]&gt;.status_code">tests/test_feature_api.py:622: in test_full_lifecycle
+    assert delete_response.status_code == 200
+E   assert 520 == 200
+E    +  where 520 = &lt;Response [520]&gt;.status_code</failure></testcase><testcase classname="tests.test_feature_api.TestFeatureGenerateEndpoint" name="test_generate_features_endpoint_exists" time="1.137" /><testcase classname="tests.test_feature_api.TestFeatureChatEndpoint" name="test_chat_endpoint_exists" time="3.377" /><testcase classname="tests.test_feature_api.TestFeatureChatEndpoint" name="test_chat_moves_to_refining_stage" time="3.721" /><testcase classname="tests.test_feature_api.TestFeatureChatEndpoint" name="test_cannot_chat_with_approved_feature" time="1.956"><error message="failed on teardown with &quot;RuntimeError: Task &lt;Task pending name='Task-6' coro=&lt;locked_epic.&lt;locals&gt;._cleanup() running at /app/tests/test_feature_api.py:107&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop&quot;">tests/test_feature_api.py:116: in locked_epic
+    asyncio.run(_cleanup())
+/usr/local/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_feature_api.py:107: in _cleanup
+    await session.execute(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:449: in execute
+    result = await greenlet_spawn(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2351: in execute
+    return self._execute_internal(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2239: in _execute_internal
+    conn = self._connection_for_bind(bind)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2108: in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;string&gt;:2: in _connection_for_bind
+    ???
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1187: in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3285: in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:143: in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3309: in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:447: in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1363: in _checkout
+    with util.safe_reraise():
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1301: in _checkout
+    result = pool._dialect._do_ping_w_event(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:729: in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:1160: in do_ping
+    dbapi_connection.ping()
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:818: in ping
+    self._handle_exception(error)
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:799: in _handle_exception
+    raise error
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:816: in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:825: in _async_ping
+    await tr.start()
+/root/.venv/lib/python3.11/site-packages/asyncpg/transaction.py:146: in start
+    await self._connection.execute(query)
+/root/.venv/lib/python3.11/site-packages/asyncpg/connection.py:354: in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+asyncpg/protocol/protocol.pyx:369: in query
+    ???
+E   RuntimeError: Task &lt;Task pending name='Task-6' coro=&lt;locked_epic.&lt;locals&gt;._cleanup() running at /app/tests/test_feature_api.py:107&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop</error></testcase></testsuite></testsuites>
