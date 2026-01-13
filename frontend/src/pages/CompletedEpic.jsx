@@ -105,6 +105,66 @@ const CompletedEpic = () => {
   const collapseAll = () => {
     setExpandedFeatures({});
   };
+  
+  // Generate personas
+  const handleGeneratePersonas = async () => {
+    setGenerating(true);
+    setGenerationError(null);
+    setGenerationStatus('Starting persona generation...');
+    
+    try {
+      const response = await personaAPI.generateFromEpic(epicId, personaCount);
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to generate personas');
+      }
+      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      const newPersonas = [];
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.type === 'status') {
+                setGenerationStatus(data.message);
+              } else if (data.type === 'warning') {
+                setGenerationStatus(`⚠️ ${data.message}`);
+              } else if (data.type === 'persona_created') {
+                newPersonas.push(data.persona);
+                setPersonas(prev => [...prev, data.persona]);
+              } else if (data.type === 'error') {
+                throw new Error(data.message);
+              } else if (data.type === 'done') {
+                setGenerationStatus(`✅ Generated ${data.count} personas!`);
+                setTimeout(() => {
+                  setShowGenerateDialog(false);
+                  setGenerationStatus('');
+                }, 1500);
+              }
+            } catch (e) {
+              // Ignore parse errors
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Persona generation error:', err);
+      setGenerationError(err.message);
+      setGenerationStatus('');
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   // Calculate stats
   const totalFeatures = features.length;
