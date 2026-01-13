@@ -456,6 +456,8 @@ When an Epic is locked, users enter Feature Planning Mode:
   - Personas displayed in grid after generation
   - "View All" navigates to /personas page filtered by epic
 - **Tests:** Backend 17/17 passed (100%), Frontend all flows working
+- **Bug Fix:** Fixed streaming generator database session issue (greenlet_spawn error)
+- **UX Improvement:** Added clear messaging when epic isn't completed yet, with disabled Generate button and "Continue Epic Workflow" CTA
 
 ---
 
