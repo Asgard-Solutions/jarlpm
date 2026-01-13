@@ -18,6 +18,7 @@ from db.feature_models import Feature, FeatureStage
 from services.feature_service import FeatureService
 from services.llm_service import LLMService
 from services.prompt_service import PromptService
+from services.lock_policy_service import lock_policy
 from routes.auth import get_current_user_id
 
 logger = logging.getLogger(__name__)
