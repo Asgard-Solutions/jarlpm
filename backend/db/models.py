@@ -262,7 +262,7 @@ class EpicTranscriptEvent(Base):
     role: Mapped[str] = mapped_column(String(20), nullable=False)  # 'user', 'assistant', 'system'
     content: Mapped[str] = mapped_column(Text, nullable=False)
     stage: Mapped[EpicStage] = mapped_column(Enum(EpicStage), nullable=False)
-    metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    event_metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     
     # Relationships
@@ -358,7 +358,7 @@ class PaymentTransaction(Base):
     currency: Mapped[str] = mapped_column(String(10), default="usd", nullable=False)
     payment_status: Mapped[PaymentStatus] = mapped_column(Enum(PaymentStatus), default=PaymentStatus.INITIATED, nullable=False)
     processed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    payment_metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     

@@ -83,7 +83,7 @@ class EpicService:
         role: str,
         content: str,
         stage: EpicStage,
-        metadata: dict = None
+        event_metadata: dict = None
     ) -> EpicTranscriptEvent:
         """Add an event to the transcript (append-only)"""
         event = EpicTranscriptEvent(
@@ -91,7 +91,7 @@ class EpicService:
             role=role,
             content=content,
             stage=stage,
-            metadata=metadata
+            event_metadata=event_metadata
         )
         self.session.add(event)
         await self.session.commit()
