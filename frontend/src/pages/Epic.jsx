@@ -1250,10 +1250,15 @@ const Epic = () => {
 };
 
 // Feature Card Component
-const FeatureCard = ({ feature, onRefine, onApprove, onDelete, onCreateStories }) => {
+const FeatureCard = ({ feature, onRefine, onApprove, onDelete, onCreateStories, storyCount }) => {
   const stageInfo = FEATURE_STAGES[feature.current_stage];
   const StageIcon = stageInfo?.icon || Edit3;
   const isApproved = feature.current_stage === 'approved';
+  
+  // Determine story status for approved features
+  const hasStories = storyCount && storyCount.total > 0;
+  const allStoriesApproved = storyCount && storyCount.allApproved;
+  const storiesInProgress = hasStories && !allStoriesApproved;
 
   return (
     <Card className={`border-${isApproved ? 'success' : feature.current_stage === 'refining' ? 'violet-500' : 'amber-500'}/30 bg-${isApproved ? 'success' : feature.current_stage === 'refining' ? 'violet-500' : 'amber-500'}/5`} data-testid={`feature-card-${feature.feature_id}`}>
@@ -1265,7 +1270,7 @@ const FeatureCard = ({ feature, onRefine, onApprove, onDelete, onCreateStories }
             </div>
             <div>
               <CardTitle className="text-base text-foreground">{feature.title}</CardTitle>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <Badge variant="outline" className={`text-xs ${stageInfo?.color}`}>
                   {isApproved && <Lock className="w-3 h-3 mr-1" />}
                   {stageInfo?.label}
@@ -1273,6 +1278,25 @@ const FeatureCard = ({ feature, onRefine, onApprove, onDelete, onCreateStories }
                 <Badge variant="outline" className="text-xs bg-muted text-muted-foreground">
                   {feature.source === 'ai_generated' ? 'AI' : 'Manual'}
                 </Badge>
+                {/* Story status badge for approved features */}
+                {isApproved && (
+                  allStoriesApproved ? (
+                    <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30">
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                      {storyCount.total} Stories Done
+                    </Badge>
+                  ) : hasStories ? (
+                    <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/30">
+                      <BookOpen className="w-3 h-3 mr-1" />
+                      {storyCount.approved}/{storyCount.total} Stories
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-400 border-amber-500/30">
+                      <AlertCircle className="w-3 h-3 mr-1" />
+                      No Stories
+                    </Badge>
+                  )
+                )}
               </div>
             </div>
           </div>
@@ -1338,18 +1362,41 @@ const FeatureCard = ({ feature, onRefine, onApprove, onDelete, onCreateStories }
           </div>
         )}
         
-        {/* Show Create User Stories button for approved features */}
+        {/* User Stories action for approved features */}
         {isApproved && onCreateStories && (
           <div className="flex gap-2 pt-2 border-t border-success/20">
-            <Button 
-              size="sm" 
-              onClick={onCreateStories}
-              className="bg-blue-500 hover:bg-blue-600 text-white"
-              data-testid={`create-stories-btn-${feature.feature_id}`}
-            >
-              <BookOpen className="w-4 h-4 mr-1" />
-              Create User Stories
-            </Button>
+            {allStoriesApproved ? (
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={onCreateStories}
+                className="border-success/50 text-success"
+                data-testid={`view-stories-btn-${feature.feature_id}`}
+              >
+                <CheckCircle2 className="w-4 h-4 mr-1" />
+                View Stories
+              </Button>
+            ) : storiesInProgress ? (
+              <Button 
+                size="sm" 
+                onClick={onCreateStories}
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+                data-testid={`continue-stories-btn-${feature.feature_id}`}
+              >
+                <BookOpen className="w-4 h-4 mr-1" />
+                Continue Stories ({storyCount.approved}/{storyCount.total})
+              </Button>
+            ) : (
+              <Button 
+                size="sm" 
+                onClick={onCreateStories}
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+                data-testid={`create-stories-btn-${feature.feature_id}`}
+              >
+                <BookOpen className="w-4 h-4 mr-1" />
+                Create User Stories
+              </Button>
+            )}
           </div>
         )}
       </CardContent>
