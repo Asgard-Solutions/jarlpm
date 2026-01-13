@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import ThemeToggle from '@/components/ThemeToggle';
-import { useAuthStore } from '@/store';
+import { useAuthStore, useThemeStore } from '@/store';
 import { 
-  Layers, ArrowRight, 
+  ArrowRight, 
   CheckCircle2, Brain, Lock, MessageSquare, Loader2, FlaskConical
 } from 'lucide-react';
 
