@@ -39,7 +39,6 @@ const ProtectedRoute = ({ children }) => {
     // If we already have user from store, skip API call
     if (user && !hasChecked.current) {
       hasChecked.current = true;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsAuthenticated(true);
       return;
     }
