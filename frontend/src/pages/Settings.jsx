@@ -379,10 +379,10 @@ const Settings = () => {
                     value={deliveryContext.delivery_platform}
                     onValueChange={(value) => setDeliveryContext({ ...deliveryContext, delivery_platform: value })}
                   >
-                    <SelectTrigger className="bg-nordic-bg-primary border-nordic-border text-nordic-text-primary" data-testid="select-platform">
+                    <SelectTrigger className="bg-background border-border text-foreground" data-testid="select-platform">
                       <SelectValue placeholder="Select platform" />
                     </SelectTrigger>
-                    <SelectContent className="bg-nordic-bg-secondary border-nordic-border">
+                    <SelectContent className="bg-popover border-border shadow-lg">
                       <SelectItem value="jira">Jira</SelectItem>
                       <SelectItem value="azure_devops">Azure DevOps</SelectItem>
                       <SelectItem value="none">None</SelectItem>
