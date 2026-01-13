@@ -197,12 +197,13 @@ class EpicService:
             raise ValueError("Epic not found")
         
         import uuid
+        target_stage_value = target_stage.value if isinstance(target_stage, EpicStage) else target_stage
         proposal = {
             "proposal_id": f"prop_{uuid.uuid4().hex[:12]}",
             "field": field,
             "proposed_content": content,
             "proposed_at": datetime.now(timezone.utc).isoformat(),
-            "target_stage": target_stage.value
+            "target_stage": target_stage_value
         }
         
         epic.pending_proposal = proposal
