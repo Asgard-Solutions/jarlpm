@@ -174,6 +174,104 @@ const Bugs = () => {
     }
   };
 
+  // AI-assisted bug creation
+  const startAIChat = () => {
+    setAiMessages([]);
+    setAiInput('');
+    setAiProposal(null);
+    setAiStreamingContent('');
+    setShowAICreateDialog(true);
+    
+    // Auto-start conversation
+    setTimeout(() => {
+      sendAIMessage('Hi, I want to report a bug.');
+    }, 300);
+  };
+
+  const sendAIMessage = async (message = aiInput) => {
+    if (!message.trim() || aiSending) return;
+    
+    const userMessage = { role: 'user', content: message.trim() };
+    const newMessages = [...aiMessages, userMessage];
+    setAiMessages(newMessages);
+    setAiInput('');
+    setAiSending(true);
+    setAiStreamingContent('');
+    
+    try {
+      const response = await bugAPI.aiChat(message.trim(), newMessages.slice(0, -1));
+      
+      if (!response.ok) {
+        throw new Error('Failed to get AI response');
+      }
+      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '';
+      let proposal = null;
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.type === 'chunk') {
+                fullContent += data.content;
+                setAiStreamingContent(fullContent);
+              } else if (data.type === 'done') {
+                if (data.proposal) {
+                  proposal = data.proposal;
+                  setAiProposal(data.proposal);
+                }
+              }
+            } catch (e) {
+              // Ignore parse errors
+            }
+          }
+        }
+      }
+      
+      // Add assistant message
+      setAiMessages(prev => [...prev, { role: 'assistant', content: fullContent }]);
+      setAiStreamingContent('');
+      
+      // Scroll to bottom
+      setTimeout(() => {
+        aiChatRef.current?.scrollTo({ top: aiChatRef.current.scrollHeight, behavior: 'smooth' });
+      }, 100);
+      
+    } catch (err) {
+      console.error('AI chat error:', err);
+      setError('Failed to communicate with AI');
+    } finally {
+      setAiSending(false);
+    }
+  };
+
+  const createFromAIProposal = async () => {
+    if (!aiProposal) return;
+    
+    try {
+      setCreatingFromProposal(true);
+      await bugAPI.createFromProposal(aiProposal);
+      setShowAICreateDialog(false);
+      setAiMessages([]);
+      setAiProposal(null);
+      loadBugs();
+    } catch (err) {
+      setError('Failed to create bug from proposal');
+      console.error(err);
+    } finally {
+      setCreatingFromProposal(false);
+    }
+  };
+
   // Transition status
   const handleTransition = async (bugId, newStatus, notes = null) => {
     try {
