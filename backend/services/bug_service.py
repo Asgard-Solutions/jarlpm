@@ -202,8 +202,9 @@ class BugService:
             bug.due_date = due_date
         
         await self.session.commit()
-        await self.session.refresh(bug)
-        return bug
+        
+        # Reload with relationships
+        return await self.get_bug(bug_id)
     
     async def soft_delete_bug(self, bug_id: str, user_id: str) -> bool:
         """Soft delete a bug"""
