@@ -65,6 +65,12 @@ const AppRouter = () => {
         </ProtectedRoute>
       } />
       
+      <Route path="/epic/:epicId/review" element={
+        <ProtectedRoute>
+          <CompletedEpic />
+        </ProtectedRoute>
+      } />
+      
       {/* Catch-all redirect to landing */}
       <Route path="*" element={<Landing />} />
     </Routes>
