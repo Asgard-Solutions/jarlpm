@@ -135,11 +135,27 @@ const Landing = () => {
             <Button 
               size="lg" 
               variant="outline" 
-              className="border-border text-foreground hover:bg-accent text-lg px-8"
+              onClick={handleTestLogin}
+              disabled={testLoading}
+              className="border-primary/50 text-primary hover:bg-primary/10 text-lg px-8"
+              data-testid="hero-test-login-btn"
             >
-              $20/month
+              {testLoading ? (
+                <>
+                  <Loader2 className="mr-2 w-5 h-5 animate-spin" />
+                  Logging in...
+                </>
+              ) : (
+                <>
+                  <FlaskConical className="mr-2 w-5 h-5" />
+                  Test Login
+                </>
+              )}
             </Button>
           </div>
+          <p className="text-sm text-muted-foreground mt-4">
+            Use "Test Login" for instant access with full features enabled
+          </p>
         </div>
       </section>
 
