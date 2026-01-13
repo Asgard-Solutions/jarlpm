@@ -71,12 +71,9 @@ class EpicService:
         if not epic:
             return False
         
-        # Enable cascade delete for append-only tables
-        await self.session.execute(
-            select(1).execution_options(
-                schema_translate_map={"jarlpm.allow_cascade_delete": "true"}
-            )
-        )
+        # Enable cascade delete for append-only tables by setting session variable
+        from sqlalchemy import text
+        await self.session.execute(text("SET LOCAL jarlpm.allow_cascade_delete = 'true'"))
         
         # Delete will cascade to all related tables
         await self.session.delete(epic)
