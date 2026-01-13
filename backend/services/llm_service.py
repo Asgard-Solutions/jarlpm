@@ -225,10 +225,13 @@ class LLMService:
             }
         return None
     
-    async def validate_api_key(self, provider: LLMProvider, api_key: str, base_url: str = None, model: str = None) -> bool:
+    async def validate_api_key(self, provider, api_key: str, base_url: str = None, model: str = None) -> bool:
         """Validate that an API key works with the provider"""
+        # Handle both enum and string provider values
+        provider_value = provider.value if isinstance(provider, LLMProvider) else provider
+        
         try:
-            if provider == LLMProvider.OPENAI:
+            if provider_value == LLMProvider.OPENAI.value:
                 async with httpx.AsyncClient() as client:
                     response = await client.get(
                         "https://api.openai.com/v1/models",
@@ -237,7 +240,7 @@ class LLMService:
                     )
                     return response.status_code == 200
             
-            elif provider == LLMProvider.ANTHROPIC:
+            elif provider_value == LLMProvider.ANTHROPIC.value:
                 async with httpx.AsyncClient() as client:
                     response = await client.post(
                         "https://api.anthropic.com/v1/messages",
@@ -255,7 +258,7 @@ class LLMService:
                     )
                     return response.status_code == 200
             
-            elif provider == LLMProvider.LOCAL:
+            elif provider_value == LLMProvider.LOCAL.value:
                 if not base_url:
                     return False
                 async with httpx.AsyncClient() as client:
