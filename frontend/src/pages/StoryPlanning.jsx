@@ -572,7 +572,7 @@ const StoryPlanning = () => {
                     All Stories Approved! 🎉
                   </h3>
                   <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                    You've completed all {approvedStories.length} user stories for "{feature.title}". 
+                    You&apos;ve completed all {approvedStories.length} user stories for &quot;{feature.title}&quot;. 
                     Return to Feature Planning to continue with other features.
                   </p>
                   <Button 
