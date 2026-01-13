@@ -220,9 +220,9 @@ async def generate_personas_for_epic(
     
     async def generate():
         # Import here to create fresh session for generator
-        from db.database import async_session_factory
+        from db.database import AsyncSessionLocal
         
-        async with async_session_factory() as gen_session:
+        async with AsyncSessionLocal() as gen_session:
             gen_persona_service = PersonaService(gen_session)
             gen_llm_service = LLMService(gen_session)
             
