@@ -4,95 +4,73 @@ The user wants to build **JarlPM**, an AI-agnostic, conversation-driven Product 
 **PRODUCT REQUIREMENTS (Authoritative):**
 
 1.  **Core Product:** A tool for Product Managers to create and refine Epics, Features, User Stories, and Bugs. The core unit of value is the Epic.
-2.  **LLM Architecture:**
-    *   **AI-Agnostic:** Users bring their own API keys for providers like OpenAI, Anthropic, or a local LLM.
-    *   **Server-Side Agent Pattern:** The system must use a server-side Prompt Registry to orchestrate LLM interactions, not provider-native agent runtimes. Prompts are versioned and stage-specific.
-3.  **Subscription Model:** A 0/month subscription is required for AI features, managed via Stripe. Inactive subscriptions block AI calls but preserve data.
-4.  **Epic Lifecycle (Monotonic State Machine):** An Epic must progress through the following stages without regression:  ->  (locked) ->  ->  (locked) ->  ->  (immutable).
-5.  **Sacred Invariants:** Confirmed decisions, conversation history, and user intent are immutable and append-only. Stage locks cannot be bypassed.
-6.  **Database Migration (MongoDB to PostgreSQL):** The entire application must be migrated from MongoDB to PostgreSQL (using Neon). PostgreSQL will be the single source of truth, enforcing relational integrity, append-only constraints, and transactional safety.
-7.  **Data Model (PostgreSQL):** Must include tables for , , , , , , , , and .
-8.  **Frontend Requirements:**
-    *   An Epic Page displaying the stage, locked sections, conversation transcript, and a UI for pending proposals from the LLM.
-    *   State must be fully rehydrated when an Epic is resumed.
-    *   Authentication via Google OAuth.
-9.  **UI/Branding (Nordic Theme):** The UI must use a muted, professional, and calm Nordic color palette inspired by the Norwegian flag (but not a literal copy). The theme must support both light and dark modes and use centralized design tokens. All colors must be desaturated and softened.
+2.  **LLM Architecture:** AI-Agnostic, using a server-side Prompt Registry.
+3.  **Subscription Model:** A 0/month subscription is required for AI features, managed via Stripe.
+4.  **Epic Lifecycle (Monotonic State Machine):** An Epic must progress through defined stages without regression.
+5.  **Sacred Invariants:** Confirmed decisions, conversation history, and user intent are immutable.
+6.  **Database Migration (MongoDB to PostgreSQL):** COMPLETED.
+7.  **Data Model (PostgreSQL):** Includes tables for , , , , , etc.
+8.  **Frontend Requirements:** An Epic Page, a Story Planning Page, a Completed Epic view, and settings. Authentication via Google OAuth and a test login.
+9.  **UI/Branding (Nordic Theme):** A muted, professional, calm Nordic color palette, supporting both light and dark modes, with a custom logo.
+10. **State-Driven Locking Model:** Implement a decision-discipline locking model across Epics, Features, and User Stories. Epic anchors (Problem + Desired Outcome) become immutable after the start. Features and User Stories become non-editable when the parent Epic is locked. This enforcement must exist at the DB, service, API, and UI layers.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The agent has successfully scaffolded a full-stack application using FastAPI for the backend and React for the frontend.
-- **Backend:** Initially built with MongoDB, but a migration to PostgreSQL (Neon) is in progress. The agent has installed SQLAlchemy and psycopg2, and created the initial database connection logic and ORM models in . The service layer (, , ) has been updated to use the new SQLAlchemy-based database session.
-- **Frontend:** A complete UI has been built with React, Zustand for state management, and Tailwind CSS. It includes a landing page, dashboard, settings page, and the main epic workflow page.
-- **Theming:** A sophisticated, dual-mode (light/dark) Nordic theme has been implemented as per the user's detailed specifications, using CSS variables and Tailwind CSS configuration. The theme is fully integrated across all pages.
-
-The application is currently in a non-runnable state because the database migration is incomplete. The API routes have not yet been updated to use the new PostgreSQL session, causing a mismatch with the updated service layer.
+The application is a full-stack app with a FastAPI backend, React frontend, and a PostgreSQL database. The core workflow for creating Epics, Features, and User Stories is fully implemented, following a pattern of AI-suggestion and user confirmation/refinement. This includes dedicated pages for epic creation (), user story planning (), and a read-only review page for completed epics (). The UI has been updated with a Nordic theme, a custom logo/favicon that adapts to light/dark modes, and new landing page copy reflecting the product's brand identity. A Test Login button allows for easy access to a pre-configured test environment.
 
 **Last working item**:
-    - Last item agent was working on: The agent was in the process of migrating the application's database from MongoDB to PostgreSQL (Neon). It had just finished updating the service layer files (, , ) to use the new SQLAlchemy-based database logic. The next step was to update the API routes to align with this change.
+    - Last item agent was working on: The agent began a major architectural refactor to implement a state-driven locking model across Epics, Features, and User Stories. The goal is to make Epic anchors (Problem, Outcome) immutable after they are set, and enforce locking rules down the hierarchy. The agent started by creating a new  and updating the  file to include versioning for User Stories and locking metadata for Epics.
     - Status: IN PROGRESS
     - Agent Testing Done: N
-    - Which testing method agent to use? backend testing agent
+    - Which testing method agent to use? both
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  Issue 1:  The application is broken due to an incomplete database migration. The backend services have been updated to use PostgreSQL, but the API routes in  still contain MongoDB-specific logic. This will cause the application to fail at runtime. (Priority: P0)
-
+  - Issue 1:  Authenticated Screenshot Failures (Priority: P2)
+  
   Issues Detail:
-  - Issue 1:
-     - Attempted fixes: No fixes have been attempted yet. The agent was systematically working through the migration and was about to address this part.
-     - Next debug checklist:
-        1.  Review all files in  (, , , ).
-        2.  For each route, replace MongoDB client calls with the new SQLAlchemy session and ORM models.
-        3.  Specifically, update how the database session is obtained (dependency injection) and how data is queried and committed.
-        4.  Update the main  to initialize the PostgreSQL database and create all tables on startup.
-     - Why fix this issue and what will be achieved with the fix? This is the most critical step to complete the database migration. Fixing this will make the backend functional again, using PostgreSQL as the source of truth.
-     - Status:  IN PROGRESS
-     - Is recurring issue? N
-     - Should Test frontend/backend/both after fix? backend
+  - Issue 1: Authenticated Screenshot Failures
+     - Attempted fixes: None. This is a known issue from a previous session.
+     - Next debug checklist: The screenshot tool fails on authenticated pages because the session cookie is set for , but the tool navigates to the preview domain. The fix likely involves configuring the screenshot tool to use cookies for the correct domain or finding a way to pass the session token.
+     - Why fix this issue and what will be achieved with the fix? Solving this will enable visual verification of authenticated frontend pages, improving testing efficiency for UI changes.
+     - Status:  NOT STARTED
+     - Is recurring issue? Y
+     - Should Test frontend/backend/both after fix? frontend
      - Blocked on other issue: None
 
 **In progress Task List**:
-  - Task 1: Complete MongoDB to PostgreSQL Migration
-     - Where to resume: The agent needs to start by updating the API route files located in .
-     - What will be achieved with this? The application will use PostgreSQL as its database, fulfilling a core requirement. This will enable the implementation of relational integrity, transactions, and database-level constraints for the application's sacred invariants.
-     - Status: IN PROGRESS
+  - Task 1:  Implement State-Driven Locking Model (Priority: P0)
+     - Where to resume: The agent has modified  with versioning for  and locking metadata for . The next immediate step is to update  to ensure these new models/fields are correctly initialized with the database. After that, continue implementing the backend policy enforcement in the new  and apply it across all relevant API routes (, , ).
+     - What will be achieved with this? A robust, state-driven locking mechanism that prevents unintended edits to locked Epics, Features, and User Stories, ensuring data integrity and decision immutability as per the user's explicit request.
+     - Status:  IN PROGRESS
      - Should Test frontend/backend/both after fix? both
      - Blocked on something: None
 
 **Upcoming and Future Tasks**
     Upcoming Tasks:
-    - **P0: Finalize DB Schema and Constraints:** After the code migration, create a script or ensure  creates all necessary tables, indexes, and DB-level constraints (e.g., CHECK constraints for monotonic stage progression, triggers for append-only tables) as specified in the migration directive.
-    - **P1: Full E2E Workflow Test:** With the PostgreSQL backend running, perform an end-to-end test of the entire Epic creation and state transition workflow. This includes configuring an LLM provider, sending messages, generating proposals, and confirming them to advance the Epic's stage.
-    - **P1: Validate Server-Side Enforcement:** Rigorously test that all sacred invariants (append-only logs, monotonic state, locked content) are being enforced by the new PostgreSQL backend. Attempt to violate these rules via the API to ensure they are blocked.
+    - **P1: Bug Creation Stage:** Implement a creation flow for Bugs, which can be children of Features, following the same lifecycle pattern.
+    - **P1: Full E2E Workflow Test:** After the locking model is in place, perform a comprehensive end-to-end test of the entire application.
 
     Future Tasks:
-    - **P2: Implement Deletion Semantics:** Implement the hard-delete functionality for Epics, ensuring it requires explicit user confirmation and correctly cascades through related records.
-    - **P2: Implement Prompt Registry:** Build the full Prompt Registry system as defined in the requirements, with versioned, stage-specific prompts stored in the database.
+    - **P2: Implement Stripe Subscription:** Fully implement the Stripe integration to handle real user subscriptions.
+    - **P2: Implement Deletion Semantics:** Implement hard-delete functionality for Epics with user confirmation.
+    - **P2: Export to Jira/Azure DevOps:** Add functionality to export locked epics and their children.
+    - **P2: Team Collaboration:** Introduce features for multiple users to collaborate on the same epic.
+    - **P2: Markdown Export:** Create a feature to export a completed epic hierarchy as a Markdown document.
 
 **Completed work in this session**
-- **Full-Stack Application Scaffolding:**
-  - Created a FastAPI backend structure with initial models, routes, and services.
-  - Created a React frontend with pages for Landing, Dashboard, Settings, and the core Epic workflow.
-- **State Management:**
-  - Implemented Zustand for global state management on the frontend ().
-- **Nordic UI & Theming:**
-  - Implemented a complete, dual-mode (light/dark) Nordic theme based on user-provided color palettes.
-  - Centralized theme tokens in  and .
-  - Created a  component and integrated it.
-- **Backend API Development (Initial):**
-  - Created initial API endpoints for authentication, epics, LLM providers, and subscriptions.
-- **Linting & Code Cleanup:**
-  - Addressed multiple ESLint errors and warnings across the frontend codebase.
-- **Database Migration (Started):**
-  - Installed  and .
-  - Created the PostgreSQL database layer () and ORM models ().
-  - Updated the service layer to use the new database connection.
+- **Improved Feature Creation Workflow (DONE):** Refactored the entire feature creation process to be AI-driven with a proposal/approval/refinement loop, including a full lifecycle and mini-conversations for each feature.
+- **User Story Creation Workflow (DONE):** Implemented the full lifecycle for user stories, generated from features, following the established pattern of AI-suggestion and user refinement.
+- **Completed Epic Review Page (DONE):** Created a read-only, expandable tree-view page () for reviewing a fully completed epic with its features and user stories.
+- **Landing Page Copy & Branding Update (DONE):** Completely rewrote the landing page content to align with the Senior PM brand identity and removed the Test Login button from the public view.
+- **Logo & Favicon Integration (DONE):** Added user-provided logo and favicon images, with support for light/dark themes, across the application including the landing page and dashboard.
+- **Frontend State Loading Fix (DONE):** Fixed a recurring bug where auth/provider state was not loaded correctly when navigating directly to protected pages like  and .
 
 **Earlier issues found/mentioned but not fixed**
    - Issue 1: Authenticated Screenshot Failures
-     - Debug checklist: When taking a screenshot of an authenticated page (like ), the agent creates a test session cookie. However, this cookie is set for , while the screenshot tool navigates to the preview domain, causing a redirect to the login page. The agent noted this but moved on. A potential fix is to ensure the screenshot tool can be configured to use cookies for a specific domain.
-     - Why to solve this issue and what will be achieved with this? Solving this will allow the agent to visually verify authenticated pages, which is crucial for frontend development and testing.
+     - Debug checklist: The screenshot tool fails on authenticated pages because the session cookie is set for , but the tool navigates to the preview domain. A potential fix is to configure the screenshot tool to use cookies for the correct domain.
+     - Why to solve this issue and what will be achieved with this? Solving this will enable visual verification of authenticated frontend pages, improving testing efficiency.
      - Should Test frontend/backend/both after fix: frontend
      - Is recurring issue? Y
 
@@ -105,93 +83,79 @@ The application is currently in a non-runnable state because the database migrat
 **Key Technical Concepts**
 - **Backend:** FastAPI, PostgreSQL (Neon), SQLAlchemy (ORM)
 - **Frontend:** React, Tailwind CSS, Zustand (State Management)
-- **Authentication:** Google OAuth
-- **Payments:** Stripe (planned)
+- **Authentication:** Google OAuth, Test User JWT
 - **Architecture:** AI-agnostic, Server-side agent pattern, Monotonic state machine
 
 **key DB schema**
-Defined in  (SQLAlchemy ORM):
-- **User:** uid=0(root) gid=0(root) groups=0(root), , , , , 
-- **Subscription:** uid=0(root) gid=0(root) groups=0(root),  (FK to User), , , , 
-- **LLMProviderConfig:** uid=0(root) gid=0(root) groups=0(root),  (FK to User), , , 
-- **Epic:** uid=0(root) gid=0(root) groups=0(root),  (FK to User), , 
-- **EpicSnapshot:** uid=0(root) gid=0(root) groups=0(root),  (FK to Epic), , , 
-- **EpicTranscriptEvent:** uid=0(root) gid=0(root) groups=0(root),  (FK to Epic), , , 
-- **EpicDecision:** uid=0(root) gid=0(root) groups=0(root),  (FK to Epic), , 
-- **EpicArtifact:** uid=0(root) gid=0(root) groups=0(root),  (FK to Epic), , 
-- **PromptTemplate:** uid=0(root) gid=0(root) groups=0(root), , , , 
+  - **Epic:** uid=0(root) gid=0(root) groups=0(root), , , ,  (new),  (new),  (new),  (new)
+  - **Feature:** uid=0(root) gid=0(root) groups=0(root), , , 
+  - **UserStory:** uid=0(root) gid=0(root) groups=0(root), , , ,  (new),  (new)
+  - ...and other related tables as defined in .
 
 **changes in tech stack**
-- **Database:** Major migration from MongoDB to PostgreSQL (Neon).
+  - None.
 
 **All files of reference**
-- : New file. Contains SQLAlchemy engine and session setup for PostgreSQL.
-- : New file. Defines all application tables using SQLAlchemy ORM.
-- , , : Updated to use the new PostgreSQL database session instead of MongoDB.
-- : All files in this directory need to be updated to use PostgreSQL.
-- : Updated to define the precise Nordic color palette.
-- : Updated with CSS variables for the Nordic theme.
-- : All page components were overwritten to implement the Nordic theme.
-- : Created to store the project requirements.
+- : Updated to include  and  models, and new fields for locking and versioning.
+- : New service created to handle the locking logic (implementation in progress).
+- , : New route files for managing features and user stories.
+- , : New service files for business logic.
+- : Major refactor for the new feature workflow and to add navigation to the user story planning.
+- : New page for creating and managing user stories for a specific feature.
+- : New page to display the full, read-only hierarchy of a completed epic.
+- : Completely rewritten for new branding, copy, and logo integration.
+- : New logo and favicon assets added.
+- : Updated with routes for  and .
 
 **Areas that need refactoring**:
-- The agent used an  comment in  to suppress a  error. While deemed necessary for the auth flow, this could be reviewed for a cleaner solution that avoids disabling lint rules.
+- An  comment in  from a previous session could be reviewed for a cleaner solution.
 
 **key api endpoints**
-- : Handles Google OAuth callback.
-- : Fetches the current user's profile.
-- : Logs out the user.
-- : Fetches all epics for the user.
-- : Creates a new epic.
-- : Fetches a single epic's details.
-- : Sends a message to the chat for an epic.
-- : Gets the user's configured LLM provider.
-- : Saves or updates the user's LLM provider settings.
-- : Checks the user's subscription status.
-- : Creates a Stripe checkout session.
+- : To manage features for an epic.
+- : To manage user stories for a feature.
+- : One-click test user login.
+- : GET/POST for managing the Product Delivery Context.
 
 **Critical Info for New Agent**
-You are picking up in the middle of a critical database migration from MongoDB to PostgreSQL. The backend is currently **non-functional**. Your immediate priority is to complete this migration.
-
-1.  **Update API Routes:** Modify all files in  to remove all MongoDB logic and replace it with the SQLAlchemy session and ORM models from .
-2.  **Update :** Modify  to initialize the PostgreSQL database on startup (). Remove all MongoDB-related setup.
-3.  **Environment Variable:** The PostgreSQL connection string is provided via the  environment variable. Ensure your database logic reads from this.
-4.  **Test Thoroughly:** Once the migration is complete, you must restart the backend and thoroughly test all API endpoints to ensure they work correctly with the new database. After that, perform a full end-to-end test from the frontend.
+Your top priority is to continue the implementation of the state-driven locking mechanism. The data models have been updated, but the core logic is not yet implemented or enforced.
+1.  **Resume Locking Model:** Start by updating  to register the model changes.
+2.  **Implement Backend Policy:** Flesh out the  and integrate it into the , , and  API routes to enforce the rules specified by the user. This includes preventing edits to locked items and handling versioning for user stories.
+3.  **Update Frontend UI:** Modify the , , and  pages to reflect the locked/unlocked states (e.g., disabling buttons, showing read-only fields).
+4.  **Use Test Login:** Continue using the Test Login button for all development and testing.
 
 **documents and test reports created in this job**
+-  (updated multiple times)
 - 
 - 
 - 
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Provided a detailed directive to migrate the database from MongoDB to PostgreSQL (Neon), including schema requirements, ORM choice, and transaction/constraint enforcement. (IN PROGRESS)
-2.  **User:** Provided a locked, precise Nordic v1 color palette with specific hex codes for light and dark themes. (COMPLETED)
-3.  **User:** Provided a guardrail amendment for a Nordic UI theme, emphasizing a muted, calm, professional aesthetic and requiring light/dark modes. (COMPLETED)
-4.  **Agent:** Summarized the completed MVP and listed next steps. (COMPLETED)
-5.  **Agent:** Completed the implementation of the Nordic theme overhaul. (COMPLETED)
-6.  **Agent:** Confirmed the app compiled successfully. (COMPLETED)
-7.  **Agent:** Fixed several linting issues. (COMPLETED)
-8.  **Agent:** Identified a cookie domain issue preventing authenticated screenshots. (NOT RESOLVED)
-9.  **Agent:** Ran the testing agent, which reported a 93.3% backend success rate. (COMPLETED)
-10. **Agent:** Started the MongoDB to PostgreSQL migration by installing dependencies and creating the new DB layer. (IN PROGRESS)
+1.  **User:** Provided detailed specifications for the state-driven locking model. (PENDING IMPLEMENTATION)
+2.  **User:** Requested a Completed Epic page with an expandable tree view. (COMPLETED)
+3.  **User:** Requested the User Story creation workflow. (COMPLETED)
+4.  **User:** Requested new logos and favicons. (COMPLETED)
+5.  **User:** Provided detailed copy and branding updates for the landing page. (COMPLETED)
+6.  **User:** Clarified that features should have their own mini-conversations for refinement. (COMPLETED)
+7.  **User:** Provided initial feedback on the feature creation flow, leading to the current improved design. (COMPLETED)
+... (Older messages are resolved bug reports and feature refinements from the previous session)
 
 **Project Health Check:**
-- **Broken:** The backend is non-functional due to the in-progress database migration. API routes are out of sync with the updated service layer.
-- **Mocked:** N/A
+- **Broken:** None. The application is in a runnable state.
+- **Mocked:** The Stripe subscription flow is planned but not implemented.
 
 **3rd Party Integrations**
-- **Google OAuth:** For user authentication. The flow is implemented but requires real-world testing. Uses User-provided keys configured on the platform.
-- **Stripe:** For subscriptions. A checkout flow is partially implemented. Requires a User-provided API key.
-- **OpenAI / Anthropic / Local LLM:** Planned integrations. The system is designed to use User-provided API keys for these services. The UI for configuration exists.
+- **Google OAuth:** Implemented for user authentication.
+- **OpenAI:** Integrated and pre-configured for the test user. The system is AI-agnostic.
+- **Stripe:** Planned for subscriptions, but not yet implemented.
 
 **Testing status**
-  - Testing agent used after significant changes: YES (once)
+  - Testing agent used after significant changes: YES (3 times, for features, user stories, and completed view)
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: None
-  - Known regressions: The entire backend is currently non-functional due to the incomplete migration.
+  - Test files created: The testing agent generated comprehensive backend tests for the new features in  directory.
+  - Known regressions: None.
 
 **Credentials to test flow:**
-The agent used a  tool which generates a test user and session token. The next agent should use the same tool to test authenticated flows. Example command: 
+Use the Test Login button on the landing page. This logs in a test user with a valid session, active subscription, and pre-configured settings.
 
 **What agent forgot to execute**
-The agent did not forget but rather is in the middle of a multi-step task. The most critical pending action is updating the API routes in  to complete the PostgreSQL migration. It has also not yet implemented the database-level constraints (e.g., CHECK constraints, triggers for append-only tables) which were part of the migration directive.</analysis>
+The agent has been diligent in following user requests. The current task (state-driven locking) is a large, multi-step process that was correctly started and is now the main pending item.</analysis>
