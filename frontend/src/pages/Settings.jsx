@@ -277,7 +277,7 @@ const Settings = () => {
                   Product Delivery Context
                 </CardTitle>
                 <CardDescription className="text-nordic-text-muted">
-                  Configure your team's delivery context. This information is automatically included in all AI prompts as read-only context.
+                  Configure your team&apos;s delivery context. This information is automatically included in all AI prompts as read-only context.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
