@@ -218,14 +218,8 @@ export const personaAPI = {
   updateSettings: (data) => api.put('/personas/settings', data),
   
   // Generate personas from epic
-  generateFromEpic: (epicId, count = 3) => {
-    return fetch(`${API}/personas/epic/${epicId}/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ count }),
-      credentials: 'include',
-    });
-  },
+  generateFromEpic: (epicId, count = 3) => 
+    api.post(`/personas/epic/${epicId}/generate`, { count }),
   
   // CRUD
   list: (params = {}) => {
