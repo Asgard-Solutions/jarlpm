@@ -417,6 +417,46 @@ When an Epic is locked, users enter Feature Planning Mode:
   - Refine dialog with AI chat and story preview sidebar
 - **Tests:** Backend 22/22 passed (100%), Frontend all flows working
 
+### 2026-01-13: AI-Assisted User Personas for Completed Epics (COMPLETE)
+- **User Personas from completed Epics:** AI analyzes Epic, Features, and User Stories to generate actionable personas
+- **Persona Structure:**
+  - Name & Role (e.g., "Sarah, Product Manager")
+  - Demographics (age range, location, tech proficiency)
+  - Goals & Motivations
+  - Pain Points & Frustrations
+  - Key Behaviors/Patterns
+  - Jobs-to-Be-Done
+  - Product Interaction Context
+  - Representative Quote
+  - AI-generated Portrait Image (OpenAI gpt-image-1)
+- **Data Model:**
+  - `Persona` table with all persona fields
+  - `PersonaGenerationSettings` for user preferences (image provider, default count)
+  - `source` field tracks "ai_generated" vs "human_modified"
+  - Soft delete via `is_active` flag
+- **API Endpoints:**
+  - GET/PUT /api/personas/settings - Manage image provider (openai/gemini), model, default count (1-5)
+  - POST /api/personas/epic/{epic_id}/generate - Generate personas (streaming SSE with progress)
+  - GET /api/personas - List all personas with search & epic filter
+  - GET /api/personas/epic/{epic_id} - List personas for specific epic
+  - GET/PUT/DELETE /api/personas/{persona_id} - CRUD operations
+  - POST /api/personas/{persona_id}/regenerate-portrait - Regenerate portrait image
+- **Frontend (/personas page):**
+  - "Personas" button (violet) in Dashboard header
+  - Grid view with persona cards (portrait, name, role, quote, source badge)
+  - Search and Epic filter
+  - Persona detail dialog with all fields
+  - Edit dialog for updating persona (marks as human_modified)
+  - Delete functionality (soft delete)
+  - Regenerate portrait hover button
+- **Frontend (CompletedEpic page):**
+  - "Generate Personas" button opens dialog
+  - Count selector (1-5) with default 3 and warning for >3
+  - Real-time progress updates during generation
+  - Personas displayed in grid after generation
+  - "View All" navigates to /personas page filtered by epic
+- **Tests:** Backend 17/17 passed (100%), Frontend all flows working
+
 ---
 
 ## Backlog
