@@ -11,7 +11,8 @@ from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db
-from db.models import User, UserSession, Subscription, SubscriptionStatus
+from db.models import User, UserSession, Subscription, SubscriptionStatus, ProductDeliveryContext, LLMProviderConfig
+from services.encryption import get_encryption_service
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,23 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 TEST_USER_EMAIL = "testuser@jarlpm.dev"
 TEST_USER_NAME = "Test User"
 TEST_SESSION_TOKEN = "test_session_jarlpm_full_access_2025"
+
+# Test user default configurations
+TEST_USER_DELIVERY_CONTEXT = {
+    "industry": "Healthcare, Pharmacy",
+    "delivery_methodology": "agile",
+    "sprint_cycle_length": 14,
+    "sprint_start_date": datetime(2026, 1, 14, tzinfo=timezone.utc),
+    "num_developers": 5,
+    "num_qa": 3,
+    "delivery_platform": "jira",
+}
+
+TEST_USER_LLM_CONFIG = {
+    "provider": "openai",
+    "api_key": "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",
+    "model_name": "gpt-4o",
+}
 
 
 class SessionExchangeRequest(BaseModel):
