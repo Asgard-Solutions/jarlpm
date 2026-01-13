@@ -24,7 +24,7 @@ class EpicService:
             select(Subscription).where(Subscription.user_id == user_id)
         )
         sub = result.scalar_one_or_none()
-        return sub is not None and sub.status == SubscriptionStatus.ACTIVE
+        return sub is not None and sub.status == SubscriptionStatus.ACTIVE.value
     
     async def create_epic(self, user_id: str, title: str) -> Epic:
         """Create a new epic with initial snapshot"""
