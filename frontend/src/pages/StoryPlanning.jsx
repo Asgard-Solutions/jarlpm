@@ -560,6 +560,32 @@ const StoryPlanning = () => {
                 </Button>
               </div>
             )}
+            
+            {/* Completion Banner - when all stories are approved */}
+            {stories.length > 0 && approvedStories.length === stories.length && generatedDrafts.length === 0 && (
+              <Card className="border-2 border-success/50 bg-success/10" data-testid="stories-complete-banner">
+                <CardContent className="p-6 text-center">
+                  <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle2 className="w-8 h-8 text-success" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">
+                    All Stories Approved! 🎉
+                  </h3>
+                  <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                    You've completed all {approvedStories.length} user stories for "{feature.title}". 
+                    Return to Feature Planning to continue with other features.
+                  </p>
+                  <Button 
+                    onClick={() => navigate(`/epic/${feature.epic_id}`)}
+                    className="bg-success hover:bg-success/90 text-white"
+                    data-testid="return-to-features-btn"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Return to Feature Planning
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
 
