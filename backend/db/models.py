@@ -14,7 +14,7 @@ from enum import Enum as PyEnum
 import uuid
 
 from sqlalchemy import (
-    String, Text, Boolean, Integer, Float, DateTime, Enum, JSON,
+    String, Text, Boolean, Integer, Float, DateTime, JSON,
     ForeignKey, Index, CheckConstraint, UniqueConstraint,
     event, text
 )
@@ -30,7 +30,7 @@ def generate_uuid(prefix: str = "") -> str:
 
 
 # ============================================
-# ENUMS
+# ENUMS (Python-side for type safety)
 # ============================================
 
 class SubscriptionStatus(str, PyEnum):
