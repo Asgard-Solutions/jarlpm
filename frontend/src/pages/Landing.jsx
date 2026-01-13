@@ -6,11 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useAuthStore } from '@/store';
 import { 
-  Layers, Zap, Shield, Users, ArrowRight, 
-  CheckCircle2, Brain, Lock, RefreshCw, Loader2, FlaskConical
+  Layers, ArrowRight, 
+  CheckCircle2, Brain, Lock, MessageSquare, Loader2, FlaskConical
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
+// Internal test login only visible in development or with specific env flag
+const SHOW_TEST_LOGIN = process.env.NODE_ENV === 'development' || process.env.REACT_APP_SHOW_TEST_LOGIN === 'true';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -55,22 +58,22 @@ const Landing = () => {
     {
       icon: Brain,
       title: 'AI-Agnostic',
-      description: 'Use OpenAI, Anthropic, or your own local LLM. Bring your own API keys.'
+      description: 'Use OpenAI, Anthropic, or your own local LLM. You control the intelligence. JarlPM controls the process.'
     },
     {
       icon: Layers,
       title: 'Epic-Centric',
-      description: 'Everything revolves around Epics. Features, stories, and bugs flow naturally.'
+      description: 'Every workflow revolves around the Epic — from problem definition to implementation-ready scope.'
     },
     {
       icon: Lock,
       title: 'Immutable Decisions',
-      description: 'Confirmed decisions are locked. No accidental overwrites or scope creep.'
+      description: 'Once confirmed, decisions are locked. No accidental rewrites. No silent scope creep.'
     },
     {
-      icon: RefreshCw,
+      icon: MessageSquare,
       title: 'Conversation-Driven',
-      description: 'Natural dialogue to capture problems, outcomes, and acceptance criteria.'
+      description: 'Structured dialogue designed to surface clarity, not noise.'
     }
   ];
 
@@ -119,9 +122,12 @@ const Landing = () => {
             Build Epics That
             <span className="text-primary"> Developers Love</span>
           </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            JarlPM is a conversation-driven product management system. 
-            Create clear, implementation-ready Epics with AI assistance — using any LLM you choose.
+          <p className="text-xl text-muted-foreground mb-4 max-w-2xl mx-auto">
+            JarlPM helps Product Managers lead with clarity and discipline.
+            Capture problems, lock decisions, and deliver implementation-ready epics — using any LLM you choose.
+          </p>
+          <p className="text-sm text-muted-foreground/70 italic mb-8">
+            Lead like a Jarl — calm authority, decisions that stick.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
@@ -130,31 +136,34 @@ const Landing = () => {
               className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8"
               data-testid="hero-get-started-btn"
             >
-              Start Building <ArrowRight className="ml-2 w-5 h-5" />
+              Start Building Epics <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              onClick={handleTestLogin}
-              disabled={testLoading}
-              className="border-primary/50 text-primary hover:bg-primary/10 text-lg px-8"
-              data-testid="hero-test-login-btn"
-            >
-              {testLoading ? (
-                <>
-                  <Loader2 className="mr-2 w-5 h-5 animate-spin" />
-                  Logging in...
-                </>
-              ) : (
-                <>
-                  <FlaskConical className="mr-2 w-5 h-5" />
-                  Test Login
-                </>
-              )}
-            </Button>
+            {/* Test Login - Internal Only */}
+            {SHOW_TEST_LOGIN && (
+              <Button 
+                size="lg" 
+                variant="outline" 
+                onClick={handleTestLogin}
+                disabled={testLoading}
+                className="border-muted-foreground/30 text-muted-foreground hover:bg-muted/50 text-lg px-8"
+                data-testid="hero-test-login-btn"
+              >
+                {testLoading ? (
+                  <>
+                    <Loader2 className="mr-2 w-5 h-5 animate-spin" />
+                    Logging in...
+                  </>
+                ) : (
+                  <>
+                    <FlaskConical className="mr-2 w-5 h-5" />
+                    Test Login
+                  </>
+                )}
+              </Button>
+            )}
           </div>
           <p className="text-sm text-muted-foreground mt-4">
-            Use "Test Login" for instant access with full features enabled
+            Get started in minutes. No demos. No setup friction.
           </p>
         </div>
       </section>
@@ -162,6 +171,9 @@ const Landing = () => {
       {/* Features Grid */}
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
+          <p className="text-muted-foreground text-center mb-4 max-w-2xl mx-auto">
+            Good products start with clear decisions. Great products don't revisit them.
+          </p>
           <h2 className="text-3xl font-bold text-foreground text-center mb-12">Why JarlPM?</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, i) => (
@@ -184,7 +196,7 @@ const Landing = () => {
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold text-foreground text-center mb-4">The Epic Lifecycle</h2>
           <p className="text-muted-foreground text-center mb-12">
-            A monotonic state machine. No going back. No scope creep.
+            A monotonic decision lifecycle. No going back. No scope creep.
           </p>
           <div className="space-y-4">
             {stages.map((stage, i) => (
@@ -209,12 +221,18 @@ const Landing = () => {
               </div>
             ))}
           </div>
+          <p className="text-sm text-muted-foreground/70 italic text-center mt-8">
+            A Jarl does not reopen settled decisions.
+          </p>
         </div>
       </section>
 
       {/* Pricing */}
       <section className="py-16 px-4">
         <div className="max-w-xl mx-auto">
+          <p className="text-muted-foreground text-center mb-8">
+            Simple pricing for serious product teams
+          </p>
           <Card className="bg-card border-primary/30">
             <CardHeader className="text-center">
               <CardTitle className="text-3xl text-foreground">$20<span className="text-lg font-normal text-muted-foreground">/month</span></CardTitle>
@@ -236,7 +254,7 @@ const Landing = () => {
               ))}
               <div className="pt-4 border-t border-border">
                 <p className="text-sm text-muted-foreground text-center">
-                  Note: LLM API costs are separate. You use your own keys.
+                  LLM API costs are separate. You use your own keys.
                 </p>
               </div>
               <Button 
@@ -262,7 +280,7 @@ const Landing = () => {
             <span className="text-sm text-muted-foreground">JarlPM</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            © 2025 JarlPM. Build better products.
+            © 2026 JarlPM · Built by Asgard Solutions LLC
           </p>
         </div>
       </footer>
