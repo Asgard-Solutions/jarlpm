@@ -586,3 +586,168 @@ Return ONLY valid JSON in this format: {"severity": "...", "priority": "...", "s
             return {"error": "Could not parse AI response", "raw": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI suggestion failed: {str(e)}")
+
+
+
+# ============================================
+# AI-ASSISTED BUG CREATION
+# ============================================
+
+class BugChatMessage(BaseModel):
+    content: str
+    conversation_history: Optional[List[dict]] = []  # Previous messages for context
+
+class BugProposal(BaseModel):
+    title: str
+    description: str
+    severity: str
+    steps_to_reproduce: Optional[str] = None
+    expected_behavior: Optional[str] = None
+    actual_behavior: Optional[str] = None
+    environment: Optional[str] = None
+    priority: Optional[str] = None
+
+class BugChatResponse(BaseModel):
+    message: str
+    proposal: Optional[BugProposal] = None
+    is_complete: bool = False
+
+
+@router.post("/ai/chat")
+async def ai_bug_chat(
+    request: Request,
+    body: BugChatMessage,
+    session: AsyncSession = Depends(get_db)
+):
+    """AI-assisted bug creation via conversation (streaming)"""
+    user_id = await get_current_user_id(request, session)
+    
+    llm_service = LLMService(session)
+    
+    # Get user's active LLM config
+    config = await llm_service.get_active_config(user_id)
+    if not config:
+        raise HTTPException(status_code=400, detail="No LLM provider configured")
+    
+    # Build conversation context
+    conversation = body.conversation_history or []
+    
+    system_prompt = """You are an expert QA engineer and bug reporter assistant for JarlPM, a product management tool.
+Your goal is to help users create comprehensive, well-structured bug reports through a friendly conversation.
+
+CONVERSATION FLOW:
+1. First, ask about the PROBLEM - what went wrong?
+2. Then ask for STEPS TO REPRODUCE - how can someone else see this bug?
+3. Ask about EXPECTED BEHAVIOR - what should have happened?
+4. Ask about ACTUAL BEHAVIOR - what actually happened instead?
+5. Optionally ask about ENVIRONMENT (browser, OS, device) if relevant
+
+IMPORTANT RULES:
+- Ask ONE question at a time to keep the conversation focused
+- Be conversational and helpful, not robotic
+- If the user provides multiple pieces of information, acknowledge them
+- Once you have enough information (problem, steps, expected, actual), propose a complete bug report
+
+WHEN READY TO PROPOSE:
+After gathering sufficient information, respond with a JSON block containing the proposed bug:
+```json
+{
+  "proposal": {
+    "title": "Brief, clear title describing the bug",
+    "description": "Detailed description of the issue",
+    "severity": "critical|high|medium|low",
+    "steps_to_reproduce": "Numbered steps",
+    "expected_behavior": "What should happen",
+    "actual_behavior": "What actually happens",
+    "environment": "Browser/OS/Device if mentioned",
+    "priority": "p0|p1|p2|p3"
+  }
+}
+```
+
+Severity guide:
+- critical: System crash, data loss, security vulnerability
+- high: Major feature broken, no workaround
+- medium: Feature partially broken, workaround exists
+- low: Minor issue, cosmetic, edge case
+
+Priority guide:
+- p0: Fix immediately (blocking users)
+- p1: Fix this sprint
+- p2: Fix soon
+- p3: Fix when possible
+
+Start the conversation by asking about the problem they encountered."""
+
+    # Format conversation for LLM
+    formatted_history = []
+    for msg in conversation:
+        formatted_history.append({
+            "role": msg.get("role", "user"),
+            "content": msg.get("content", "")
+        })
+    
+    async def generate():
+        full_response = ""
+        async for chunk in llm_service.stream_completion(
+            config=config,
+            system_prompt=system_prompt,
+            user_prompt=body.content,
+            context=formatted_history if formatted_history else None
+        ):
+            full_response += chunk
+            yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
+        
+        # Check if response contains a proposal
+        proposal = None
+        is_complete = False
+        
+        # Try to extract JSON proposal from response
+        try:
+            import re
+            json_match = re.search(r'```json\s*(\{.*?\})\s*```', full_response, re.DOTALL)
+            if json_match:
+                proposal_data = json.loads(json_match.group(1))
+                if "proposal" in proposal_data:
+                    proposal = proposal_data["proposal"]
+                    is_complete = True
+        except (json.JSONDecodeError, KeyError):
+            pass
+        
+        yield f"data: {json.dumps({'type': 'done', 'proposal': proposal, 'is_complete': is_complete})}\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
+
+
+@router.post("/ai/create-from-proposal", response_model=BugResponse)
+async def create_bug_from_proposal(
+    request: Request,
+    body: BugProposal,
+    session: AsyncSession = Depends(get_db)
+):
+    """Create a bug from an AI-generated proposal"""
+    user_id = await get_current_user_id(request, session)
+    
+    # Validate severity
+    if body.severity not in [s.value for s in BugSeverity]:
+        raise HTTPException(status_code=400, detail=f"Invalid severity: {body.severity}")
+    
+    # Validate priority if provided
+    if body.priority and body.priority not in [p.value for p in BugPriority]:
+        raise HTTPException(status_code=400, detail=f"Invalid priority: {body.priority}")
+    
+    bug_service = BugService(session)
+    bug = await bug_service.create_bug(
+        user_id=user_id,
+        title=body.title,
+        description=body.description,
+        severity=body.severity,
+        steps_to_reproduce=body.steps_to_reproduce,
+        expected_behavior=body.expected_behavior,
+        actual_behavior=body.actual_behavior,
+        environment=body.environment,
+        priority=body.priority
+    )
+    
+    logger.info(f"Created bug from AI proposal: {bug.bug_id} for user {user_id}")
+    return bug_to_response(bug)
