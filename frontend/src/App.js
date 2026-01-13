@@ -72,6 +72,12 @@ const AppRouter = () => {
         </ProtectedRoute>
       } />
       
+      <Route path="/bugs" element={
+        <ProtectedRoute>
+          <Bugs />
+        </ProtectedRoute>
+      } />
+      
       {/* Catch-all redirect to landing */}
       <Route path="*" element={<Landing />} />
     </Routes>
