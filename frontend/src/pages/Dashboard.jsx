@@ -152,6 +152,16 @@ const Dashboard = () => {
               <span className="text-xl font-bold text-foreground">JarlPM</span>
             </div>
             <div className="flex items-center gap-4">
+              <Button 
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/bugs')}
+                className="text-red-400 border-red-500/30 hover:bg-red-500/10"
+                data-testid="bugs-nav-btn"
+              >
+                <Bug className="w-4 h-4 mr-2" />
+                Bugs
+              </Button>
               <span className="text-sm text-muted-foreground">{user?.name || user?.email}</span>
               <ThemeToggle />
               <Button 
