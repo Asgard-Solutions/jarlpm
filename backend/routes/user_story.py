@@ -47,7 +47,7 @@ class UserStoryUpdate(BaseModel):
     story_points: Optional[int] = None
 
 
-class StoryChatMessage(BaseModel):
+class FeatureStoryChatMessage(BaseModel):
     content: str
 
 
