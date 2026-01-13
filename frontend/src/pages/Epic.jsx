@@ -367,7 +367,7 @@ const Epic = () => {
                   <Layers className="w-16 h-16 text-slate-700 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-white mb-2">Start the Conversation</h3>
                   <p className="text-slate-400">
-                    Describe the problem you're trying to solve
+                    Describe the problem you&apos;re trying to solve
                   </p>
                 </div>
               ) : (
