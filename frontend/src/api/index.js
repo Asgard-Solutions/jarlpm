@@ -65,4 +65,38 @@ export const epicAPI = {
   deleteArtifact: (epicId, artifactId) => api.delete(`/epics/${epicId}/artifacts/${artifactId}`),
 };
 
+// Feature API (new lifecycle-based features)
+export const featureAPI = {
+  // Epic-level operations
+  listForEpic: (epicId) => api.get(`/features/epic/${epicId}`),
+  create: (epicId, data) => api.post(`/features/epic/${epicId}`, data),
+  generate: (epicId, count = 5) => {
+    // Return fetch for streaming
+    return fetch(`${API}/features/epic/${epicId}/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ count }),
+      credentials: 'include',
+    });
+  },
+  
+  // Individual feature operations
+  get: (featureId) => api.get(`/features/${featureId}`),
+  update: (featureId, data) => api.put(`/features/${featureId}`, data),
+  delete: (featureId) => api.delete(`/features/${featureId}`),
+  approve: (featureId) => api.post(`/features/${featureId}/approve`),
+  
+  // Feature conversation
+  getConversation: (featureId) => api.get(`/features/${featureId}/conversation`),
+  chat: (featureId, content) => {
+    // Return fetch for streaming
+    return fetch(`${API}/features/${featureId}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+      credentials: 'include',
+    });
+  },
+};
+
 export default api;
