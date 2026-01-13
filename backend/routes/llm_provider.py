@@ -134,7 +134,7 @@ async def create_llm_provider(
         update(LLMProviderConfig)
         .where(
             LLMProviderConfig.user_id == user_id,
-            LLMProviderConfig.provider != body.provider
+            LLMProviderConfig.provider != provider_value
         )
         .values(is_active=False)
     )
