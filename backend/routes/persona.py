@@ -227,12 +227,13 @@ async def generate_personas_for_epic(
             # Step 2: Create personas and generate images
             created_personas = []
             for i, persona_data in enumerate(personas_data):
-                yield f"data: {json.dumps({'type': 'status', 'message': f'Creating persona {i+1}/{len(personas_data)}: {persona_data.get(\"name\", \"Unknown\")}...'})}\n\n"
+                persona_name = persona_data.get('name', 'Unknown')
+                yield f"data: {json.dumps({'type': 'status', 'message': f'Creating persona {i+1}/{len(personas_data)}: {persona_name}...'})}\n\n"
                 
                 # Generate portrait image
                 portrait_base64 = None
                 if persona_data.get("portrait_prompt"):
-                    yield f"data: {json.dumps({'type': 'status', 'message': f'Generating portrait for {persona_data.get(\"name\")}...'})}\n\n"
+                    yield f"data: {json.dumps({'type': 'status', 'message': f'Generating portrait for {persona_name}...'})}\n\n"
                     try:
                         portrait_base64 = await persona_service.generate_portrait_image(
                             persona_data["portrait_prompt"],
@@ -240,7 +241,7 @@ async def generate_personas_for_epic(
                         )
                     except Exception as e:
                         logger.error(f"Portrait generation failed: {e}")
-                        yield f"data: {json.dumps({'type': 'warning', 'message': f'Portrait generation failed for {persona_data.get(\"name\")}'})}\n\n"
+                        yield f"data: {json.dumps({'type': 'warning', 'message': f'Portrait generation failed for {persona_name}'})}\n\n"
                 
                 # Create persona in database
                 persona = await persona_service.create_persona(
