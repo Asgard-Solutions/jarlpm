@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { epicAPI, subscriptionAPI, llmProviderAPI, authAPI } from '@/api';
-import { useAuthStore, useSubscriptionStore, useLLMProviderStore } from '@/store';
+import { useAuthStore, useSubscriptionStore, useLLMProviderStore, useThemeStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { 
-  Layers, Plus, Settings, LogOut, Loader2, 
+  Plus, Settings, LogOut, Loader2, 
   AlertCircle, FileText, Clock, Lock, Trash2 
 } from 'lucide-react';
 
