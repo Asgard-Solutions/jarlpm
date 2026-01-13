@@ -1,7 +1,6 @@
 from fastapi import FastAPI, APIRouter, Request
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
@@ -13,20 +12,12 @@ sys.path.insert(0, str(Path(__file__).parent))
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ.get('DB_NAME', 'jarlpm')]
-
 # Create the main app
 app = FastAPI(
     title="JarlPM API",
     description="AI-agnostic Product Management System",
     version="1.0.0"
 )
-
-# Store db in app state for access in routes
-app.state.db = db
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
@@ -76,32 +67,26 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database indexes and default data"""
+    """Initialize database and default data"""
     logger.info("Starting JarlPM API...")
     
-    # Create indexes for better query performance
-    await db.users.create_index("email", unique=True)
-    await db.users.create_index("user_id", unique=True)
-    await db.user_sessions.create_index("session_token")
-    await db.user_sessions.create_index("user_id")
-    await db.subscriptions.create_index("user_id")
-    await db.llm_provider_configs.create_index([("user_id", 1), ("provider", 1)])
-    await db.epics.create_index("user_id")
-    await db.epics.create_index("epic_id", unique=True)
-    await db.epic_transcript_events.create_index([("epic_id", 1), ("created_at", 1)])
-    await db.epic_decisions.create_index([("epic_id", 1), ("created_at", 1)])
-    await db.epic_artifacts.create_index("epic_id")
-    await db.payment_transactions.create_index("session_id")
-    await db.prompt_templates.create_index([("stage", 1), ("is_active", 1)])
+    # Initialize PostgreSQL database
+    from db.database import init_db, AsyncSessionLocal
+    await init_db()
     
     # Initialize default prompt templates
-    from services.prompt_service import PromptService
-    prompt_service = PromptService(db)
-    await prompt_service.initialize_default_prompts()
+    if AsyncSessionLocal:
+        from services.prompt_service import PromptService
+        async with AsyncSessionLocal() as session:
+            prompt_service = PromptService(session)
+            await prompt_service.initialize_default_prompts()
     
-    logger.info("JarlPM API started successfully")
+    logger.info("JarlPM API started successfully with PostgreSQL")
 
 @app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
+async def shutdown_event():
+    """Cleanup on shutdown"""
+    from db.database import engine
+    if engine:
+        await engine.dispose()
     logger.info("JarlPM API shutdown complete")
