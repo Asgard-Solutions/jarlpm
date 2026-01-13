@@ -432,7 +432,7 @@ const Settings = () => {
                   <ul className="text-xs text-nordic-text-muted space-y-1">
                     <li>• This context is automatically injected into every AI prompt</li>
                     <li>• The AI treats this as read-only background information</li>
-                    <li>• Missing values are shown as "Not specified"</li>
+                    <li>• Missing values are shown as &quot;Not specified&quot;</li>
                     <li>• Context persists across all Epics and sessions</li>
                   </ul>
                 </div>
