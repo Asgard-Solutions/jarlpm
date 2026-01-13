@@ -143,19 +143,19 @@ async def init_db():
         """))
         
         # Apply append-only triggers to transcript events
+        await conn.execute(text("DROP TRIGGER IF EXISTS enforce_append_only_transcript ON epic_transcript_events"))
         await conn.execute(text("""
-            DROP TRIGGER IF EXISTS enforce_append_only_transcript ON epic_transcript_events;
             CREATE TRIGGER enforce_append_only_transcript
             BEFORE UPDATE OR DELETE ON epic_transcript_events
-            FOR EACH ROW EXECUTE FUNCTION prevent_update_delete();
+            FOR EACH ROW EXECUTE FUNCTION prevent_update_delete()
         """))
         
         # Apply append-only triggers to decisions
+        await conn.execute(text("DROP TRIGGER IF EXISTS enforce_append_only_decisions ON epic_decisions"))
         await conn.execute(text("""
-            DROP TRIGGER IF EXISTS enforce_append_only_decisions ON epic_decisions;
             CREATE TRIGGER enforce_append_only_decisions
             BEFORE UPDATE OR DELETE ON epic_decisions
-            FOR EACH ROW EXECUTE FUNCTION prevent_update_delete();
+            FOR EACH ROW EXECUTE FUNCTION prevent_update_delete()
         """))
         
         # Create monotonic stage check function
