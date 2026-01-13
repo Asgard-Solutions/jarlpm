@@ -86,6 +86,12 @@ const AppRouter = () => {
         </ProtectedRoute>
       } />
       
+      <Route path="/personas" element={
+        <ProtectedRoute>
+          <Personas />
+        </ProtectedRoute>
+      } />
+      
       {/* Catch-all redirect to landing */}
       <Route path="*" element={<Landing />} />
     </Routes>
