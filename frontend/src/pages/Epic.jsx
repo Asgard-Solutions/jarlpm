@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { epicAPI } from '@/api';
+import { epicAPI, featureAPI } from '@/api';
 import { useSubscriptionStore, useLLMProviderStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,10 +43,10 @@ const STAGE_INDEX = {
   epic_locked: 5,
 };
 
-const ARTIFACT_ICONS = {
-  feature: Puzzle,
-  user_story: BookOpen,
-  bug: Bug,
+const FEATURE_STAGES = {
+  draft: { label: 'Draft', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30', icon: Edit3 },
+  refining: { label: 'Refining', color: 'bg-violet-500/20 text-violet-400 border-violet-500/30', icon: MessageSquare },
+  approved: { label: 'Approved', color: 'bg-success/20 text-success border-success/30', icon: Lock },
 };
 
 const Epic = () => {
@@ -58,7 +58,6 @@ const Epic = () => {
   const [epic, setEpic] = useState(null);
   const [transcript, setTranscript] = useState([]);
   const [decisions, setDecisions] = useState([]);
-  const [artifacts, setArtifacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -67,15 +66,17 @@ const Epic = () => {
   const [confirmingProposal, setConfirmingProposal] = useState(false);
   const [error, setError] = useState('');
   
-  // Feature creation state
-  const [suggestedFeatures, setSuggestedFeatures] = useState([]);
+  // Feature state (using new lifecycle API)
+  const [features, setFeatures] = useState([]);
   const [generatingFeatures, setGeneratingFeatures] = useState(false);
-  const [featuresGenerated, setFeaturesGenerated] = useState(false);
-  const [confirmingFeature, setConfirmingFeature] = useState(null);
-  const [refiningFeature, setRefiningFeature] = useState(null);
-  const [refinementChat, setRefinementChat] = useState([]);
+  const [generatedDrafts, setGeneratedDrafts] = useState([]); // Temporary drafts before saving
+  
+  // Feature refinement dialog
+  const [selectedFeature, setSelectedFeature] = useState(null);
+  const [featureConversation, setFeatureConversation] = useState([]);
   const [refinementMessage, setRefinementMessage] = useState('');
   const [sendingRefinement, setSendingRefinement] = useState(false);
+  const [streamingRefinement, setStreamingRefinement] = useState('');
   
   // Manual feature creation
   const [showManualCreate, setShowManualCreate] = useState(false);
@@ -86,6 +87,7 @@ const Epic = () => {
 
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
+  const refinementEndRef = useRef(null);
 
   const scrollToBottom = useCallback(() => {
     if (messagesEndRef.current) {
@@ -99,18 +101,22 @@ const Epic = () => {
 
   const loadEpic = useCallback(async () => {
     try {
-      const [epicRes, transcriptRes, decisionsRes, artifactsRes] = await Promise.all([
+      const [epicRes, transcriptRes, decisionsRes] = await Promise.all([
         epicAPI.get(epicId),
         epicAPI.getTranscript(epicId),
         epicAPI.getDecisions(epicId),
-        epicAPI.listArtifacts(epicId),
       ]);
       setEpic(epicRes.data);
       setTranscript(transcriptRes.data.events);
       setDecisions(decisionsRes.data.decisions);
-      setArtifacts(artifactsRes.data || []);
       if (epicRes.data.pending_proposal) {
         setPendingProposal(epicRes.data.pending_proposal);
+      }
+      
+      // Load features if epic is locked
+      if (epicRes.data.current_stage === 'epic_locked') {
+        const featuresRes = await featureAPI.listForEpic(epicId);
+        setFeatures(featuresRes.data || []);
       }
     } catch (err) {
       if (err.response?.status === 404) { navigate('/dashboard'); }
@@ -121,7 +127,7 @@ const Epic = () => {
 
   useEffect(() => { loadEpic(); }, [loadEpic]);
 
-  // Auto-generate features when epic is locked and no features exist
+  // Generate feature suggestions using new API
   const generateFeatureSuggestions = async () => {
     if (!isActive || !activeProvider) {
       setError('Active subscription and LLM provider required.');
@@ -130,33 +136,12 @@ const Epic = () => {
     
     setGeneratingFeatures(true);
     setError('');
+    setGeneratedDrafts([]);
     
-    const prompt = `Based on this locked epic, suggest 3-5 specific features that would implement it. For each feature, provide:
-1. A clear title
-2. A description (2-3 sentences)
-3. 2-3 acceptance criteria
-
-Epic Summary: ${epic.snapshot?.epic_summary || 'Not available'}
-
-Acceptance Criteria:
-${epic.snapshot?.acceptance_criteria?.join('\n') || 'Not available'}
-
-Format your response as a JSON array like this:
-[
-  {
-    "title": "Feature Title",
-    "description": "Feature description...",
-    "acceptance_criteria": ["Criterion 1", "Criterion 2"]
-  }
-]
-
-Only respond with the JSON array, no other text.`;
-
     try {
-      const response = await epicAPI.chat(epicId, prompt);
+      const response = await featureAPI.generate(epicId, 5);
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let fullContent = '';
 
       while (true) {
         const { done, value } = await reader.read();
@@ -167,29 +152,12 @@ Only respond with the JSON array, no other text.`;
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
-              if (data.type === 'chunk') { 
-                fullContent += data.content; 
-              }
-              else if (data.type === 'done') {
-                // Parse the JSON response
-                try {
-                  // Find JSON array in the response
-                  const jsonMatch = fullContent.match(/\[[\s\S]*\]/);
-                  if (jsonMatch) {
-                    const features = JSON.parse(jsonMatch[0]);
-                    setSuggestedFeatures(features.map((f, i) => ({
-                      id: `suggested_${Date.now()}_${i}`,
-                      title: f.title,
-                      description: f.description,
-                      acceptance_criteria: f.acceptance_criteria || [],
-                      status: 'pending' // pending, confirmed, rejected
-                    })));
-                    setFeaturesGenerated(true);
-                  }
-                } catch (parseErr) {
-                  console.error('Failed to parse features:', parseErr);
-                  setError('Failed to parse AI suggestions. Please try again.');
-                }
+              if (data.type === 'features') {
+                // Store generated features as drafts
+                setGeneratedDrafts(data.features.map((f, i) => ({
+                  tempId: `draft_${Date.now()}_${i}`,
+                  ...f
+                })));
               }
               else if (data.type === 'error') { 
                 setError(data.message); 
@@ -205,65 +173,64 @@ Only respond with the JSON array, no other text.`;
     }
   };
 
-  const handleConfirmFeature = async (feature) => {
-    setConfirmingFeature(feature.id);
+  // Save a draft feature to the database
+  const handleSaveDraftFeature = async (draft) => {
     try {
-      await epicAPI.createArtifact(epicId, {
-        artifact_type: 'feature',
-        title: feature.title,
-        description: feature.description,
-        acceptance_criteria: feature.acceptance_criteria,
+      const res = await featureAPI.create(epicId, {
+        title: draft.title,
+        description: draft.description,
+        acceptance_criteria: draft.acceptance_criteria,
+        source: 'ai_generated'
       });
       
-      // Remove from suggestions and refresh artifacts
-      setSuggestedFeatures(prev => prev.filter(f => f.id !== feature.id));
-      const artifactsRes = await epicAPI.listArtifacts(epicId);
-      setArtifacts(artifactsRes.data || []);
+      // Add to features list and remove from drafts
+      setFeatures(prev => [...prev, res.data]);
+      setGeneratedDrafts(prev => prev.filter(d => d.tempId !== draft.tempId));
     } catch (err) {
-      setError('Failed to confirm feature.');
-    } finally {
-      setConfirmingFeature(null);
+      setError('Failed to save feature.');
     }
   };
 
-  const handleRejectFeature = (featureId) => {
-    setSuggestedFeatures(prev => prev.filter(f => f.id !== featureId));
+  // Discard a draft
+  const handleDiscardDraft = (tempId) => {
+    setGeneratedDrafts(prev => prev.filter(d => d.tempId !== tempId));
   };
 
-  const handleStartRefinement = (feature) => {
-    setRefiningFeature(feature);
-    setRefinementChat([{
-      role: 'system',
-      content: `Refining feature: "${feature.title}". Current description: ${feature.description}`
-    }]);
+  // Open refinement dialog for a feature
+  const handleOpenRefinement = async (feature) => {
+    setSelectedFeature(feature);
+    setFeatureConversation([]);
+    setRefinementMessage('');
+    setStreamingRefinement('');
+    
+    // Load existing conversation
+    try {
+      const res = await featureAPI.getConversation(feature.feature_id);
+      setFeatureConversation(res.data || []);
+    } catch (err) {
+      console.error('Failed to load conversation:', err);
+    }
   };
 
+  // Send refinement message
   const handleSendRefinement = async () => {
-    if (!refinementMessage.trim() || sendingRefinement) return;
+    if (!refinementMessage.trim() || sendingRefinement || !selectedFeature) return;
     
     setSendingRefinement(true);
     const userMsg = refinementMessage.trim();
     setRefinementMessage('');
-    setRefinementChat(prev => [...prev, { role: 'user', content: userMsg }]);
-
-    const prompt = `The user wants to refine this feature:
-Title: ${refiningFeature.title}
-Description: ${refiningFeature.description}
-Acceptance Criteria: ${refiningFeature.acceptance_criteria?.join(', ')}
-
-User's refinement request: ${userMsg}
-
-Please provide an updated version of the feature. Respond with JSON:
-{
-  "title": "Updated title",
-  "description": "Updated description",
-  "acceptance_criteria": ["Criterion 1", "Criterion 2"]
-}
-
-Only respond with the JSON, no other text.`;
+    setStreamingRefinement('');
+    
+    // Optimistic UI update
+    setFeatureConversation(prev => [...prev, { 
+      event_id: `temp_${Date.now()}`, 
+      role: 'user', 
+      content: userMsg,
+      created_at: new Date().toISOString()
+    }]);
 
     try {
-      const response = await epicAPI.chat(epicId, prompt);
+      const response = await featureAPI.chat(selectedFeature.feature_id, userMsg);
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let fullContent = '';
@@ -279,75 +246,88 @@ Only respond with the JSON, no other text.`;
               const data = JSON.parse(line.slice(6));
               if (data.type === 'chunk') { 
                 fullContent += data.content; 
+                setStreamingRefinement(fullContent);
+              }
+              else if (data.type === 'feature_updated') {
+                // Feature was updated - refresh
+                const updated = await featureAPI.get(selectedFeature.feature_id);
+                setSelectedFeature(updated.data);
+                setFeatures(prev => prev.map(f => 
+                  f.feature_id === updated.data.feature_id ? updated.data : f
+                ));
               }
               else if (data.type === 'done') {
-                try {
-                  const jsonMatch = fullContent.match(/\{[\s\S]*\}/);
-                  if (jsonMatch) {
-                    const updated = JSON.parse(jsonMatch[0]);
-                    // Update the feature in suggestions
-                    setSuggestedFeatures(prev => prev.map(f => 
-                      f.id === refiningFeature.id 
-                        ? { ...f, title: updated.title, description: updated.description, acceptance_criteria: updated.acceptance_criteria || [] }
-                        : f
-                    ));
-                    setRefiningFeature(prev => ({
-                      ...prev,
-                      title: updated.title,
-                      description: updated.description,
-                      acceptance_criteria: updated.acceptance_criteria || []
-                    }));
-                    setRefinementChat(prev => [...prev, { 
-                      role: 'assistant', 
-                      content: `Updated the feature:\n\n**${updated.title}**\n\n${updated.description}\n\nAcceptance Criteria:\n${updated.acceptance_criteria?.map(c => `• ${c}`).join('\n') || 'None'}`
-                    }]);
-                  }
-                } catch (parseErr) {
-                  setRefinementChat(prev => [...prev, { role: 'assistant', content: fullContent }]);
-                }
+                setFeatureConversation(prev => [...prev, {
+                  event_id: `asst_${Date.now()}`,
+                  role: 'assistant',
+                  content: fullContent,
+                  created_at: new Date().toISOString()
+                }]);
+                setStreamingRefinement('');
+              }
+              else if (data.type === 'error') {
+                setError(data.message);
               }
             } catch (e) { /* Ignore */ }
           }
         }
       }
     } catch (err) {
-      setRefinementChat(prev => [...prev, { role: 'assistant', content: 'Failed to process refinement. Please try again.' }]);
+      setError('Failed to send message.');
     } finally {
       setSendingRefinement(false);
     }
   };
 
+  // Approve a feature
+  const handleApproveFeature = async (featureId) => {
+    try {
+      const res = await featureAPI.approve(featureId);
+      setFeatures(prev => prev.map(f => 
+        f.feature_id === featureId ? res.data : f
+      ));
+      if (selectedFeature?.feature_id === featureId) {
+        setSelectedFeature(res.data);
+      }
+    } catch (err) {
+      setError('Failed to approve feature.');
+    }
+  };
+
+  // Delete a feature
+  const handleDeleteFeature = async (featureId) => {
+    try {
+      await featureAPI.delete(featureId);
+      setFeatures(prev => prev.filter(f => f.feature_id !== featureId));
+      if (selectedFeature?.feature_id === featureId) {
+        setSelectedFeature(null);
+      }
+    } catch (err) {
+      setError('Failed to delete feature.');
+    }
+  };
+
+  // Create manual feature
   const handleCreateManual = async () => {
     if (!manualTitle.trim() || !manualDescription.trim()) return;
     setCreatingManual(true);
     try {
       const criteriaList = manualCriteria.split('\n').filter(c => c.trim());
-      await epicAPI.createArtifact(epicId, {
-        artifact_type: 'feature',
+      const res = await featureAPI.create(epicId, {
         title: manualTitle.trim(),
         description: manualDescription.trim(),
         acceptance_criteria: criteriaList.length > 0 ? criteriaList : null,
+        source: 'manual'
       });
+      setFeatures(prev => [...prev, res.data]);
       setShowManualCreate(false);
       setManualTitle('');
       setManualDescription('');
       setManualCriteria('');
-      const artifactsRes = await epicAPI.listArtifacts(epicId);
-      setArtifacts(artifactsRes.data || []);
     } catch (err) {
       setError('Failed to create feature.');
     } finally {
       setCreatingManual(false);
-    }
-  };
-
-  const handleDeleteArtifact = async (artifactId) => {
-    try {
-      await epicAPI.deleteArtifact(epicId, artifactId);
-      const artifactsRes = await epicAPI.listArtifacts(epicId);
-      setArtifacts(artifactsRes.data || []);
-    } catch (err) {
-      setError('Failed to delete feature.');
     }
   };
 
@@ -519,33 +499,37 @@ Only respond with the JSON, no other text.`;
   // FEATURE PLANNING MODE (Epic Locked)
   // ============================================
   if (isEpicLocked) {
+    const draftFeatures = features.filter(f => f.current_stage === 'draft');
+    const refiningFeatures = features.filter(f => f.current_stage === 'refining');
+    const approvedFeatures = features.filter(f => f.current_stage === 'approved');
+
     return (
       <div className="h-screen bg-background flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="flex-shrink-0 border-b-2 border-violet-500/50 bg-violet-500/5">
+        <header className="flex-shrink-0 border-b-2 border-violet-500/50 bg-violet-500/5" data-testid="feature-planning-header">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="text-muted-foreground hover:text-foreground">
+                <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="text-muted-foreground hover:text-foreground" data-testid="back-to-dashboard-btn">
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-muted-foreground">Epic:</span>
                   <span className="text-foreground font-medium">{epic.title}</span>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  <Badge className="bg-violet-500 text-white">
+                  <Badge className="bg-violet-500 text-white" data-testid="feature-planning-badge">
                     <Puzzle className="w-3 h-3 mr-1" />
                     Feature Planning
                   </Badge>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="bg-success/10 text-success border-success/30">
+                <Badge variant="outline" className="bg-success/10 text-success border-success/30" data-testid="epic-locked-badge">
                   <Lock className="w-3 h-3 mr-1" />
                   Epic Locked
                 </Badge>
                 <ThemeToggle />
-                <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} className="text-muted-foreground hover:text-foreground">
+                <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} className="text-muted-foreground hover:text-foreground" data-testid="settings-btn">
                   <Settings className="w-5 h-5" />
                 </Button>
               </div>
@@ -563,12 +547,22 @@ Only respond with the JSON, no other text.`;
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-foreground">Feature Planning Mode</h1>
-                  <p className="text-sm text-muted-foreground">Review AI-suggested features, refine them, and lock in your approved features</p>
+                  <p className="text-sm text-muted-foreground">Generate features with AI, refine them through conversation, then approve to lock</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-foreground">{artifacts.length}</p>
-                <p className="text-xs text-muted-foreground">Confirmed Features</p>
+              <div className="flex items-center gap-6 text-center">
+                <div>
+                  <p className="text-lg font-bold text-amber-400">{draftFeatures.length + generatedDrafts.length}</p>
+                  <p className="text-xs text-muted-foreground">Drafts</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-violet-400">{refiningFeatures.length}</p>
+                  <p className="text-xs text-muted-foreground">Refining</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-success">{approvedFeatures.length}</p>
+                  <p className="text-xs text-muted-foreground">Approved</p>
+                </div>
               </div>
             </div>
           </div>
@@ -579,22 +573,23 @@ Only respond with the JSON, no other text.`;
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-4xl mx-auto space-y-8">
               
-              {/* Pending Feature Suggestions */}
-              {!featuresGenerated && suggestedFeatures.length === 0 && (
-                <Card className="border-2 border-dashed border-violet-500/30 bg-violet-500/5">
+              {/* Generate Features CTA */}
+              {features.length === 0 && generatedDrafts.length === 0 && (
+                <Card className="border-2 border-dashed border-violet-500/30 bg-violet-500/5" data-testid="generate-features-cta">
                   <CardContent className="p-8 text-center">
                     <div className="w-16 h-16 rounded-2xl bg-violet-500/20 flex items-center justify-center mx-auto mb-4">
                       <Sparkles className="w-8 h-8 text-violet-400" />
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">Generate Feature Suggestions</h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">Break Down Your Epic</h3>
                     <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                      Let AI analyze your epic and suggest specific features to implement. You can then review, refine, and approve each one.
+                      Let AI analyze your locked epic and suggest implementable features. Review each one, refine through conversation, then approve.
                     </p>
                     <div className="flex gap-3 justify-center">
                       <Button 
                         onClick={generateFeatureSuggestions}
                         disabled={generatingFeatures}
                         className="bg-violet-500 hover:bg-violet-600 text-white"
+                        data-testid="generate-features-btn"
                       >
                         {generatingFeatures ? (
                           <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating...</>
@@ -602,7 +597,7 @@ Only respond with the JSON, no other text.`;
                           <><Sparkles className="w-4 h-4 mr-2" /> Generate Features</>
                         )}
                       </Button>
-                      <Button variant="outline" onClick={() => setShowManualCreate(true)}>
+                      <Button variant="outline" onClick={() => setShowManualCreate(true)} data-testid="create-manual-btn">
                         <Plus className="w-4 h-4 mr-2" />
                         Create Manually
                       </Button>
@@ -611,56 +606,55 @@ Only respond with the JSON, no other text.`;
                 </Card>
               )}
 
-              {/* Suggested Features (Pending Approval) */}
-              {suggestedFeatures.length > 0 && (
-                <div>
+              {/* Generated Drafts (not yet saved) */}
+              {generatedDrafts.length > 0 && (
+                <div data-testid="generated-drafts-section">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5 text-amber-400" />
-                      Pending Review ({suggestedFeatures.length})
+                      <Sparkles className="w-5 h-5 text-violet-400" />
+                      AI Generated ({generatedDrafts.length})
                     </h2>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={generateFeatureSuggestions}
-                        disabled={generatingFeatures}
-                        className="border-violet-500/50 text-violet-400"
-                      >
-                        <RefreshCw className={`w-4 h-4 mr-1 ${generatingFeatures ? 'animate-spin' : ''}`} />
-                        Regenerate
-                      </Button>
-                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={generateFeatureSuggestions}
+                      disabled={generatingFeatures}
+                      className="border-violet-500/50 text-violet-400"
+                      data-testid="regenerate-btn"
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-1 ${generatingFeatures ? 'animate-spin' : ''}`} />
+                      Regenerate
+                    </Button>
                   </div>
                   
                   <div className="space-y-4">
-                    {suggestedFeatures.map((feature) => (
-                      <Card key={feature.id} className="border-amber-500/30 bg-amber-500/5">
+                    {generatedDrafts.map((draft) => (
+                      <Card key={draft.tempId} className="border-violet-500/30 bg-violet-500/5" data-testid={`draft-card-${draft.tempId}`}>
                         <CardHeader className="pb-2">
                           <div className="flex items-start justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                                <Puzzle className="w-5 h-5 text-amber-400" />
+                              <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                                <Sparkles className="w-5 h-5 text-violet-400" />
                               </div>
                               <div>
-                                <CardTitle className="text-base text-foreground">{feature.title}</CardTitle>
-                                <Badge variant="outline" className="text-xs mt-1 bg-amber-500/10 text-amber-400 border-amber-500/30">
-                                  Pending Approval
+                                <CardTitle className="text-base text-foreground">{draft.title}</CardTitle>
+                                <Badge variant="outline" className="text-xs mt-1 bg-violet-500/10 text-violet-400 border-violet-500/30">
+                                  AI Generated - Not Saved
                                 </Badge>
                               </div>
                             </div>
                           </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                          <p className="text-sm text-muted-foreground">{feature.description}</p>
+                          <p className="text-sm text-muted-foreground">{draft.description}</p>
                           
-                          {feature.acceptance_criteria?.length > 0 && (
+                          {draft.acceptance_criteria?.length > 0 && (
                             <div className="bg-background/50 rounded-lg p-3">
                               <p className="text-xs font-medium text-foreground mb-2">Acceptance Criteria:</p>
                               <ul className="text-xs text-muted-foreground space-y-1">
-                                {feature.acceptance_criteria.map((c, i) => (
+                                {draft.acceptance_criteria.map((c, i) => (
                                   <li key={i} className="flex items-start gap-2">
-                                    <span className="text-amber-400">•</span>
+                                    <span className="text-violet-400">•</span>
                                     {c}
                                   </li>
                                 ))}
@@ -671,34 +665,22 @@ Only respond with the JSON, no other text.`;
                           <div className="flex gap-2 pt-2">
                             <Button 
                               size="sm" 
-                              onClick={() => handleConfirmFeature(feature)}
-                              disabled={confirmingFeature === feature.id}
-                              className="bg-success hover:bg-success/90 text-white"
+                              onClick={() => handleSaveDraftFeature(draft)}
+                              className="bg-violet-500 hover:bg-violet-600"
+                              data-testid={`save-draft-btn-${draft.tempId}`}
                             >
-                              {confirmingFeature === feature.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin mr-1" />
-                              ) : (
-                                <CheckCircle2 className="w-4 h-4 mr-1" />
-                              )}
-                              Approve & Lock
+                              <Plus className="w-4 h-4 mr-1" />
+                              Save as Draft
                             </Button>
                             <Button 
                               size="sm" 
                               variant="outline"
-                              onClick={() => handleStartRefinement(feature)}
-                              className="border-violet-500/50 text-violet-400"
-                            >
-                              <MessageSquare className="w-4 h-4 mr-1" />
-                              Refine with AI
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleRejectFeature(feature.id)}
+                              onClick={() => handleDiscardDraft(draft.tempId)}
                               className="border-destructive/50 text-destructive"
+                              data-testid={`discard-draft-btn-${draft.tempId}`}
                             >
                               <XCircle className="w-4 h-4 mr-1" />
-                              Reject
+                              Discard
                             </Button>
                           </div>
                         </CardContent>
@@ -708,82 +690,90 @@ Only respond with the JSON, no other text.`;
                 </div>
               )}
 
-              {/* Confirmed Features */}
-              {artifacts.length > 0 && (
-                <div>
+              {/* Draft Features (saved but not yet refined) */}
+              {draftFeatures.length > 0 && (
+                <div data-testid="draft-features-section">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                      <Lock className="w-5 h-5 text-success" />
-                      Confirmed Features ({artifacts.length})
+                      <Edit3 className="w-5 h-5 text-amber-400" />
+                      Draft Features ({draftFeatures.length})
                     </h2>
-                    <Button variant="outline" size="sm" onClick={() => setShowManualCreate(true)}>
-                      <Plus className="w-4 h-4 mr-1" />
-                      Add Feature
-                    </Button>
                   </div>
                   
                   <div className="space-y-4">
-                    {artifacts.map((artifact) => (
-                      <Card key={artifact.artifact_id} className="border-success/30 bg-success/5">
-                        <CardHeader className="pb-2">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-success/20 flex items-center justify-center">
-                                <Puzzle className="w-5 h-5 text-success" />
-                              </div>
-                              <div>
-                                <CardTitle className="text-base text-foreground">{artifact.title}</CardTitle>
-                                <Badge variant="outline" className="text-xs mt-1 bg-success/10 text-success border-success/30">
-                                  <Lock className="w-3 h-3 mr-1" />
-                                  Locked
-                                </Badge>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteArtifact(artifact.artifact_id)}
-                              className="text-muted-foreground hover:text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-muted-foreground mb-3">{artifact.description}</p>
-                          {artifact.acceptance_criteria?.length > 0 && (
-                            <div className="bg-background/50 rounded-lg p-3">
-                              <p className="text-xs font-medium text-foreground mb-2">Acceptance Criteria:</p>
-                              <ul className="text-xs text-muted-foreground space-y-1">
-                                {artifact.acceptance_criteria.map((c, i) => (
-                                  <li key={i} className="flex items-start gap-2">
-                                    <CheckCircle2 className="w-3 h-3 mt-0.5 text-success flex-shrink-0" />
-                                    {c}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
+                    {draftFeatures.map((feature) => (
+                      <FeatureCard 
+                        key={feature.feature_id} 
+                        feature={feature}
+                        onRefine={() => handleOpenRefinement(feature)}
+                        onApprove={() => handleApproveFeature(feature.feature_id)}
+                        onDelete={() => handleDeleteFeature(feature.feature_id)}
+                      />
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Show generate button if features were generated but all handled */}
-              {featuresGenerated && suggestedFeatures.length === 0 && (
-                <div className="flex gap-3 justify-center pt-4">
+              {/* Refining Features (in conversation) */}
+              {refiningFeatures.length > 0 && (
+                <div data-testid="refining-features-section">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                      <MessageSquare className="w-5 h-5 text-violet-400" />
+                      In Refinement ({refiningFeatures.length})
+                    </h2>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {refiningFeatures.map((feature) => (
+                      <FeatureCard 
+                        key={feature.feature_id} 
+                        feature={feature}
+                        onRefine={() => handleOpenRefinement(feature)}
+                        onApprove={() => handleApproveFeature(feature.feature_id)}
+                        onDelete={() => handleDeleteFeature(feature.feature_id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Approved Features (locked) */}
+              {approvedFeatures.length > 0 && (
+                <div data-testid="approved-features-section">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                      <Lock className="w-5 h-5 text-success" />
+                      Approved & Locked ({approvedFeatures.length})
+                    </h2>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {approvedFeatures.map((feature) => (
+                      <FeatureCard 
+                        key={feature.feature_id} 
+                        feature={feature}
+                        onDelete={() => handleDeleteFeature(feature.feature_id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action buttons when features exist */}
+              {(features.length > 0 || generatedDrafts.length > 0) && (
+                <div className="flex gap-3 justify-center pt-4" data-testid="feature-actions">
                   <Button 
                     variant="outline" 
                     onClick={generateFeatureSuggestions}
                     disabled={generatingFeatures}
                     className="border-violet-500/50 text-violet-400"
+                    data-testid="generate-more-btn"
                   >
-                    {generatingFeatures ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-                    Generate More Features
+                    {generatingFeatures ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                    Generate More
                   </Button>
-                  <Button variant="outline" onClick={() => setShowManualCreate(true)}>
+                  <Button variant="outline" onClick={() => setShowManualCreate(true)} data-testid="add-manual-btn">
                     <Plus className="w-4 h-4 mr-2" />
                     Add Manually
                   </Button>
@@ -793,7 +783,7 @@ Only respond with the JSON, no other text.`;
           </div>
 
           {/* Sidebar - Epic Reference */}
-          <div className="w-80 flex-shrink-0 border-l border-border bg-card/50 hidden lg:flex lg:flex-col overflow-hidden">
+          <div className="w-80 flex-shrink-0 border-l border-border bg-card/50 hidden lg:flex lg:flex-col overflow-hidden" data-testid="epic-reference-sidebar">
             <div className="p-4 border-b border-border bg-muted/30">
               <h3 className="font-semibold text-foreground flex items-center gap-2">
                 <FileText className="w-4 h-4 text-muted-foreground" />
@@ -838,76 +828,127 @@ Only respond with the JSON, no other text.`;
           </div>
         </div>
 
-        {/* Refinement Dialog */}
-        <Dialog open={!!refiningFeature} onOpenChange={() => setRefiningFeature(null)}>
-          <DialogContent className="bg-card border-border max-w-2xl">
+        {/* Feature Refinement Dialog */}
+        <Dialog open={!!selectedFeature} onOpenChange={() => setSelectedFeature(null)}>
+          <DialogContent className="bg-card border-border max-w-2xl max-h-[80vh] flex flex-col" data-testid="refinement-dialog">
             <DialogHeader>
               <DialogTitle className="text-foreground flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-violet-400" />
-                Refine Feature with AI
+                Refine Feature
               </DialogTitle>
               <DialogDescription>
-                Chat with AI to improve this feature before approving it
+                Chat with AI to improve this feature before approving
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <Card className="bg-muted/50">
-                <CardContent className="p-3">
-                  <p className="text-sm font-medium text-foreground">{refiningFeature?.title}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{refiningFeature?.description}</p>
-                </CardContent>
-              </Card>
-              
-              <div className="max-h-64 overflow-y-auto space-y-3 bg-background rounded-lg p-3">
-                {refinementChat.filter(m => m.role !== 'system').map((msg, i) => (
-                  <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-                      msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
-                    }`}>
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
+            
+            {selectedFeature && (
+              <div className="flex-1 flex flex-col min-h-0 space-y-4">
+                {/* Current Feature State */}
+                <Card className="bg-muted/50 flex-shrink-0">
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium text-foreground">{selectedFeature.title}</p>
+                      <Badge variant="outline" className={FEATURE_STAGES[selectedFeature.current_stage]?.color}>
+                        {FEATURE_STAGES[selectedFeature.current_stage]?.label}
+                      </Badge>
                     </div>
+                    <p className="text-xs text-muted-foreground">{selectedFeature.description}</p>
+                    {selectedFeature.acceptance_criteria?.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-border">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Acceptance Criteria:</p>
+                        <ul className="text-xs text-muted-foreground">
+                          {selectedFeature.acceptance_criteria.map((c, i) => (
+                            <li key={i}>• {c}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+                
+                {/* Conversation */}
+                <div className="flex-1 overflow-y-auto space-y-3 bg-background rounded-lg p-3 min-h-[200px]">
+                  {featureConversation.filter(m => m.role !== 'system').map((msg, i) => (
+                    <div key={msg.event_id || i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      {msg.role !== 'user' && (
+                        <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                          <Bot className="w-3 h-3 text-primary" />
+                        </div>
+                      )}
+                      <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                        msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                      }`}>
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                      </div>
+                      {msg.role === 'user' && (
+                        <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                          <User className="w-3 h-3 text-secondary-foreground" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {streamingRefinement && (
+                    <div className="flex gap-2 justify-start">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                        <Bot className="w-3 h-3 text-primary" />
+                      </div>
+                      <div className="max-w-[80%] rounded-lg px-3 py-2 text-sm bg-muted text-foreground">
+                        <p className="whitespace-pre-wrap">{streamingRefinement}</p>
+                        <span className="inline-block w-2 h-3 bg-primary animate-pulse ml-1" />
+                      </div>
+                    </div>
+                  )}
+                  <div ref={refinementEndRef} />
+                </div>
+                
+                {/* Input */}
+                {selectedFeature.current_stage !== 'approved' && (
+                  <div className="flex gap-2 flex-shrink-0">
+                    <Textarea
+                      value={refinementMessage}
+                      onChange={(e) => setRefinementMessage(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendRefinement(); }}}
+                      placeholder="Suggest changes... (e.g., 'Make the description more specific' or 'Add an acceptance criterion for error handling')"
+                      disabled={sendingRefinement}
+                      className="bg-background border-border text-foreground resize-none"
+                      rows={2}
+                      data-testid="refinement-input"
+                    />
+                    <Button
+                      onClick={handleSendRefinement}
+                      disabled={!refinementMessage.trim() || sendingRefinement}
+                      className="bg-violet-500 hover:bg-violet-600 h-auto"
+                      data-testid="send-refinement-btn"
+                    >
+                      {sendingRefinement ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                    </Button>
                   </div>
-                ))}
+                )}
               </div>
-              
-              <div className="flex gap-2">
-                <Textarea
-                  value={refinementMessage}
-                  onChange={(e) => setRefinementMessage(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendRefinement(); }}}
-                  placeholder="Suggest changes... (e.g., 'Make it more specific' or 'Add criteria for error handling')"
-                  disabled={sendingRefinement}
-                  className="bg-background border-border text-foreground resize-none"
-                  rows={2}
-                />
-                <Button
-                  onClick={handleSendRefinement}
-                  disabled={!refinementMessage.trim() || sendingRefinement}
-                  className="bg-violet-500 hover:bg-violet-600 h-auto"
+            )}
+            
+            <DialogFooter className="flex-shrink-0">
+              <Button variant="outline" onClick={() => setSelectedFeature(null)} data-testid="close-refinement-btn">Close</Button>
+              {selectedFeature?.current_stage !== 'approved' && (
+                <Button 
+                  onClick={() => {
+                    handleApproveFeature(selectedFeature.feature_id);
+                    setSelectedFeature(null);
+                  }}
+                  className="bg-success hover:bg-success/90"
+                  data-testid="approve-feature-btn"
                 >
-                  {sendingRefinement ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                  <CheckCircle2 className="w-4 h-4 mr-1" />
+                  Approve & Lock
                 </Button>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setRefiningFeature(null)}>Close</Button>
-              <Button 
-                onClick={() => {
-                  handleConfirmFeature(refiningFeature);
-                  setRefiningFeature(null);
-                }}
-                className="bg-success hover:bg-success/90"
-              >
-                <CheckCircle2 className="w-4 h-4 mr-1" />
-                Approve & Lock
-              </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
         {/* Manual Create Dialog */}
         <Dialog open={showManualCreate} onOpenChange={setShowManualCreate}>
-          <DialogContent className="bg-card border-border">
+          <DialogContent className="bg-card border-border" data-testid="manual-create-dialog">
             <DialogHeader>
               <DialogTitle className="text-foreground">Create Feature Manually</DialogTitle>
               <DialogDescription>Add a custom feature to this epic</DialogDescription>
@@ -920,6 +961,7 @@ Only respond with the JSON, no other text.`;
                   onChange={(e) => setManualTitle(e.target.value)}
                   placeholder="Feature title..."
                   className="bg-background border-border text-foreground"
+                  data-testid="manual-title-input"
                 />
               </div>
               <div className="space-y-2">
@@ -929,6 +971,7 @@ Only respond with the JSON, no other text.`;
                   onChange={(e) => setManualDescription(e.target.value)}
                   placeholder="Describe the feature..."
                   className="bg-background border-border text-foreground min-h-[100px]"
+                  data-testid="manual-description-input"
                 />
               </div>
               <div className="space-y-2">
@@ -938,6 +981,7 @@ Only respond with the JSON, no other text.`;
                   onChange={(e) => setManualCriteria(e.target.value)}
                   placeholder="Given... When... Then..."
                   className="bg-background border-border text-foreground min-h-[80px]"
+                  data-testid="manual-criteria-input"
                 />
               </div>
             </div>
@@ -947,9 +991,10 @@ Only respond with the JSON, no other text.`;
                 onClick={handleCreateManual} 
                 disabled={creatingManual || !manualTitle.trim() || !manualDescription.trim()}
                 className="bg-violet-500 hover:bg-violet-600"
+                data-testid="create-feature-btn"
               >
                 {creatingManual ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Create & Lock
+                Create Feature
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -957,7 +1002,7 @@ Only respond with the JSON, no other text.`;
 
         {/* Error Toast */}
         {error && (
-          <div className="fixed bottom-4 right-4 bg-destructive text-destructive-foreground px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
+          <div className="fixed bottom-4 right-4 bg-destructive text-destructive-foreground px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50" data-testid="error-toast">
             <AlertCircle className="w-5 h-5" />
             <p className="text-sm">{error}</p>
             <Button variant="ghost" size="sm" onClick={() => setError('')} className="text-destructive-foreground hover:bg-destructive-foreground/10">
@@ -973,12 +1018,12 @@ Only respond with the JSON, no other text.`;
   // EPIC CREATION MODE (Not Locked)
   // ============================================
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="h-screen bg-background flex flex-col overflow-hidden" data-testid="epic-creation-page">
       <header className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur-sm z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="text-muted-foreground hover:text-foreground"><ArrowLeft className="w-5 h-5" /></Button>
+              <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="text-muted-foreground hover:text-foreground" data-testid="back-btn"><ArrowLeft className="w-5 h-5" /></Button>
               <div>
                 <h1 className="text-lg font-semibold text-foreground line-clamp-1">{epic.title}</h1>
                 <p className="text-xs text-muted-foreground">Epic Creation</p>
@@ -986,7 +1031,7 @@ Only respond with the JSON, no other text.`;
             </div>
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} className="text-muted-foreground hover:text-foreground"><Settings className="w-5 h-5" /></Button>
+              <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} className="text-muted-foreground hover:text-foreground" data-testid="settings-btn"><Settings className="w-5 h-5" /></Button>
             </div>
           </div>
         </div>
@@ -994,7 +1039,7 @@ Only respond with the JSON, no other text.`;
 
       <div className="flex-shrink-0 border-b border-border bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2" data-testid="stage-progress">
             {STAGES.map((stage, index) => {
               const currentIndex = getCurrentStageIndex();
               const isCompleted = index < currentIndex;
@@ -1018,7 +1063,7 @@ Only respond with the JSON, no other text.`;
 
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 flex flex-col min-w-0">
-          <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4">
+          <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4" data-testid="chat-container">
             <div className="max-w-3xl mx-auto">
               {transcript.length === 0 && !streamingContent ? (
                 <div className="text-center py-20">
@@ -1045,7 +1090,7 @@ Only respond with the JSON, no other text.`;
           </div>
 
           {pendingProposal && (
-            <div className="flex-shrink-0 border-t border-warning/30 bg-warning/10 p-4">
+            <div className="flex-shrink-0 border-t border-warning/30 bg-warning/10 p-4" data-testid="pending-proposal">
               <div className="max-w-3xl mx-auto">
                 <div className="flex items-start gap-4">
                   <AlertCircle className="w-6 h-6 text-warning flex-shrink-0 mt-1" />
@@ -1056,10 +1101,10 @@ Only respond with the JSON, no other text.`;
                       <p className="text-foreground whitespace-pre-wrap text-sm">{pendingProposal.content}</p>
                     </div>
                     <div className="flex gap-3">
-                      <Button onClick={() => handleConfirmProposal(true)} disabled={confirmingProposal} className="bg-success hover:bg-success/90 text-success-foreground">
+                      <Button onClick={() => handleConfirmProposal(true)} disabled={confirmingProposal} className="bg-success hover:bg-success/90 text-success-foreground" data-testid="confirm-proposal-btn">
                         {confirmingProposal ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />} Confirm
                       </Button>
-                      <Button onClick={() => handleConfirmProposal(false)} disabled={confirmingProposal} variant="outline" className="border-destructive/50 text-destructive hover:bg-destructive/10">
+                      <Button onClick={() => handleConfirmProposal(false)} disabled={confirmingProposal} variant="outline" className="border-destructive/50 text-destructive hover:bg-destructive/10" data-testid="reject-proposal-btn">
                         <XCircle className="w-4 h-4 mr-2" /> Reject
                       </Button>
                     </div>
@@ -1079,11 +1124,11 @@ Only respond with the JSON, no other text.`;
             </div>
           )}
 
-          <div className="flex-shrink-0 border-t border-border p-4 bg-background">
+          <div className="flex-shrink-0 border-t border-border p-4 bg-background" data-testid="chat-input-area">
             <div className="max-w-3xl mx-auto">
               <div className="flex gap-3">
-                <Textarea placeholder="Type your message..." value={message} onChange={(e) => setMessage(e.target.value)} onKeyDown={handleKeyDown} disabled={sending || !!pendingProposal} className="bg-background border-border text-foreground resize-none min-h-[60px]" rows={2} />
-                <Button onClick={handleSendMessage} disabled={!message.trim() || sending || !!pendingProposal} className="bg-primary hover:bg-primary/90 text-primary-foreground h-auto px-4">
+                <Textarea placeholder="Type your message..." value={message} onChange={(e) => setMessage(e.target.value)} onKeyDown={handleKeyDown} disabled={sending || !!pendingProposal} className="bg-background border-border text-foreground resize-none min-h-[60px]" rows={2} data-testid="chat-input" />
+                <Button onClick={handleSendMessage} disabled={!message.trim() || sending || !!pendingProposal} className="bg-primary hover:bg-primary/90 text-primary-foreground h-auto px-4" data-testid="send-message-btn">
                   {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                 </Button>
               </div>
@@ -1091,7 +1136,7 @@ Only respond with the JSON, no other text.`;
           </div>
         </div>
 
-        <div className="w-80 flex-shrink-0 border-l border-border bg-card/50 hidden lg:flex lg:flex-col overflow-hidden">
+        <div className="w-80 flex-shrink-0 border-l border-border bg-card/50 hidden lg:flex lg:flex-col overflow-hidden" data-testid="sidebar">
           <Tabs defaultValue="snapshot" className="flex-1 flex flex-col overflow-hidden">
             <TabsList className="flex-shrink-0 bg-transparent border-b border-border rounded-none p-0 h-auto">
               <TabsTrigger value="snapshot" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent py-3"><FileText className="w-4 h-4 mr-2" /> Snapshot</TabsTrigger>
@@ -1136,6 +1181,99 @@ Only respond with the JSON, no other text.`;
         </div>
       </div>
     </div>
+  );
+};
+
+// Feature Card Component
+const FeatureCard = ({ feature, onRefine, onApprove, onDelete }) => {
+  const stageInfo = FEATURE_STAGES[feature.current_stage];
+  const StageIcon = stageInfo?.icon || Edit3;
+  const isApproved = feature.current_stage === 'approved';
+
+  return (
+    <Card className={`border-${isApproved ? 'success' : feature.current_stage === 'refining' ? 'violet-500' : 'amber-500'}/30 bg-${isApproved ? 'success' : feature.current_stage === 'refining' ? 'violet-500' : 'amber-500'}/5`} data-testid={`feature-card-${feature.feature_id}`}>
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isApproved ? 'bg-success/20' : feature.current_stage === 'refining' ? 'bg-violet-500/20' : 'bg-amber-500/20'}`}>
+              <StageIcon className={`w-5 h-5 ${isApproved ? 'text-success' : feature.current_stage === 'refining' ? 'text-violet-400' : 'text-amber-400'}`} />
+            </div>
+            <div>
+              <CardTitle className="text-base text-foreground">{feature.title}</CardTitle>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="outline" className={`text-xs ${stageInfo?.color}`}>
+                  {isApproved && <Lock className="w-3 h-3 mr-1" />}
+                  {stageInfo?.label}
+                </Badge>
+                <Badge variant="outline" className="text-xs bg-muted text-muted-foreground">
+                  {feature.source === 'ai_generated' ? 'AI' : 'Manual'}
+                </Badge>
+              </div>
+            </div>
+          </div>
+          {onDelete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onDelete}
+              className="text-muted-foreground hover:text-destructive"
+              data-testid={`delete-feature-btn-${feature.feature_id}`}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">{feature.description}</p>
+        
+        {feature.acceptance_criteria?.length > 0 && (
+          <div className="bg-background/50 rounded-lg p-3">
+            <p className="text-xs font-medium text-foreground mb-2">Acceptance Criteria:</p>
+            <ul className="text-xs text-muted-foreground space-y-1">
+              {feature.acceptance_criteria.map((c, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  {isApproved ? (
+                    <CheckCircle2 className="w-3 h-3 mt-0.5 text-success flex-shrink-0" />
+                  ) : (
+                    <span className={feature.current_stage === 'refining' ? 'text-violet-400' : 'text-amber-400'}>•</span>
+                  )}
+                  {c}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {!isApproved && (
+          <div className="flex gap-2 pt-2">
+            {onApprove && (
+              <Button 
+                size="sm" 
+                onClick={onApprove}
+                className="bg-success hover:bg-success/90 text-white"
+                data-testid={`approve-btn-${feature.feature_id}`}
+              >
+                <CheckCircle2 className="w-4 h-4 mr-1" />
+                Approve & Lock
+              </Button>
+            )}
+            {onRefine && (
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={onRefine}
+                className="border-violet-500/50 text-violet-400"
+                data-testid={`refine-btn-${feature.feature_id}`}
+              >
+                <MessageSquare className="w-4 h-4 mr-1" />
+                Refine with AI
+              </Button>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
