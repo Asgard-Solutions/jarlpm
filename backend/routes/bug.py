@@ -392,7 +392,7 @@ async def add_links(
         if link.entity_type not in [e.value for e in BugLinkEntityType]:
             raise HTTPException(status_code=400, detail=f"Invalid entity type: {link.entity_type}")
     
-    links_data = [{"entity_type": l.entity_type, "entity_id": l.entity_id} for l in body.links]
+    links_data = [{"entity_type": link.entity_type, "entity_id": link.entity_id} for link in body.links]
     created_links = await bug_service.add_links(bug_id, links_data)
     
     return [
