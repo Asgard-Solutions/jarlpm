@@ -305,8 +305,12 @@ class BugService:
         )
         self.session.add(link)
         await self.session.commit()
-        await self.session.refresh(link)
-        return link
+        
+        # Reload to get updated data
+        result = await self.session.execute(
+            select(BugLink).where(BugLink.link_id == link.link_id)
+        )
+        return result.scalar_one()
     
     async def add_links(
         self,
