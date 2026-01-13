@@ -1125,6 +1125,15 @@ const Epic = () => {
         </div>
       </header>
 
+      {/* Workflow Stepper - Epic Definition Mode */}
+      <WorkflowStepper 
+        currentStep="definition"
+        featuresComplete={false}
+        storiesComplete={false}
+        totalFeatures={0}
+        featuresWithStories={0}
+      />
+
       <div className="flex-shrink-0 border-b border-border bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between gap-2" data-testid="stage-progress">
