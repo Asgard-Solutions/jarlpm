@@ -227,12 +227,16 @@ class PromptService:
     def __init__(self, session: AsyncSession):
         self.session = session
     
-    async def get_prompt_for_stage(self, stage: EpicStage) -> Optional[dict]:
+    async def get_prompt_for_stage(self, stage) -> Optional[dict]:
         """Get the active prompt template for a stage"""
+        # Convert string to enum if needed
+        stage_value = stage.value if isinstance(stage, EpicStage) else stage
+        stage_enum = EpicStage(stage_value) if isinstance(stage, str) else stage
+        
         # First check database for custom prompts
         result = await self.session.execute(
             select(PromptTemplate)
-            .where(PromptTemplate.stage == stage, PromptTemplate.is_active == True)
+            .where(PromptTemplate.stage == stage_value, PromptTemplate.is_active == True)
         )
         prompt = result.scalar_one_or_none()
         
@@ -247,7 +251,7 @@ class PromptService:
             }
         
         # Fall back to default prompts
-        return DEFAULT_PROMPTS.get(stage)
+        return DEFAULT_PROMPTS.get(stage_enum)
     
     def render_prompt(
         self,
