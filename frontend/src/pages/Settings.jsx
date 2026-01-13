@@ -298,10 +298,10 @@ const Settings = () => {
                     value={deliveryContext.delivery_methodology}
                     onValueChange={(value) => setDeliveryContext({ ...deliveryContext, delivery_methodology: value })}
                   >
-                    <SelectTrigger className="bg-nordic-bg-primary border-nordic-border text-nordic-text-primary" data-testid="select-methodology">
+                    <SelectTrigger className="bg-background border-border text-foreground" data-testid="select-methodology">
                       <SelectValue placeholder="Select methodology" />
                     </SelectTrigger>
-                    <SelectContent className="bg-nordic-bg-secondary border-nordic-border">
+                    <SelectContent className="bg-popover border-border shadow-lg">
                       <SelectItem value="waterfall">Waterfall</SelectItem>
                       <SelectItem value="agile">Agile</SelectItem>
                       <SelectItem value="scrum">Scrum</SelectItem>
