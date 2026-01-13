@@ -78,7 +78,7 @@ async def list_epics(request: Request):
     )
 
 
-@router.post("", response_model=EpicResponse)
+@router.post("", response_model=EpicResponse, status_code=201)
 async def create_epic(request: Request, body: EpicCreate):
     """Create a new epic"""
     db = request.app.state.db
