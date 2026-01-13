@@ -132,6 +132,36 @@ export const userStoryAPI = {
       credentials: 'include',
     });
   },
+  
+  // Standalone story operations
+  listStandalone: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return api.get(`/stories/standalone${query ? `?${query}` : ''}`);
+  },
+  getStandalone: (storyId) => api.get(`/stories/standalone/${storyId}`),
+  createStandalone: (data) => api.post('/stories/standalone', data),
+  updateStandalone: (storyId, data) => api.put(`/stories/standalone/${storyId}`, data),
+  deleteStandalone: (storyId) => api.delete(`/stories/standalone/${storyId}`),
+  approveStandalone: (storyId) => api.post(`/stories/standalone/${storyId}/approve`),
+  chatStandalone: (storyId, content) => {
+    return fetch(`${API}/stories/standalone/${storyId}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+      credentials: 'include',
+    });
+  },
+  
+  // AI-assisted story creation
+  aiChat: (content, conversationHistory = []) => {
+    return fetch(`${API}/stories/ai/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, conversation_history: conversationHistory }),
+      credentials: 'include',
+    });
+  },
+  createFromProposal: (proposal) => api.post('/stories/ai/create-from-proposal', proposal),
 };
 
 // Bug API
