@@ -134,4 +134,40 @@ export const userStoryAPI = {
   },
 };
 
+// Bug API
+export const bugAPI = {
+  // CRUD
+  list: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return api.get(`/bugs${query ? `?${query}` : ''}`);
+  },
+  get: (bugId) => api.get(`/bugs/${bugId}`),
+  create: (data) => api.post('/bugs', data),
+  update: (bugId, data) => api.patch(`/bugs/${bugId}`, data),
+  delete: (bugId) => api.delete(`/bugs/${bugId}`),
+  
+  // Status transitions
+  transition: (bugId, newStatus, notes = null) => 
+    api.post(`/bugs/${bugId}/transition`, { new_status: newStatus, notes }),
+  getHistory: (bugId) => api.get(`/bugs/${bugId}/history`),
+  
+  // Links
+  addLinks: (bugId, links) => api.post(`/bugs/${bugId}/links`, { links }),
+  removeLink: (bugId, linkId) => api.delete(`/bugs/${bugId}/links/${linkId}`),
+  getLinks: (bugId) => api.get(`/bugs/${bugId}/links`),
+  
+  // Entity queries
+  getForEntity: (entityType, entityId) => api.get(`/bugs/by-entity/${entityType}/${entityId}`),
+  
+  // AI assistance
+  refineDescription: (bugId) => {
+    return fetch(`${API}/bugs/${bugId}/ai/refine-description`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+  },
+  suggestSeverity: (bugId) => api.post(`/bugs/${bugId}/ai/suggest-severity`),
+};
+
 export default api;
