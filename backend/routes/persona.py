@@ -90,7 +90,7 @@ async def get_current_user_id(request: Request, session: AsyncSession) -> str:
     from sqlalchemy import select
     
     result = await session.execute(
-        select(UserSession).where(UserSession.token == session_token)
+        select(UserSession).where(UserSession.session_token == session_token)
     )
     session_record = result.scalar_one_or_none()
     
