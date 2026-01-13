@@ -1,17 +1,22 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timezone
 import json
 import logging
-import re
+import uuid
 
-from models.epic import (
-    Epic, EpicStage, EpicCreate, EpicChatMessage, EpicConfirmProposal,
-    EpicTranscriptEvent, EpicDecision, EpicArtifact, ArtifactCreate, ArtifactType,
-    PendingProposal, STAGE_ORDER
+from sqlalchemy import select, delete
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from db import get_db
+from db.models import (
+    Epic as EpicModel, EpicStage, EpicSnapshot, EpicTranscriptEvent,
+    EpicDecision, EpicArtifact, ArtifactType, STAGE_ORDER
 )
+from models.epic import EpicCreate, EpicChatMessage, EpicConfirmProposal, ArtifactCreate
 from services.epic_service import EpicService
 from services.llm_service import LLMService
 from services.prompt_service import PromptService
@@ -23,11 +28,21 @@ router = APIRouter(prefix="/epics", tags=["epics"])
 
 
 # Response models
+class EpicSnapshotResponse(BaseModel):
+    problem_statement: Optional[str] = None
+    problem_confirmed_at: Optional[datetime] = None
+    desired_outcome: Optional[str] = None
+    outcome_confirmed_at: Optional[datetime] = None
+    epic_summary: Optional[str] = None
+    acceptance_criteria: Optional[List[str]] = None
+    epic_locked_at: Optional[datetime] = None
+
+
 class EpicResponse(BaseModel):
     epic_id: str
     title: str
     current_stage: EpicStage
-    snapshot: dict
+    snapshot: EpicSnapshotResponse
     pending_proposal: Optional[dict] = None
     created_at: datetime
     updated_at: datetime
@@ -37,12 +52,34 @@ class EpicListResponse(BaseModel):
     epics: List[EpicResponse]
 
 
+class TranscriptEventResponse(BaseModel):
+    event_id: str
+    epic_id: str
+    role: str
+    content: str
+    stage: EpicStage
+    event_metadata: Optional[dict] = None
+    created_at: datetime
+
+
 class TranscriptResponse(BaseModel):
-    events: List[dict]
+    events: List[TranscriptEventResponse]
+
+
+class DecisionEventResponse(BaseModel):
+    decision_id: str
+    epic_id: str
+    decision_type: str
+    from_stage: EpicStage
+    to_stage: Optional[EpicStage] = None
+    proposal_id: Optional[str] = None
+    content_snapshot: Optional[str] = None
+    user_id: str
+    created_at: datetime
 
 
 class DecisionResponse(BaseModel):
-    decisions: List[dict]
+    decisions: List[DecisionEventResponse]
 
 
 class ArtifactResponse(BaseModel):
@@ -56,35 +93,60 @@ class ArtifactResponse(BaseModel):
     created_at: datetime
 
 
+def snapshot_to_response(snapshot: Optional[EpicSnapshot]) -> EpicSnapshotResponse:
+    """Convert SQLAlchemy EpicSnapshot to response model"""
+    if not snapshot:
+        return EpicSnapshotResponse()
+    return EpicSnapshotResponse(
+        problem_statement=snapshot.problem_statement,
+        problem_confirmed_at=snapshot.problem_confirmed_at,
+        desired_outcome=snapshot.desired_outcome,
+        outcome_confirmed_at=snapshot.outcome_confirmed_at,
+        epic_summary=snapshot.epic_summary,
+        acceptance_criteria=snapshot.acceptance_criteria,
+        epic_locked_at=snapshot.epic_locked_at
+    )
+
+
+def epic_to_response(epic: EpicModel) -> EpicResponse:
+    """Convert SQLAlchemy Epic to response model"""
+    return EpicResponse(
+        epic_id=epic.epic_id,
+        title=epic.title,
+        current_stage=epic.current_stage,
+        snapshot=snapshot_to_response(epic.snapshot),
+        pending_proposal=epic.pending_proposal,
+        created_at=epic.created_at,
+        updated_at=epic.updated_at
+    )
+
+
 @router.get("", response_model=EpicListResponse)
-async def list_epics(request: Request):
+async def list_epics(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
     """List all epics for the current user"""
-    db = request.app.state.db
-    user_id = await get_current_user_id(request)
+    user_id = await get_current_user_id(request, session)
     
-    epic_service = EpicService(db)
+    epic_service = EpicService(session)
     epics = await epic_service.get_user_epics(user_id)
     
     return EpicListResponse(
-        epics=[EpicResponse(
-            epic_id=e.epic_id,
-            title=e.title,
-            current_stage=e.current_stage,
-            snapshot=e.snapshot.model_dump() if e.snapshot else {},
-            pending_proposal=e.pending_proposal.model_dump() if e.pending_proposal else None,
-            created_at=e.created_at,
-            updated_at=e.updated_at
-        ) for e in epics]
+        epics=[epic_to_response(e) for e in epics]
     )
 
 
 @router.post("", response_model=EpicResponse, status_code=201)
-async def create_epic(request: Request, body: EpicCreate):
+async def create_epic(
+    request: Request, 
+    body: EpicCreate,
+    session: AsyncSession = Depends(get_db)
+):
     """Create a new epic"""
-    db = request.app.state.db
-    user_id = await get_current_user_id(request)
+    user_id = await get_current_user_id(request, session)
     
-    epic_service = EpicService(db)
+    epic_service = EpicService(session)
     epic = await epic_service.create_epic(user_id, body.title)
     
     # Add initial system message to transcript
@@ -95,47 +157,37 @@ async def create_epic(request: Request, body: EpicCreate):
         stage=epic.current_stage
     )
     
-    return EpicResponse(
-        epic_id=epic.epic_id,
-        title=epic.title,
-        current_stage=epic.current_stage,
-        snapshot=epic.snapshot.model_dump() if epic.snapshot else {},
-        pending_proposal=None,
-        created_at=epic.created_at,
-        updated_at=epic.updated_at
-    )
+    return epic_to_response(epic)
 
 
 @router.get("/{epic_id}", response_model=EpicResponse)
-async def get_epic(request: Request, epic_id: str):
+async def get_epic(
+    request: Request, 
+    epic_id: str,
+    session: AsyncSession = Depends(get_db)
+):
     """Get an epic by ID"""
-    db = request.app.state.db
-    user_id = await get_current_user_id(request)
+    user_id = await get_current_user_id(request, session)
     
-    epic_service = EpicService(db)
+    epic_service = EpicService(session)
     epic = await epic_service.get_epic(epic_id, user_id)
     
     if not epic:
         raise HTTPException(status_code=404, detail="Epic not found")
     
-    return EpicResponse(
-        epic_id=epic.epic_id,
-        title=epic.title,
-        current_stage=epic.current_stage,
-        snapshot=epic.snapshot.model_dump() if epic.snapshot else {},
-        pending_proposal=epic.pending_proposal.model_dump() if epic.pending_proposal else None,
-        created_at=epic.created_at,
-        updated_at=epic.updated_at
-    )
+    return epic_to_response(epic)
 
 
 @router.delete("/{epic_id}")
-async def delete_epic(request: Request, epic_id: str):
+async def delete_epic(
+    request: Request, 
+    epic_id: str,
+    session: AsyncSession = Depends(get_db)
+):
     """Delete an epic (requires explicit confirmation - handled by frontend)"""
-    db = request.app.state.db
-    user_id = await get_current_user_id(request)
+    user_id = await get_current_user_id(request, session)
     
-    epic_service = EpicService(db)
+    epic_service = EpicService(session)
     success = await epic_service.delete_epic(epic_id, user_id)
     
     if not success:
@@ -145,14 +197,18 @@ async def delete_epic(request: Request, epic_id: str):
 
 
 @router.post("/{epic_id}/chat")
-async def chat_with_epic(request: Request, epic_id: str, body: EpicChatMessage):
+async def chat_with_epic(
+    request: Request, 
+    epic_id: str, 
+    body: EpicChatMessage,
+    session: AsyncSession = Depends(get_db)
+):
     """Chat with AI about the epic (streaming response)"""
-    db = request.app.state.db
-    user_id = await get_current_user_id(request)
+    user_id = await get_current_user_id(request, session)
     
-    epic_service = EpicService(db)
-    llm_service = LLMService(db)
-    prompt_service = PromptService(db)
+    epic_service = EpicService(session)
+    llm_service = LLMService(session)
+    prompt_service = PromptService(session)
     
     # Get epic
     epic = await epic_service.get_epic(epic_id, user_id)
@@ -174,11 +230,6 @@ async def chat_with_epic(request: Request, epic_id: str, body: EpicChatMessage):
             status_code=400,
             detail="No LLM provider configured. Please add your API key in settings."
         )
-    
-    # Check if epic is locked
-    if epic.current_stage == EpicStage.EPIC_LOCKED:
-        # Still allow chat but make it clear the epic is locked
-        pass
     
     # Add user message to transcript
     await epic_service.add_transcript_event(
@@ -211,7 +262,7 @@ async def chat_with_epic(request: Request, epic_id: str, body: EpicChatMessage):
                 user_id=user_id,
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
-                conversation_history=history[:-1] if history else None  # Exclude last user message
+                conversation_history=history[:-1] if history else None
             ):
                 full_response += chunk
                 yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
@@ -219,7 +270,6 @@ async def chat_with_epic(request: Request, epic_id: str, body: EpicChatMessage):
             # Check for proposal in response
             proposal = llm_service.extract_proposal(full_response)
             if proposal:
-                # Determine target stage based on proposal type
                 target_stage = None
                 field = None
                 
@@ -234,7 +284,6 @@ async def chat_with_epic(request: Request, epic_id: str, body: EpicChatMessage):
                     field = "epic_final"
                 
                 if target_stage and field:
-                    # Create pending proposal
                     pending = await epic_service.set_pending_proposal(
                         epic_id=epic_id,
                         user_id=user_id,
@@ -242,7 +291,7 @@ async def chat_with_epic(request: Request, epic_id: str, body: EpicChatMessage):
                         content=proposal["content"],
                         target_stage=target_stage
                     )
-                    yield f"data: {json.dumps({'type': 'proposal', 'proposal_id': pending.proposal_id, 'field': field, 'content': proposal['content'], 'target_stage': target_stage.value})}\n\n"
+                    yield f"data: {json.dumps({'type': 'proposal', 'proposal_id': pending['proposal_id'], 'field': field, 'content': proposal['content'], 'target_stage': target_stage.value})}\n\n"
             
             # Add assistant response to transcript
             await epic_service.add_transcript_event(
@@ -272,18 +321,21 @@ async def chat_with_epic(request: Request, epic_id: str, body: EpicChatMessage):
 
 
 @router.post("/{epic_id}/confirm-proposal", response_model=EpicResponse)
-async def confirm_proposal(request: Request, epic_id: str, body: EpicConfirmProposal):
+async def confirm_proposal(
+    request: Request, 
+    epic_id: str, 
+    body: EpicConfirmProposal,
+    session: AsyncSession = Depends(get_db)
+):
     """Confirm or reject a pending proposal"""
-    db = request.app.state.db
-    user_id = await get_current_user_id(request)
+    user_id = await get_current_user_id(request, session)
     
-    epic_service = EpicService(db)
+    epic_service = EpicService(session)
     
     try:
         if body.confirmed:
             epic = await epic_service.confirm_proposal(epic_id, user_id, body.proposal_id)
             
-            # Add confirmation to transcript
             await epic_service.add_transcript_event(
                 epic_id=epic_id,
                 role="system",
@@ -293,7 +345,6 @@ async def confirm_proposal(request: Request, epic_id: str, body: EpicConfirmProp
         else:
             epic = await epic_service.reject_proposal(epic_id, user_id, body.proposal_id)
             
-            # Add rejection to transcript
             await epic_service.add_transcript_event(
                 epic_id=epic_id,
                 role="system",
@@ -301,28 +352,22 @@ async def confirm_proposal(request: Request, epic_id: str, body: EpicConfirmProp
                 stage=epic.current_stage
             )
         
-        return EpicResponse(
-            epic_id=epic.epic_id,
-            title=epic.title,
-            current_stage=epic.current_stage,
-            snapshot=epic.snapshot.model_dump() if epic.snapshot else {},
-            pending_proposal=epic.pending_proposal.model_dump() if epic.pending_proposal else None,
-            created_at=epic.created_at,
-            updated_at=epic.updated_at
-        )
+        return epic_to_response(epic)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/{epic_id}/transcript", response_model=TranscriptResponse)
-async def get_transcript(request: Request, epic_id: str):
+async def get_transcript(
+    request: Request, 
+    epic_id: str,
+    session: AsyncSession = Depends(get_db)
+):
     """Get full transcript for an epic"""
-    db = request.app.state.db
-    user_id = await get_current_user_id(request)
+    user_id = await get_current_user_id(request, session)
     
-    epic_service = EpicService(db)
+    epic_service = EpicService(session)
     
-    # Verify ownership
     epic = await epic_service.get_epic(epic_id, user_id)
     if not epic:
         raise HTTPException(status_code=404, detail="Epic not found")
@@ -330,19 +375,29 @@ async def get_transcript(request: Request, epic_id: str):
     events = await epic_service.get_transcript(epic_id)
     
     return TranscriptResponse(
-        events=[e.model_dump() for e in events]
+        events=[TranscriptEventResponse(
+            event_id=e.event_id,
+            epic_id=e.epic_id,
+            role=e.role,
+            content=e.content,
+            stage=e.stage,
+            event_metadata=e.event_metadata,
+            created_at=e.created_at
+        ) for e in events]
     )
 
 
 @router.get("/{epic_id}/decisions", response_model=DecisionResponse)
-async def get_decisions(request: Request, epic_id: str):
+async def get_decisions(
+    request: Request, 
+    epic_id: str,
+    session: AsyncSession = Depends(get_db)
+):
     """Get all decisions for an epic"""
-    db = request.app.state.db
-    user_id = await get_current_user_id(request)
+    user_id = await get_current_user_id(request, session)
     
-    epic_service = EpicService(db)
+    epic_service = EpicService(session)
     
-    # Verify ownership
     epic = await epic_service.get_epic(epic_id, user_id)
     if not epic:
         raise HTTPException(status_code=404, detail="Epic not found")
@@ -350,82 +405,118 @@ async def get_decisions(request: Request, epic_id: str):
     decisions = await epic_service.get_decisions(epic_id)
     
     return DecisionResponse(
-        decisions=[d.model_dump() for d in decisions]
+        decisions=[DecisionEventResponse(
+            decision_id=d.decision_id,
+            epic_id=d.epic_id,
+            decision_type=d.decision_type,
+            from_stage=d.from_stage,
+            to_stage=d.to_stage,
+            proposal_id=d.proposal_id,
+            content_snapshot=d.content_snapshot,
+            user_id=d.user_id,
+            created_at=d.created_at
+        ) for d in decisions]
     )
 
 
 # Artifact endpoints
 @router.get("/{epic_id}/artifacts", response_model=List[ArtifactResponse])
-async def list_artifacts(request: Request, epic_id: str):
+async def list_artifacts(
+    request: Request, 
+    epic_id: str,
+    session: AsyncSession = Depends(get_db)
+):
     """List all artifacts for an epic"""
-    db = request.app.state.db
-    user_id = await get_current_user_id(request)
+    user_id = await get_current_user_id(request, session)
     
-    epic_service = EpicService(db)
+    epic_service = EpicService(session)
     
-    # Verify ownership
     epic = await epic_service.get_epic(epic_id, user_id)
     if not epic:
         raise HTTPException(status_code=404, detail="Epic not found")
     
-    cursor = db.epic_artifacts.find(
-        {"epic_id": epic_id},
-        {"_id": 0}
-    ).sort("created_at", -1)
-    artifacts = await cursor.to_list(1000)
+    result = await session.execute(
+        select(EpicArtifact)
+        .where(EpicArtifact.epic_id == epic_id)
+        .order_by(EpicArtifact.created_at.desc())
+    )
+    artifacts = result.scalars().all()
     
-    return [ArtifactResponse(**a) for a in artifacts]
+    return [ArtifactResponse(
+        artifact_id=a.artifact_id,
+        epic_id=a.epic_id,
+        artifact_type=a.artifact_type,
+        title=a.title,
+        description=a.description,
+        acceptance_criteria=a.acceptance_criteria,
+        priority=a.priority,
+        created_at=a.created_at
+    ) for a in artifacts]
 
 
 @router.post("/{epic_id}/artifacts", response_model=ArtifactResponse)
-async def create_artifact(request: Request, epic_id: str, body: ArtifactCreate):
+async def create_artifact(
+    request: Request, 
+    epic_id: str, 
+    body: ArtifactCreate,
+    session: AsyncSession = Depends(get_db)
+):
     """Create a new artifact under an epic"""
-    db = request.app.state.db
-    user_id = await get_current_user_id(request)
+    user_id = await get_current_user_id(request, session)
     
-    epic_service = EpicService(db)
+    epic_service = EpicService(session)
     
-    # Verify ownership
     epic = await epic_service.get_epic(epic_id, user_id)
     if not epic:
         raise HTTPException(status_code=404, detail="Epic not found")
     
-    import uuid
-    artifact_doc = {
-        "artifact_id": f"art_{uuid.uuid4().hex[:12]}",
-        "epic_id": epic_id,
-        "artifact_type": body.artifact_type.value,
-        "title": body.title,
-        "description": body.description,
-        "acceptance_criteria": body.acceptance_criteria,
-        "priority": body.priority,
-        "created_at": datetime.now(timezone.utc),
-        "updated_at": datetime.now(timezone.utc)
-    }
+    artifact = EpicArtifact(
+        epic_id=epic_id,
+        artifact_type=body.artifact_type,
+        title=body.title,
+        description=body.description,
+        acceptance_criteria=body.acceptance_criteria,
+        priority=body.priority
+    )
+    session.add(artifact)
+    await session.commit()
+    await session.refresh(artifact)
     
-    await db.epic_artifacts.insert_one(artifact_doc)
-    
-    return ArtifactResponse(**artifact_doc)
+    return ArtifactResponse(
+        artifact_id=artifact.artifact_id,
+        epic_id=artifact.epic_id,
+        artifact_type=artifact.artifact_type,
+        title=artifact.title,
+        description=artifact.description,
+        acceptance_criteria=artifact.acceptance_criteria,
+        priority=artifact.priority,
+        created_at=artifact.created_at
+    )
 
 
 @router.delete("/{epic_id}/artifacts/{artifact_id}")
-async def delete_artifact(request: Request, epic_id: str, artifact_id: str):
+async def delete_artifact(
+    request: Request, 
+    epic_id: str, 
+    artifact_id: str,
+    session: AsyncSession = Depends(get_db)
+):
     """Delete an artifact"""
-    db = request.app.state.db
-    user_id = await get_current_user_id(request)
+    user_id = await get_current_user_id(request, session)
     
-    epic_service = EpicService(db)
+    epic_service = EpicService(session)
     
-    # Verify ownership
     epic = await epic_service.get_epic(epic_id, user_id)
     if not epic:
         raise HTTPException(status_code=404, detail="Epic not found")
     
-    result = await db.epic_artifacts.delete_one(
-        {"artifact_id": artifact_id, "epic_id": epic_id}
+    result = await session.execute(
+        delete(EpicArtifact)
+        .where(EpicArtifact.artifact_id == artifact_id, EpicArtifact.epic_id == epic_id)
     )
+    await session.commit()
     
-    if result.deleted_count == 0:
+    if result.rowcount == 0:
         raise HTTPException(status_code=404, detail="Artifact not found")
     
     return {"message": "Artifact deleted"}
