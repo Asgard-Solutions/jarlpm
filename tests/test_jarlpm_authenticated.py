@@ -43,6 +43,10 @@ def create_test_session():
             session_token = f"pytest_session_{timestamp}"
             email = f"pytest.user.{timestamp}@example.com"
             
+            # Enable cascade delete for cleanup
+            from sqlalchemy import text
+            await session.execute(text("SET LOCAL jarlpm.allow_cascade_delete = 'true'"))
+            
             # Clean up old pytest data
             await session.execute(
                 delete(UserSession).where(UserSession.session_token.like("pytest_session_%"))
