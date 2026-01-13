@@ -340,10 +340,12 @@ async def confirm_proposal(
         if body.confirmed:
             epic = await epic_service.confirm_proposal(epic_id, user_id, body.proposal_id)
             
+            # current_stage is now a string, not an enum
+            stage_display = epic.current_stage.replace("_", " ").title()
             await epic_service.add_transcript_event(
                 epic_id=epic_id,
                 role="system",
-                content=f"Proposal confirmed. Advanced to {epic.current_stage.value} stage.",
+                content=f"Proposal confirmed. Advanced to {stage_display} stage.",
                 stage=epic.current_stage
             )
         else:
