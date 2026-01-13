@@ -66,7 +66,7 @@
     --card: var(--bg-secondary);
     --card-foreground: var(--text-primary);
     
-    --popover: var(--bg-secondary);
+    --popover: 210 15% 93%;
     --popover-foreground: var(--text-primary);
     
     --primary: var(--accent-blue);
@@ -146,7 +146,7 @@
     --card: var(--bg-secondary);
     --card-foreground: var(--text-primary);
     
-    --popover: var(--bg-secondary);
+    --popover: 210 15% 93%;
     --popover-foreground: var(--text-primary);
     
     --primary: var(--accent-blue);
