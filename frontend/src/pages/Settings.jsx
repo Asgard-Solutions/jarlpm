@@ -94,7 +94,19 @@ const Settings = () => {
       console.error('Payment status check failed:', error);
       setCheckingPayment(false);
     }
-  };
+  }, [navigate, setSubscription]);
+
+  useEffect(() => {
+    loadData();
+    
+    // Check for payment return
+    const sessionId = searchParams.get('session_id');
+    const paymentStatus = searchParams.get('payment');
+    
+    if (sessionId && paymentStatus === 'success') {
+      pollPaymentStatus(sessionId);
+    }
+  }, [searchParams, loadData, pollPaymentStatus]);
 
   const handleSubscribe = async () => {
     setSubscribing(true);
