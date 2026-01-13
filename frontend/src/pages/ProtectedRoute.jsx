@@ -31,14 +31,15 @@ const ProtectedRoute = ({ children }) => {
     if (location.state?.user && !hasChecked.current) {
       hasChecked.current = true;
       setUser(location.state.user);
-      setIsAuthenticated(true);
+      // Schedule state update after effect completes to avoid cascade
+      Promise.resolve().then(() => setIsAuthenticated(true));
       return;
     }
 
     // If we already have user from store, skip API call
     if (user && !hasChecked.current) {
       hasChecked.current = true;
-      setIsAuthenticated(true);
+      Promise.resolve().then(() => setIsAuthenticated(true));
       return;
     }
 
