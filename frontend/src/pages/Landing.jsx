@@ -280,9 +280,11 @@ const Landing = () => {
       <footer className="border-t border-border py-8 px-4">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
-              <Layers className="w-4 h-4 text-primary-foreground" />
-            </div>
+            <img 
+              src={logoSrc} 
+              alt="JarlPM" 
+              className="h-7 w-auto"
+            />
             <span className="text-sm text-muted-foreground">JarlPM</span>
           </div>
           <p className="text-sm text-muted-foreground">
