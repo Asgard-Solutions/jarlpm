@@ -190,12 +190,13 @@ class LockPolicyService:
     # ============================================
     
     def can_mutate_features(self, epic_status: EpicStatus) -> PolicyResult:
-        """Check if Feature mutations are allowed at all"""
-        if epic_status == EpicStatus.LOCKED:
-            return PolicyResult(
-                allowed=False,
-                reason="Epic is locked. Features cannot be added, modified, or deleted."
-            )
+        """
+        Check if Feature mutations are allowed at all.
+        
+        NOTE: Feature Planning Mode happens WHEN epic is LOCKED (epic_locked stage).
+        Features can be created, edited, and deleted during this mode.
+        Only ARCHIVED epics prevent feature mutations.
+        """
         if epic_status == EpicStatus.ARCHIVED:
             return PolicyResult(
                 allowed=False,
@@ -204,12 +205,17 @@ class LockPolicyService:
         return PolicyResult(allowed=True)
     
     def can_create_feature(self, epic_status: EpicStatus) -> PolicyResult:
-        """Check if new Features can be created"""
-        if epic_status == EpicStatus.LOCKED:
+        """
+        Check if new Features can be created.
+        
+        Features are created AFTER epic is locked (Feature Planning Mode).
+        """
+        if epic_status == EpicStatus.ARCHIVED:
             return PolicyResult(
                 allowed=False,
-                reason="Cannot add Features to a locked Epic."
+                reason="Cannot add Features to an archived Epic."
             )
+        # Features can be created when epic is LOCKED (Feature Planning Mode)
         return PolicyResult(allowed=True)
     
     def can_edit_feature(
@@ -217,34 +223,40 @@ class LockPolicyService:
         epic_status: EpicStatus,
         field: str = None
     ) -> PolicyResult:
-        """Check if Feature can be edited"""
-        if epic_status == EpicStatus.LOCKED:
+        """
+        Check if Feature can be edited.
+        
+        Features can be edited while they are in draft/refining stage.
+        Individual feature approval is checked at the service layer.
+        """
+        if epic_status == EpicStatus.ARCHIVED:
             return PolicyResult(
                 allowed=False,
-                reason="Cannot edit Features on a locked Epic.",
+                reason="Cannot edit Features on an archived Epic.",
                 field_errors={field: "Feature locked"} if field else None
             )
-        
-        # In IN_PROGRESS, allow editing title/description/order but not Epic anchors
-        # (Features don't directly contain Epic anchors, so this is mainly for completeness)
         
         return PolicyResult(allowed=True)
     
     def can_delete_feature(self, epic_status: EpicStatus) -> PolicyResult:
-        """Check if Feature can be deleted"""
-        if epic_status == EpicStatus.LOCKED:
+        """
+        Check if Feature can be deleted.
+        
+        Features can be deleted during Feature Planning Mode.
+        """
+        if epic_status == EpicStatus.ARCHIVED:
             return PolicyResult(
                 allowed=False,
-                reason="Cannot delete Features from a locked Epic."
+                reason="Cannot delete Features from an archived Epic."
             )
         return PolicyResult(allowed=True)
     
     def can_reorder_features(self, epic_status: EpicStatus) -> PolicyResult:
         """Check if Features can be reordered"""
-        if epic_status == EpicStatus.LOCKED:
+        if epic_status == EpicStatus.ARCHIVED:
             return PolicyResult(
                 allowed=False,
-                reason="Cannot reorder Features on a locked Epic."
+                reason="Cannot reorder Features on an archived Epic."
             )
         return PolicyResult(allowed=True)
     
