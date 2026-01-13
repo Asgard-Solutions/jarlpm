@@ -40,12 +40,22 @@ USER_STORY_STAGE_ORDER = {
 
 
 class UserStory(Base):
-    """User Story entity with its own lifecycle and versioning"""
+    """User Story entity with its own lifecycle and versioning
+    
+    Stories can be:
+    1. Feature-bound: Created from a Feature (traditional flow)
+    2. Standalone: Independent stories not tied to any feature
+    """
     __tablename__ = "user_stories"
     
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     story_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("story_"))
-    feature_id: Mapped[str] = mapped_column(String(50), ForeignKey("features.feature_id", ondelete="CASCADE"), nullable=False)
+    
+    # For feature-bound stories
+    feature_id: Mapped[Optional[str]] = mapped_column(String(50), ForeignKey("features.feature_id", ondelete="CASCADE"), nullable=True)
+    
+    # For standalone stories (required when feature_id is null)
+    user_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     
     # Standard User Story format: As a [persona], I want to [action] so that [benefit]
     persona: Mapped[str] = mapped_column(String(200), nullable=False)  # The user role/persona
@@ -54,6 +64,9 @@ class UserStory(Base):
     
     # Full story text (computed from above, but stored for display)
     story_text: Mapped[str] = mapped_column(Text, nullable=False)
+    
+    # Optional title for standalone stories
+    title: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     
     # Acceptance Criteria in Given/When/Then format
     acceptance_criteria: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)
@@ -67,13 +80,16 @@ class UserStory(Base):
     # Story points (optional - for sprint planning)
     story_points: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     
-    # Priority order within feature
+    # Priority order within feature or standalone list
     priority: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     
     # Versioning support
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     parent_story_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # Lineage for versions
     is_frozen: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)  # Derived from Epic lock but stored for performance
+    
+    # Standalone stories can be linked to epics/features/bugs optionally
+    is_standalone: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -86,8 +102,10 @@ class UserStory(Base):
     
     __table_args__ = (
         Index('idx_user_stories_feature_id', 'feature_id'),
+        Index('idx_user_stories_user_id', 'user_id'),
         Index('idx_user_stories_stage', 'current_stage'),
         Index('idx_user_stories_parent', 'parent_story_id'),
+        Index('idx_user_stories_standalone', 'is_standalone'),
         CheckConstraint(
             "current_stage IN ('draft', 'refining', 'approved')",
             name='ck_user_story_valid_stage'
