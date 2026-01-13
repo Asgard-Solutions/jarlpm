@@ -101,6 +101,7 @@ async def init_db():
     
     async with engine.begin() as conn:
         # Drop all existing tables and types for clean start (development only)
+        await conn.execute(text("DROP TABLE IF EXISTS product_delivery_contexts CASCADE"))
         await conn.execute(text("DROP TABLE IF EXISTS epic_artifacts CASCADE"))
         await conn.execute(text("DROP TABLE IF EXISTS epic_decisions CASCADE"))
         await conn.execute(text("DROP TABLE IF EXISTS epic_transcript_events CASCADE"))
