@@ -8,7 +8,7 @@ JarlPM is an AI-agnostic, conversation-driven Product Management system for Prod
 ### Tech Stack
 - **Frontend**: React 19 with Tailwind CSS, shadcn/ui components
 - **Backend**: FastAPI (Python) 
-- **Database**: MongoDB
+- **Database**: PostgreSQL (Neon) with SQLAlchemy ORM
 - **Authentication**: Emergent Google OAuth
 - **Payments**: Stripe ($20/month subscription)
 
@@ -20,6 +20,8 @@ JarlPM is an AI-agnostic, conversation-driven Product Management system for Prod
 
 3. **Epic as Irreducible Unit**: All workflows, state, persistence, and UX orbit the Epic entity.
 
+4. **Product Delivery Context**: Per-user configuration automatically injected into all LLM prompts.
+
 ## Data Models
 
 ### User
@@ -27,6 +29,18 @@ JarlPM is an AI-agnostic, conversation-driven Product Management system for Prod
 - email
 - name
 - picture
+- created_at, updated_at
+
+### ProductDeliveryContext (NEW - 2026-01-13)
+- context_id (UUID)
+- user_id (FK to User, unique)
+- industry (comma-separated string)
+- delivery_methodology: waterfall | agile | scrum | kanban | hybrid
+- sprint_cycle_length (integer, days)
+- sprint_start_date (date)
+- num_developers (integer)
+- num_qa (integer)
+- delivery_platform: jira | azure_devops | none | other
 - created_at, updated_at
 
 ### Subscription
@@ -60,7 +74,7 @@ JarlPM is an AI-agnostic, conversation-driven Product Management system for Prod
 - role: user | assistant | system
 - content
 - stage
-- metadata
+- event_metadata
 - created_at
 
 ### EpicDecision (Append-Only)
@@ -109,6 +123,10 @@ Stages (no regression allowed):
 - DELETE /api/llm-providers/{config_id} - Delete configuration
 - PUT /api/llm-providers/{config_id}/activate - Activate provider
 
+### Product Delivery Context (NEW)
+- GET /api/delivery-context - Get user's delivery context (auto-creates if none)
+- PUT /api/delivery-context - Update delivery context
+
 ### Epics
 - GET /api/epics - List user's epics
 - POST /api/epics - Create new epic (status 201)
@@ -129,6 +147,7 @@ Stages (no regression allowed):
 3. User intent is preserved
 4. Agent reasoning context is persisted
 5. Stage locks cannot be bypassed
+6. **Product Delivery Context is read-only for LLM** (injected but not modifiable by AI)
 
 ## Security
 
@@ -136,6 +155,7 @@ Stages (no regression allowed):
 - Session tokens stored in httpOnly cookies
 - All state changes enforced server-side
 - Client cannot advance stages or lock content
+- PostgreSQL constraints enforce append-only tables and monotonic stage progression
 
 ## Subscription Model
 
@@ -143,3 +163,24 @@ Stages (no regression allowed):
 - Covers: Database storage, persistence, system infrastructure
 - Does NOT cover: Tokens, models, AI usage (user-provided keys)
 - Inactive subscription blocks AI execution but preserves data
+
+---
+
+## Changelog
+
+### 2026-01-13: Product Delivery Context Feature
+- Added `ProductDeliveryContext` model for per-user delivery configuration
+- New API endpoints: GET/PUT /api/delivery-context
+- Context automatically injected into all LLM prompts via `prompt_service.py`
+- Fields: industry, delivery_methodology, sprint_cycle_length, sprint_start_date, num_developers, num_qa, delivery_platform
+- Missing values treated as "Not specified"
+- Context persists across Epics and sessions
+
+### 2026-01-13: MongoDB to PostgreSQL Migration
+- Migrated entire database from MongoDB to PostgreSQL (Neon)
+- Implemented SQLAlchemy ORM models
+- Added database-level constraints:
+  - Append-only triggers for transcript_events and decisions
+  - Monotonic stage progression trigger for epics
+  - Locked content protection trigger for snapshots
+- All enum types stored as strings for compatibility
