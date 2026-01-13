@@ -64,6 +64,7 @@ const Bugs = () => {
   
   // Dialogs
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showAICreateDialog, setShowAICreateDialog] = useState(false);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [selectedBug, setSelectedBug] = useState(null);
   
@@ -79,6 +80,15 @@ const Bugs = () => {
     environment: '',
   });
   const [creating, setCreating] = useState(false);
+  
+  // AI chat state
+  const [aiMessages, setAiMessages] = useState([]);
+  const [aiInput, setAiInput] = useState('');
+  const [aiSending, setAiSending] = useState(false);
+  const [aiStreamingContent, setAiStreamingContent] = useState('');
+  const [aiProposal, setAiProposal] = useState(null);
+  const [creatingFromProposal, setCreatingFromProposal] = useState(false);
+  const aiChatRef = useRef(null);
   
   // Transition state
   const [transitioning, setTransitioning] = useState(false);
