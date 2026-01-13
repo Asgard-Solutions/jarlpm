@@ -569,21 +569,24 @@ Provide a brief justification for each suggestion.
 Return ONLY valid JSON in this format: {"severity": "...", "priority": "...", "severity_reason": "...", "priority_reason": "..."}"""
 
     try:
-        response = await llm_service.get_completion(
-            config=config,
+        # Collect streaming response
+        full_response = ""
+        async for chunk in llm_service.generate_stream(
+            user_id=user_id,
             system_prompt=system_prompt,
             user_prompt=f"Analyze this bug and suggest severity/priority:\n\n{context}",
-            context=None
-        )
+            conversation_history=None
+        ):
+            full_response += chunk
         
         # Try to parse JSON from response
         import re
-        json_match = re.search(r'\{[^}]+\}', response)
+        json_match = re.search(r'\{[^}]+\}', full_response)
         if json_match:
             suggestion = json.loads(json_match.group())
             return suggestion
         else:
-            return {"error": "Could not parse AI response", "raw": response}
+            return {"error": "Could not parse AI response", "raw": full_response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI suggestion failed: {str(e)}")
 
