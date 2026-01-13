@@ -521,11 +521,11 @@ Suggest improvements while keeping the core issue intact.
 Format your response as a refined description that could replace the current one."""
 
     async def generate():
-        async for chunk in llm_service.stream_completion(
-            config=config,
+        async for chunk in llm_service.generate_stream(
+            user_id=user_id,
             system_prompt=system_prompt,
             user_prompt=f"Please refine this bug description:\n\n{context}",
-            context=None
+            conversation_history=None
         ):
             yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
