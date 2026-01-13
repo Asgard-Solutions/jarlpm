@@ -509,6 +509,7 @@ class Bug(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     # Relationships
+    user: Mapped["User"] = relationship(back_populates="bugs")
     links: Mapped[List["BugLink"]] = relationship(back_populates="bug", cascade="all, delete-orphan")
     status_history: Mapped[List["BugStatusHistory"]] = relationship(back_populates="bug", cascade="all, delete-orphan")
     conversation_events: Mapped[List["BugConversationEvent"]] = relationship(back_populates="bug", cascade="all, delete-orphan")
