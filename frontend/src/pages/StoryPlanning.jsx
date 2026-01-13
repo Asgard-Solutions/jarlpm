@@ -343,7 +343,7 @@ const StoryPlanning = () => {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                onClick={() => navigate(-1)} 
+                onClick={() => navigate(`/epic/${feature.epic_id}`)} 
                 className="text-muted-foreground hover:text-foreground" 
                 data-testid="back-btn"
               >
@@ -351,20 +351,12 @@ const StoryPlanning = () => {
               </Button>
               <div className="flex items-center gap-2 text-sm">
                 <img src={logoSrc} alt="JarlPM" className="h-7 w-auto" />
-                <span className="text-muted-foreground">Feature:</span>
-                <span className="text-foreground font-medium truncate max-w-[200px]">{feature.title}</span>
+                <span className="text-muted-foreground">Epic</span>
                 <span className="text-muted-foreground">→</span>
-                <Badge className="bg-blue-500 text-white" data-testid="story-planning-badge">
-                  <BookOpen className="w-3 h-3 mr-1" />
-                  User Story Planning
-                </Badge>
+                <span className="text-foreground font-medium truncate max-w-[200px]">{feature.title}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-success/10 text-success border-success/30">
-                <Lock className="w-3 h-3 mr-1" />
-                Feature Approved
-              </Badge>
               <ThemeToggle />
               <Button 
                 variant="ghost" 
@@ -379,6 +371,9 @@ const StoryPlanning = () => {
           </div>
         </div>
       </header>
+
+      {/* Workflow Stepper */}
+      <WorkflowStepper currentStep="stories" />
 
       {/* Story Planning Banner */}
       <div className="flex-shrink-0 bg-gradient-to-r from-blue-500/20 via-cyan-500/20 to-blue-500/20 border-b border-blue-500/30">
