@@ -53,7 +53,9 @@ class StoryChatMessage(BaseModel):
 
 class UserStoryResponse(BaseModel):
     story_id: str
-    feature_id: str
+    feature_id: Optional[str] = None
+    user_id: Optional[str] = None
+    title: Optional[str] = None
     persona: str
     action: str
     benefit: str
@@ -63,6 +65,7 @@ class UserStoryResponse(BaseModel):
     source: str
     story_points: Optional[int] = None
     priority: Optional[int] = None
+    is_standalone: bool = False
     created_at: datetime
     updated_at: datetime
     approved_at: Optional[datetime] = None
@@ -80,11 +83,38 @@ class GenerateStoriesRequest(BaseModel):
     count: int = 5  # Target number of stories to generate
 
 
+# Standalone story models
+class StandaloneStoryCreate(BaseModel):
+    title: str
+    persona: str
+    action: str
+    benefit: str
+    acceptance_criteria: Optional[List[str]] = None
+    story_points: Optional[int] = None
+    source: str = "manual"
+
+
+class StandaloneStoryProposal(BaseModel):
+    title: str
+    persona: str
+    action: str
+    benefit: str
+    acceptance_criteria: Optional[List[str]] = None
+    story_points: Optional[int] = None
+
+
+class StoryChatMessage(BaseModel):
+    content: str
+    conversation_history: Optional[List[dict]] = []
+
+
 def story_to_response(story: UserStory) -> UserStoryResponse:
     """Convert UserStory model to response"""
     return UserStoryResponse(
         story_id=story.story_id,
         feature_id=story.feature_id,
+        user_id=story.user_id,
+        title=story.title,
         persona=story.persona,
         action=story.action,
         benefit=story.benefit,
@@ -94,6 +124,7 @@ def story_to_response(story: UserStory) -> UserStoryResponse:
         source=story.source,
         story_points=story.story_points,
         priority=story.priority,
+        is_standalone=story.is_standalone,
         created_at=story.created_at,
         updated_at=story.updated_at,
         approved_at=story.approved_at
