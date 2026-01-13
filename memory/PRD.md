@@ -211,6 +211,15 @@ When an Epic is locked, users enter Feature Planning Mode:
 
 ## Changelog
 
+### 2026-01-13: Landing Page Copy Update (COMPLETE)
+- Updated hero section with new tagline: "Lead like a Jarl — calm authority, decisions that stick."
+- New description copy emphasizing clarity and discipline
+- Hidden Test Login behind environment flag (dev-only by default)
+- Updated "Why JarlPM?" section with philosophical intro and refined card copy
+- Updated Epic Lifecycle subheading: "A monotonic decision lifecycle"
+- Added footer attribution: "Built by Asgard Solutions LLC"
+- CTA changed to "Start Building Epics" with helper text
+
 ### 2026-01-13: Feature Planning Mode (COMPLETE)
 - Added `Feature` model with lifecycle stages (draft → refining → approved)
 - Added `FeatureConversationEvent` model for append-only refinement conversations
