@@ -1206,7 +1206,7 @@ const Epic = () => {
 };
 
 // Feature Card Component
-const FeatureCard = ({ feature, onRefine, onApprove, onDelete }) => {
+const FeatureCard = ({ feature, onRefine, onApprove, onDelete, onCreateStories }) => {
   const stageInfo = FEATURE_STAGES[feature.current_stage];
   const StageIcon = stageInfo?.icon || Edit3;
   const isApproved = feature.current_stage === 'approved';
@@ -1291,6 +1291,21 @@ const FeatureCard = ({ feature, onRefine, onApprove, onDelete }) => {
                 Refine with AI
               </Button>
             )}
+          </div>
+        )}
+        
+        {/* Show Create User Stories button for approved features */}
+        {isApproved && onCreateStories && (
+          <div className="flex gap-2 pt-2 border-t border-success/20">
+            <Button 
+              size="sm" 
+              onClick={onCreateStories}
+              className="bg-blue-500 hover:bg-blue-600 text-white"
+              data-testid={`create-stories-btn-${feature.feature_id}`}
+            >
+              <BookOpen className="w-4 h-4 mr-1" />
+              Create User Stories
+            </Button>
           </div>
         )}
       </CardContent>
