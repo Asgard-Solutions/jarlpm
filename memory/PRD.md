@@ -22,6 +22,8 @@ JarlPM is an AI-agnostic, conversation-driven Product Management system for Prod
 
 4. **Product Delivery Context**: Per-user configuration automatically injected into all LLM prompts.
 
+5. **Feature Lifecycle Pattern**: Features have their own stages (draft → refining → approved) with mini-conversation support for refinement.
+
 ## Data Models
 
 ### User
@@ -31,7 +33,7 @@ JarlPM is an AI-agnostic, conversation-driven Product Management system for Prod
 - picture
 - created_at, updated_at
 
-### ProductDeliveryContext (NEW - 2026-01-13)
+### ProductDeliveryContext
 - context_id (UUID)
 - user_id (FK to User, unique)
 - industry (comma-separated string)
@@ -68,6 +70,25 @@ JarlPM is an AI-agnostic, conversation-driven Product Management system for Prod
 - pending_proposal (requires explicit confirmation)
 - created_at, updated_at
 
+### Feature (NEW - 2026-01-13)
+- feature_id (UUID)
+- epic_id (FK to Epic)
+- title
+- description
+- acceptance_criteria (array)
+- current_stage: draft | refining | approved
+- source: ai_generated | manual
+- priority (optional)
+- created_at, updated_at, approved_at
+
+### FeatureConversationEvent (Append-Only) (NEW)
+- event_id (UUID)
+- feature_id (FK to Feature)
+- role: user | assistant | system
+- content
+- event_metadata
+- created_at
+
 ### EpicTranscriptEvent (Append-Only)
 - event_id (UUID)
 - epic_id
@@ -87,14 +108,6 @@ JarlPM is an AI-agnostic, conversation-driven Product Management system for Prod
 - user_id
 - created_at
 
-### EpicArtifact
-- artifact_id (UUID)
-- epic_id
-- artifact_type: feature | user_story | bug
-- title, description
-- acceptance_criteria
-- priority
-
 ## Epic Lifecycle (Monotonic State Machine)
 
 Stages (no regression allowed):
@@ -103,7 +116,26 @@ Stages (no regression allowed):
 3. **outcome_capture** - Define success metrics
 4. **outcome_confirmed** - LOCKED - Desired outcomes are immutable
 5. **epic_drafted** - Draft epic with acceptance criteria
-6. **epic_locked** - LOCKED - Epic is implementation-ready
+6. **epic_locked** - LOCKED - Epic is implementation-ready → Feature Planning Mode
+
+## Feature Lifecycle (NEW)
+
+When an Epic is locked, users enter Feature Planning Mode:
+1. **draft** - Initial feature created (AI-generated or manual)
+2. **refining** - Feature is being refined through AI conversation
+3. **approved** - LOCKED - Feature is finalized and immutable
+
+### Feature Creation Flow
+1. User clicks "Generate Features" → AI analyzes locked epic and suggests 3-5 features
+2. Each suggestion appears as a draft that user can:
+   - **Save as Draft** → Adds to feature list
+   - **Discard** → Removes suggestion
+3. For saved drafts, user can:
+   - **Approve & Lock** → Finalizes feature immediately
+   - **Refine with AI** → Opens mini-conversation for refinement
+   - **Delete** → Removes feature
+4. Refinement conversation allows iterative improvement
+5. Once approved, feature is immutable
 
 ## API Endpoints
 
@@ -111,6 +143,7 @@ Stages (no regression allowed):
 - POST /api/auth/session - Exchange Emergent session_id for session_token
 - GET /api/auth/me - Get current user
 - POST /api/auth/logout - Logout
+- POST /api/auth/test-login - One-click test user login (development)
 
 ### Subscription
 - GET /api/subscription/status - Get subscription status
@@ -123,7 +156,7 @@ Stages (no regression allowed):
 - DELETE /api/llm-providers/{config_id} - Delete configuration
 - PUT /api/llm-providers/{config_id}/activate - Activate provider
 
-### Product Delivery Context (NEW)
+### Product Delivery Context
 - GET /api/delivery-context - Get user's delivery context (auto-creates if none)
 - PUT /api/delivery-context - Update delivery context
 
@@ -136,9 +169,17 @@ Stages (no regression allowed):
 - POST /api/epics/{id}/confirm-proposal - Confirm/reject pending proposal
 - GET /api/epics/{id}/transcript - Get full conversation history
 - GET /api/epics/{id}/decisions - Get decision log
-- GET /api/epics/{id}/artifacts - List artifacts
-- POST /api/epics/{id}/artifacts - Create artifact
-- DELETE /api/epics/{id}/artifacts/{artifact_id} - Delete artifact
+
+### Features (NEW - 2026-01-13)
+- GET /api/features/epic/{epic_id} - List features for an epic
+- POST /api/features/epic/{epic_id} - Create a feature (manual or AI-generated)
+- POST /api/features/epic/{epic_id}/generate - Generate AI feature suggestions (streaming)
+- GET /api/features/{feature_id} - Get feature details
+- PUT /api/features/{feature_id} - Update feature (only if not approved)
+- DELETE /api/features/{feature_id} - Delete feature
+- POST /api/features/{feature_id}/approve - Approve and lock feature
+- GET /api/features/{feature_id}/conversation - Get refinement conversation history
+- POST /api/features/{feature_id}/chat - Chat to refine feature (streaming)
 
 ## Sacred Invariants
 
@@ -148,6 +189,8 @@ Stages (no regression allowed):
 4. Agent reasoning context is persisted
 5. Stage locks cannot be bypassed
 6. **Product Delivery Context is read-only for LLM** (injected but not modifiable by AI)
+7. **Approved features are immutable** (NEW)
+8. **Feature conversations are append-only** (NEW)
 
 ## Security
 
@@ -168,6 +211,19 @@ Stages (no regression allowed):
 
 ## Changelog
 
+### 2026-01-13: Feature Planning Mode (COMPLETE)
+- Added `Feature` model with lifecycle stages (draft → refining → approved)
+- Added `FeatureConversationEvent` model for append-only refinement conversations
+- New API endpoints for feature CRUD, approval, and AI chat
+- New Feature Planning UI when epic is locked:
+  - "Generate Features" button triggers AI to suggest features
+  - Features organized by stage (Drafts, Refining, Approved)
+  - Mini-conversation dialog for refining individual features
+  - Manual feature creation option
+  - Epic Reference sidebar shows locked epic content
+- Added useEffect to Epic.jsx to fetch subscription/LLM providers on direct navigation
+- Database triggers for append-only feature conversations
+
 ### 2026-01-13: Product Delivery Context Feature
 - Added `ProductDeliveryContext` model for per-user delivery configuration
 - New API endpoints: GET/PUT /api/delivery-context
@@ -184,3 +240,17 @@ Stages (no regression allowed):
   - Monotonic stage progression trigger for epics
   - Locked content protection trigger for snapshots
 - All enum types stored as strings for compatibility
+
+---
+
+## Backlog
+
+### P1 - Upcoming
+- Story and Bug creation stages (children of Features)
+- Full E2E workflow test
+
+### P2 - Future
+- Implement full Stripe subscription flow
+- Epic deletion with explicit confirmation
+- Export to Jira/Azure DevOps
+- Team collaboration features
