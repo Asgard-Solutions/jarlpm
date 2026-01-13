@@ -115,27 +115,19 @@ const CompletedEpic = () => {
     try {
       const response = await personaAPI.generateFromEpic(epicId, personaCount);
       
-      // Handle non-OK responses (like 400, 402, etc.)
-      if (!response.ok) {
-        // Clone the response before reading to avoid "body already read" error
-        const errorText = await response.text();
-        try {
-          const errorJson = JSON.parse(errorText);
-          throw new Error(errorJson.detail || 'Failed to generate personas');
-        } catch (parseErr) {
-          throw new Error(errorText || `HTTP ${response.status}: Failed to generate personas`);
-        }
-      }
-      
+      // For streaming responses, we always read as stream, never as json/text
+      // Even error responses might be streamed
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       const newPersonas = [];
       let streamError = null;
+      let receivedAnyData = false;
       
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         
+        receivedAnyData = true;
         const chunk = decoder.decode(value);
         const lines = chunk.split('\n');
         
@@ -151,7 +143,6 @@ const CompletedEpic = () => {
                 newPersonas.push(data.persona);
                 setPersonas(prev => [...prev, data.persona]);
               } else if (data.type === 'error') {
-                // Store error but don't throw immediately - let stream finish
                 streamError = data.message;
               } else if (data.type === 'done') {
                 setGenerationStatus(`✅ Generated ${data.count} personas!`);
@@ -161,14 +152,17 @@ const CompletedEpic = () => {
                 }, 1500);
               }
             } catch (parseErr) {
-              // Ignore JSON parse errors for incomplete chunks
-              console.debug('SSE parse error (likely incomplete chunk):', parseErr);
+              console.debug('SSE parse error:', parseErr);
             }
           }
         }
       }
       
-      // After stream ends, check if we had an error
+      // Check HTTP status AFTER stream ends (for non-streaming error responses)
+      if (!response.ok && !receivedAnyData) {
+        throw new Error(`HTTP ${response.status}: Failed to generate personas`);
+      }
+      
       if (streamError) {
         throw new Error(streamError);
       }
