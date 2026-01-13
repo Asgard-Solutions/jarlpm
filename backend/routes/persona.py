@@ -183,8 +183,9 @@ async def generate_personas_for_epic(
     session: AsyncSession = Depends(get_db)
 ):
     """
-    Generate personas for a completed epic (streaming).
-    Streams progress updates and persona data as they're created.
+    Generate personas for a completed epic.
+    Step 1: Generate text data via LLM
+    Step 2: Save personas (images generated separately)
     """
     user_id = await get_current_user_id(request, session)
     
@@ -202,183 +203,88 @@ async def generate_personas_for_epic(
     if not llm_config:
         raise HTTPException(status_code=400, detail="No LLM provider configured")
     
-    # Validate count
+    # Validate count (1-5)
     count = max(1, min(5, body.count))
-    if body.count > 5:
-        logger.info(f"User requested {body.count} personas, capping at 5")
     
-    # Get user settings for image generation BEFORE the generator
-    settings = await persona_service.get_user_settings(user_id)
-    
-    # Verify epic exists and is completed BEFORE the generator
+    # Get epic data
     epic_data = await persona_service.get_epic_with_children(epic_id, user_id)
     if not epic_data:
         raise HTTPException(status_code=400, detail="Epic not found or not completed")
     
-    # Pre-build the context for LLM
+    # Build context for LLM
     context = persona_service.build_context_for_generation(epic_data)
     
-    # Pre-fetch LLM config BEFORE the generator starts
-    llm_config = await llm_service.get_user_llm_config(user_id)
-    if not llm_config:
-        raise HTTPException(status_code=400, detail="No LLM provider configured")
-    
-    # Get the decrypted API key before generator
-    from services.encryption_service import EncryptionService
-    encryption_service = EncryptionService()
-    api_key = encryption_service.decrypt(llm_config.encrypted_api_key)
-    provider = llm_config.provider
-    model_name = llm_config.model_name
-    
-    async def generate():
-        # Import here to create fresh session for generator
-        from db.database import AsyncSessionLocal
-        from db.models import LLMProvider
-        
-        async with AsyncSessionLocal() as gen_session:
-            gen_persona_service = PersonaService(gen_session)
-            
-            try:
-                # Step 1: Generate persona data using LLM
-                yield f"data: {json.dumps({'type': 'status', 'message': 'Analyzing epic and generating personas...'})}\n\n"
-                
-                # Build system prompt
-                system_prompt = """You are an expert UX researcher and product strategist. Your task is to create detailed, actionable user personas based on the provided Epic, Features, and User Stories.
+    # Build prompts
+    system_prompt = """You are an expert UX researcher. Create detailed user personas based on the Epic, Features, and User Stories provided.
 
-Each persona should be:
-1. Distinct from other personas (different roles, needs, behaviors)
-2. Grounded in the actual user stories and features
-3. Actionable for development teams
-4. Realistic and relatable
+OUTPUT FORMAT - Return ONLY a JSON array:
+[
+  {
+    "name": "First name",
+    "role": "Job title/user type",
+    "age_range": "25-34",
+    "location": "Urban, USA",
+    "tech_proficiency": "High",
+    "goals_and_motivations": ["Goal 1", "Goal 2"],
+    "pain_points": ["Pain 1", "Pain 2"],
+    "key_behaviors": ["Behavior 1", "Behavior 2"],
+    "jobs_to_be_done": ["JTBD 1", "JTBD 2"],
+    "product_interaction_context": "When/why they use this product",
+    "representative_quote": "Quote in first person",
+    "portrait_prompt": "Professional headshot description"
+  }
+]
 
-OUTPUT FORMAT:
-Return a JSON array of persona objects. Each persona must have:
-{
-  "name": "First name (realistic, diverse)",
-  "role": "Job title or user type (from the user stories)",
-  "age_range": "e.g., '25-34', '35-44'",
-  "location": "e.g., 'Urban, USA', 'Remote worker, Europe'",
-  "tech_proficiency": "High | Medium | Low",
-  "goals_and_motivations": ["Goal 1", "Goal 2", "Goal 3"],
-  "pain_points": ["Pain point 1", "Pain point 2", "Pain point 3"],
-  "key_behaviors": ["Behavior 1", "Behavior 2", "Behavior 3"],
-  "jobs_to_be_done": ["JTBD 1", "JTBD 2"],
-  "product_interaction_context": "When and why they use this product (2-3 sentences)",
-  "representative_quote": "A quote that captures their perspective (in first person)",
-  "portrait_prompt": "A detailed prompt for generating their portrait image (professional, friendly, realistic style)"
-}
+Return ONLY the JSON array, no other text."""
 
-IMPORTANT:
-- Derive personas directly from the user stories' personas (e.g., "As a [persona]...")
-- Make personas diverse in demographics and tech proficiency
-- Keep pain points and goals specific to the product context
-- Portrait prompts should describe a professional headshot style, mentioning age, gender, expression, and setting
-
-Return ONLY the JSON array, no additional text."""
-
-                user_prompt = f"""Based on the following Epic, Features, and User Stories, generate {count} distinct user personas.
+    user_prompt = f"""Generate {count} distinct user personas for this product:
 
 {context}
 
-Generate {count} personas that represent the key user types for this product. Return as a JSON array."""
+Return as JSON array."""
 
-                # Call LLM directly using pre-fetched config
-                full_response = ""
-                
-                if provider == LLMProvider.OPENAI.value:
-                    import openai
-                    client = openai.AsyncOpenAI(api_key=api_key)
-                    messages = [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ]
-                    stream = await client.chat.completions.create(
-                        model=model_name,
-                        messages=messages,
-                        stream=True
-                    )
-                    async for chunk in stream:
-                        if chunk.choices[0].delta.content:
-                            full_response += chunk.choices[0].delta.content
-                elif provider == LLMProvider.ANTHROPIC.value:
-                    import anthropic
-                    client = anthropic.AsyncAnthropic(api_key=api_key)
-                    async with client.messages.stream(
-                        model=model_name,
-                        max_tokens=4096,
-                        system=system_prompt,
-                        messages=[{"role": "user", "content": user_prompt}]
-                    ) as stream:
-                        async for text in stream.text_stream:
-                            full_response += text
-                else:
-                    raise ValueError(f"Unsupported LLM provider: {provider}")
-                
-                # Parse JSON from response
-                import re
-                json_match = re.search(r'\[[\s\S]*\]', full_response)
-                if json_match:
-                    personas_data = json.loads(json_match.group(0))
-                else:
-                    raise ValueError("Failed to parse LLM response - no JSON array found")
-                
-                yield f"data: {json.dumps({'type': 'status', 'message': f'Generated {len(personas_data)} persona profiles'})}\n\n"
-                
-                # Step 2: Create personas and generate images
-                created_personas = []
-                for i, persona_data in enumerate(personas_data):
-                    persona_name = persona_data.get('name', 'Unknown')
-                    yield f"data: {json.dumps({'type': 'status', 'message': f'Creating persona {i+1}/{len(personas_data)}: {persona_name}...'})}\n\n"
-                    
-                    # Generate portrait image (skip for now to speed up - can regenerate later)
-                    portrait_base64 = None
-                    # Image generation commented out to speed up initial creation
-                    # if persona_data.get("portrait_prompt"):
-                    #     yield f"data: {json.dumps({'type': 'status', 'message': f'Generating portrait for {persona_name}...'})}\n\n"
-                    #     try:
-                    #         portrait_base64 = await gen_persona_service.generate_portrait_image(
-                    #             persona_data["portrait_prompt"],
-                    #             settings
-                    #         )
-                    #     except Exception as e:
-                    #         logger.error(f"Portrait generation failed: {e}")
-                    #         yield f"data: {json.dumps({'type': 'warning', 'message': f'Portrait generation failed for {persona_name}'})}\n\n"
-                    
-                    # Create persona in database
-                    persona = await gen_persona_service.create_persona(
-                        user_id=user_id,
-                        epic_id=epic_id,
-                        persona_data=persona_data,
-                        portrait_image_base64=portrait_base64
-                    )
-                    
-                    created_personas.append(persona.to_dict())
-                    
-                    # Stream the created persona
-                    yield f"data: {json.dumps({'type': 'persona_created', 'persona': persona.to_dict()})}\n\n"
-                
-                # Done
-                yield f"data: {json.dumps({'type': 'done', 'count': len(created_personas), 'personas': created_personas})}\n\n"
-                
-            except ValueError as e:
-                logger.error(f"Persona generation error: {e}")
-                yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
-            except json.JSONDecodeError as e:
-                logger.error(f"JSON parse error: {e}")
-                yield f"data: {json.dumps({'type': 'error', 'message': 'Failed to parse AI response'})}\n\n"
-            except Exception as e:
-                logger.error(f"Unexpected error in persona generation: {e}")
-                yield f"data: {json.dumps({'type': 'error', 'message': 'An unexpected error occurred'})}\n\n"
-    
-    return StreamingResponse(
-        generate(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no"
+    try:
+        # Call LLM (non-streaming for simplicity)
+        full_response = ""
+        async for chunk in llm_service.generate_stream(
+            user_id=user_id,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt
+        ):
+            full_response += chunk
+        
+        # Parse JSON
+        import re
+        json_match = re.search(r'\[[\s\S]*\]', full_response)
+        if not json_match:
+            raise ValueError("No JSON array in LLM response")
+        
+        personas_data = json.loads(json_match.group(0))
+        
+        # Create personas in database (without images)
+        created_personas = []
+        for persona_data in personas_data:
+            persona = await persona_service.create_persona(
+                user_id=user_id,
+                epic_id=epic_id,
+                persona_data=persona_data,
+                portrait_image_base64=None  # Images generated separately
+            )
+            created_personas.append(persona_to_response(persona))
+        
+        return {
+            "success": True,
+            "count": len(created_personas),
+            "personas": created_personas,
+            "message": f"Created {len(created_personas)} personas. Use regenerate-portrait to add images."
         }
-    )
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON parse error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to parse AI response")
+    except Exception as e:
+        logger.error(f"Persona generation error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ============================================
