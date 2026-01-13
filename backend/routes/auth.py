@@ -200,8 +200,11 @@ async def test_login(
 ):
     """
     Login as test user with full access (active subscription).
+    Automatically sets up delivery context and LLM provider.
     For development/testing purposes only.
     """
+    encryption = get_encryption_service()
+    
     # Check if test user exists
     result = await session.execute(select(User).where(User.email == TEST_USER_EMAIL))
     user = result.scalar_one_or_none()
@@ -246,6 +249,66 @@ async def test_login(
             )
             session.add(subscription)
     
+    # Set up or update delivery context for test user
+    ctx_result = await session.execute(
+        select(ProductDeliveryContext).where(ProductDeliveryContext.user_id == user_id)
+    )
+    delivery_context = ctx_result.scalar_one_or_none()
+    
+    if delivery_context:
+        # Update existing
+        delivery_context.industry = TEST_USER_DELIVERY_CONTEXT["industry"]
+        delivery_context.delivery_methodology = TEST_USER_DELIVERY_CONTEXT["delivery_methodology"]
+        delivery_context.sprint_cycle_length = TEST_USER_DELIVERY_CONTEXT["sprint_cycle_length"]
+        delivery_context.sprint_start_date = TEST_USER_DELIVERY_CONTEXT["sprint_start_date"]
+        delivery_context.num_developers = TEST_USER_DELIVERY_CONTEXT["num_developers"]
+        delivery_context.num_qa = TEST_USER_DELIVERY_CONTEXT["num_qa"]
+        delivery_context.delivery_platform = TEST_USER_DELIVERY_CONTEXT["delivery_platform"]
+        delivery_context.updated_at = datetime.now(timezone.utc)
+    else:
+        # Create new
+        delivery_context = ProductDeliveryContext(
+            user_id=user_id,
+            industry=TEST_USER_DELIVERY_CONTEXT["industry"],
+            delivery_methodology=TEST_USER_DELIVERY_CONTEXT["delivery_methodology"],
+            sprint_cycle_length=TEST_USER_DELIVERY_CONTEXT["sprint_cycle_length"],
+            sprint_start_date=TEST_USER_DELIVERY_CONTEXT["sprint_start_date"],
+            num_developers=TEST_USER_DELIVERY_CONTEXT["num_developers"],
+            num_qa=TEST_USER_DELIVERY_CONTEXT["num_qa"],
+            delivery_platform=TEST_USER_DELIVERY_CONTEXT["delivery_platform"],
+        )
+        session.add(delivery_context)
+    logger.info(f"Set up delivery context for test user: {user_id}")
+    
+    # Set up or update LLM provider config for test user
+    llm_result = await session.execute(
+        select(LLMProviderConfig).where(
+            LLMProviderConfig.user_id == user_id,
+            LLMProviderConfig.provider == TEST_USER_LLM_CONFIG["provider"]
+        )
+    )
+    llm_config = llm_result.scalar_one_or_none()
+    
+    encrypted_key = encryption.encrypt(TEST_USER_LLM_CONFIG["api_key"])
+    
+    if llm_config:
+        # Update existing
+        llm_config.encrypted_api_key = encrypted_key
+        llm_config.model_name = TEST_USER_LLM_CONFIG["model_name"]
+        llm_config.is_active = True
+        llm_config.updated_at = datetime.now(timezone.utc)
+    else:
+        # Create new
+        llm_config = LLMProviderConfig(
+            user_id=user_id,
+            provider=TEST_USER_LLM_CONFIG["provider"],
+            encrypted_api_key=encrypted_key,
+            model_name=TEST_USER_LLM_CONFIG["model_name"],
+            is_active=True
+        )
+        session.add(llm_config)
+    logger.info(f"Set up LLM config (OpenAI) for test user: {user_id}")
+    
     # Remove old sessions for this user
     await session.execute(
         delete(UserSession).where(UserSession.user_id == user_id)
@@ -278,7 +341,9 @@ async def test_login(
         "user_id": user_id,
         "email": TEST_USER_EMAIL,
         "name": TEST_USER_NAME,
-        "subscription_status": "active"
+        "subscription_status": "active",
+        "delivery_context": "configured",
+        "llm_provider": "openai (gpt-4o)"
     }
 
 
