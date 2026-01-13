@@ -3,27 +3,27 @@ import httpx
 import json
 import re
 
-from models.llm_provider import LLMProvider, LLMProviderConfig
-from models.epic import EpicStage, PendingProposal
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from db.models import LLMProvider, LLMProviderConfig, EpicStage
 from services.encryption import get_encryption_service
 
 
 class LLMService:
     """LLM-agnostic service for text generation"""
     
-    def __init__(self, db):
-        self.db = db
+    def __init__(self, session: AsyncSession):
+        self.session = session
         self.encryption = get_encryption_service()
     
     async def get_user_llm_config(self, user_id: str) -> Optional[LLMProviderConfig]:
         """Get the active LLM configuration for a user"""
-        config_doc = await self.db.llm_provider_configs.find_one(
-            {"user_id": user_id, "is_active": True},
-            {"_id": 0}
+        result = await self.session.execute(
+            select(LLMProviderConfig)
+            .where(LLMProviderConfig.user_id == user_id, LLMProviderConfig.is_active == True)
         )
-        if config_doc:
-            return LLMProviderConfig(**config_doc)
-        return None
+        return result.scalar_one_or_none()
     
     def _decrypt_api_key(self, config: LLMProviderConfig) -> str:
         """Decrypt the API key for use"""
