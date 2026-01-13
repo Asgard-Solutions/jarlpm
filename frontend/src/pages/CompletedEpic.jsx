@@ -115,19 +115,31 @@ const CompletedEpic = () => {
     try {
       const response = await personaAPI.generateFromEpic(epicId, personaCount);
       
-      // For streaming responses, we always read as stream, never as json/text
-      // Even error responses might be streamed
+      // Check content-type to determine if it's streaming or JSON error
+      const contentType = response.headers.get('content-type') || '';
+      
+      if (!response.ok || !contentType.includes('text/event-stream')) {
+        // Non-streaming response (likely an error)
+        let errorMessage = `HTTP ${response.status}: Failed to generate personas`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorMessage;
+        } catch (e) {
+          // Couldn't parse as JSON, use default message
+        }
+        throw new Error(errorMessage);
+      }
+      
+      // Streaming response
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       const newPersonas = [];
       let streamError = null;
-      let receivedAnyData = false;
       
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         
-        receivedAnyData = true;
         const chunk = decoder.decode(value);
         const lines = chunk.split('\n');
         
@@ -156,11 +168,6 @@ const CompletedEpic = () => {
             }
           }
         }
-      }
-      
-      // Check HTTP status AFTER stream ends (for non-streaming error responses)
-      if (!response.ok && !receivedAnyData) {
-        throw new Error(`HTTP ${response.status}: Failed to generate personas`);
       }
       
       if (streamError) {
