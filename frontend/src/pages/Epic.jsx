@@ -574,6 +574,11 @@ const Epic = () => {
     const draftFeatures = features.filter(f => f.current_stage === 'draft');
     const refiningFeatures = features.filter(f => f.current_stage === 'refining');
     const approvedFeatures = features.filter(f => f.current_stage === 'approved');
+    
+    // Calculate workflow progress
+    const allFeaturesApproved = features.length > 0 && approvedFeatures.length === features.length;
+    const featuresWithCompleteStories = approvedFeatures.filter(f => featureStoryCounts[f.feature_id]?.allApproved).length;
+    const allStoriesComplete = allFeaturesApproved && featuresWithCompleteStories === approvedFeatures.length && approvedFeatures.length > 0;
 
     return (
       <div className="h-screen bg-background flex flex-col overflow-hidden">
@@ -588,18 +593,9 @@ const Epic = () => {
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-muted-foreground">Epic:</span>
                   <span className="text-foreground font-medium">{epic.title}</span>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  <Badge className="bg-violet-500 text-white" data-testid="feature-planning-badge">
-                    <Puzzle className="w-3 h-3 mr-1" />
-                    Feature Planning
-                  </Badge>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="bg-success/10 text-success border-success/30" data-testid="epic-locked-badge">
-                  <Lock className="w-3 h-3 mr-1" />
-                  Epic Locked
-                </Badge>
                 <ThemeToggle />
                 <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} className="text-muted-foreground hover:text-foreground" data-testid="settings-btn">
                   <Settings className="w-5 h-5" />
@@ -608,6 +604,15 @@ const Epic = () => {
             </div>
           </div>
         </header>
+
+        {/* Workflow Stepper */}
+        <WorkflowStepper 
+          currentStep={allFeaturesApproved ? 'stories' : 'features'}
+          featuresComplete={allFeaturesApproved}
+          storiesComplete={allStoriesComplete}
+          totalFeatures={features.length}
+          featuresWithStories={featuresWithCompleteStories}
+        />
 
         {/* Feature Planning Banner */}
         <div className="flex-shrink-0 bg-gradient-to-r from-violet-500/20 via-purple-500/20 to-violet-500/20 border-b border-violet-500/30">
