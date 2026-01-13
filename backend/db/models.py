@@ -86,6 +86,53 @@ class DeliveryPlatform(str, PyEnum):
     OTHER = "other"
 
 
+class BugStatus(str, PyEnum):
+    DRAFT = "draft"
+    CONFIRMED = "confirmed"
+    IN_PROGRESS = "in_progress"
+    RESOLVED = "resolved"
+    CLOSED = "closed"
+
+
+class BugSeverity(str, PyEnum):
+    CRITICAL = "critical"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+
+class BugPriority(str, PyEnum):
+    P0 = "p0"  # Urgent
+    P1 = "p1"  # High
+    P2 = "p2"  # Medium
+    P3 = "p3"  # Low
+
+
+class BugLinkEntityType(str, PyEnum):
+    EPIC = "epic"
+    FEATURE = "feature"
+    STORY = "story"
+
+
+# Bug status ordering for validation
+BUG_STATUS_ORDER = {
+    BugStatus.DRAFT: 0,
+    BugStatus.CONFIRMED: 1,
+    BugStatus.IN_PROGRESS: 2,
+    BugStatus.RESOLVED: 3,
+    BugStatus.CLOSED: 4,
+}
+
+# Valid status transitions
+BUG_STATUS_TRANSITIONS = {
+    BugStatus.DRAFT: [BugStatus.CONFIRMED],
+    BugStatus.CONFIRMED: [BugStatus.IN_PROGRESS],
+    BugStatus.IN_PROGRESS: [BugStatus.RESOLVED],
+    BugStatus.RESOLVED: [BugStatus.CLOSED],
+    BugStatus.CLOSED: [],  # Terminal state
+}
+
+
 # Stage ordering for validation
 STAGE_ORDER = {
     EpicStage.PROBLEM_CAPTURE: 0,
