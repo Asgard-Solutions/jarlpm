@@ -273,13 +273,13 @@ async def chat_with_epic(
                 target_stage = None
                 field = None
                 
-                if proposal["type"] == "PROBLEM_STATEMENT" and epic.current_stage == EpicStage.PROBLEM_CAPTURE:
+                if proposal["type"] == "PROBLEM_STATEMENT" and epic.current_stage == EpicStage.PROBLEM_CAPTURE.value:
                     target_stage = EpicStage.PROBLEM_CONFIRMED
                     field = "problem_statement"
-                elif proposal["type"] == "DESIRED_OUTCOME" and epic.current_stage == EpicStage.OUTCOME_CAPTURE:
+                elif proposal["type"] == "DESIRED_OUTCOME" and epic.current_stage == EpicStage.OUTCOME_CAPTURE.value:
                     target_stage = EpicStage.OUTCOME_CONFIRMED
                     field = "desired_outcome"
-                elif proposal["type"] == "EPIC_FINAL" and epic.current_stage == EpicStage.EPIC_DRAFTED:
+                elif proposal["type"] == "EPIC_FINAL" and epic.current_stage == EpicStage.EPIC_DRAFTED.value:
                     target_stage = EpicStage.EPIC_LOCKED
                     field = "epic_final"
                 
