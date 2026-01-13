@@ -317,6 +317,21 @@ When an Epic is locked, users enter Feature Planning Mode:
   - "Back to Feature Planning" button always visible in sidebar
 - Frontend tests: 15/15 passed (100%)
 
+### 2026-01-13: Visual Workflow Stepper (COMPLETE)
+- Added workflow stepper component showing the full journey:
+  - **Epic Definition** (Problem & Outcome) → **Features** (Break down epic) → **User Stories** (Sprint-sized tasks) → **Complete** (Ready for development)
+- Stepper displays on all epic-related pages:
+  - Epic Creation page: "Epic Definition" as current step
+  - Feature Planning page: "Features" as current (or "User Stories" when all approved)
+  - Story Planning page: "User Stories" as current
+- Visual styling:
+  - Completed steps: Green checkmarks with success color
+  - Current step: Ring highlight with primary color
+  - Upcoming steps: Muted/disabled appearance
+  - Connection lines change color based on completion
+- Dynamic content: Shows feature count on Features step, stories ready count on User Stories step
+- Frontend tests: 9/9 passed (100%)
+
 ---
 
 ## Backlog
