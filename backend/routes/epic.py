@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 import json
 import logging
@@ -20,6 +20,7 @@ from models.epic import EpicCreate, EpicChatMessage, EpicConfirmProposal, Artifa
 from services.epic_service import EpicService
 from services.llm_service import LLMService
 from services.prompt_service import PromptService
+from services.lock_policy_service import lock_policy
 from routes.auth import get_current_user_id
 
 logger = logging.getLogger(__name__)
