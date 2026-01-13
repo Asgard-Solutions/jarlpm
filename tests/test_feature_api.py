@@ -97,23 +97,15 @@ def locked_epic(auth_headers):
     epic_id = asyncio.run(_create_locked_epic())
     yield epic_id
     
-    # Cleanup - delete the epic and its features
-    async def _cleanup():
-        async with AsyncSessionLocal() as session:
-            from db.feature_models import Feature
-            from sqlalchemy import delete
-            
-            # Delete features first
-            await session.execute(
-                delete(Feature).where(Feature.epic_id == epic_id)
-            )
-            # Delete epic
-            await session.execute(
-                delete(Epic).where(Epic.epic_id == epic_id)
-            )
-            await session.commit()
-    
-    asyncio.run(_cleanup())
+    # Cleanup via API instead of direct DB access to avoid event loop issues
+    try:
+        requests.delete(
+            f"{BASE_URL}/api/epics/{epic_id}",
+            headers={'Authorization': f'Bearer {TEST_SESSION_TOKEN}'},
+            timeout=10
+        )
+    except Exception as e:
+        print(f"Cleanup warning: {e}")
 
 
 class TestFeatureListEndpoint:
