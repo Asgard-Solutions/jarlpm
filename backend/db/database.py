@@ -173,6 +173,14 @@ async def init_db():
             FOR EACH ROW EXECUTE FUNCTION prevent_update_delete()
         """))
         
+        # Apply append-only triggers to user story conversations
+        await conn.execute(text("DROP TRIGGER IF EXISTS enforce_append_only_story_conv ON user_story_conversation_events"))
+        await conn.execute(text("""
+            CREATE TRIGGER enforce_append_only_story_conv
+            BEFORE UPDATE OR DELETE ON user_story_conversation_events
+            FOR EACH ROW EXECUTE FUNCTION prevent_update_delete()
+        """))
+        
         # Create monotonic stage check function
         await conn.execute(text("""
             CREATE OR REPLACE FUNCTION check_monotonic_stage()
