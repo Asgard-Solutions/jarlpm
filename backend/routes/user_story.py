@@ -496,7 +496,7 @@ async def get_story_conversation(
 async def chat_with_story(
     request: Request,
     story_id: str,
-    body: StoryChatMessage,
+    body: FeatureStoryChatMessage,
     session: AsyncSession = Depends(get_db)
 ):
     """Chat with AI to refine a user story (streaming)"""
