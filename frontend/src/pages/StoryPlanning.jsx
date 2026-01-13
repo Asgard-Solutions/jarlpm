@@ -19,7 +19,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { 
   ArrowLeft, Send, Loader2, Lock, CheckCircle2, 
   XCircle, FileText, AlertCircle, User, Bot, Settings, 
-  Plus, Sparkles, RefreshCw, Edit3, MessageSquare, BookOpen, Trash2
+  Plus, Sparkles, RefreshCw, Edit3, MessageSquare, BookOpen, Trash2, Puzzle
 } from 'lucide-react';
 
 const STORY_STAGES = {
