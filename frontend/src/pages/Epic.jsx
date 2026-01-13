@@ -84,6 +84,9 @@ const Epic = () => {
   const [manualDescription, setManualDescription] = useState('');
   const [manualCriteria, setManualCriteria] = useState('');
   const [creatingManual, setCreatingManual] = useState(false);
+  
+  // Story counts for approved features
+  const [featureStoryCounts, setFeatureStoryCounts] = useState({});
 
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
