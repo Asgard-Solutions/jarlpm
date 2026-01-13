@@ -84,7 +84,11 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setSubscription, setProviders]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleCreateEpic = async () => {
     if (!newEpicTitle.trim()) return;
