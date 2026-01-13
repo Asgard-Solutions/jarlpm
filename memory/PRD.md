@@ -381,15 +381,51 @@ When an Epic is locked, users enter Feature Planning Mode:
   - "Continue Refining" option if user wants more changes
 - **Tests:** Backend 10/10 passed (100%), Frontend all flows working
 
+### 2026-01-13: Standalone User Stories with AI Assistance (COMPLETE)
+- **Standalone stories:** User stories not linked to any feature (feature_id = null)
+- **Data Model Updates:**
+  - `UserStory.feature_id` made nullable for standalone stories
+  - `UserStory.user_id` added for ownership tracking
+  - `UserStory.is_standalone` boolean flag
+  - `UserStory.title` field for story identification
+- **API Endpoints:**
+  - GET /api/stories/standalone - List all standalone stories for user
+  - POST /api/stories/standalone - Create standalone story manually
+  - GET /api/stories/standalone/{story_id} - Get specific standalone story
+  - PUT /api/stories/standalone/{story_id} - Update standalone story
+  - DELETE /api/stories/standalone/{story_id} - Delete standalone story
+  - POST /api/stories/standalone/{story_id}/approve - Approve and lock
+  - POST /api/stories/standalone/{story_id}/chat - Refine with AI (streaming)
+  - POST /api/stories/ai/chat - AI-assisted story creation conversation
+  - POST /api/stories/ai/create-from-proposal - Create from AI proposal
+- **AI-Assisted Creation:**
+  - Conversational flow asks about persona, action, benefit, acceptance criteria
+  - AI asks ONE question at a time for focused conversation
+  - Streaming SSE response for real-time chat
+  - AI generates proposal in JSON format when ready
+  - User can accept proposal or continue refining
+- **Frontend (/stories page):**
+  - "Stories" button in Dashboard header
+  - List view with badges (stage, story points, standalone)
+  - Filters: stage (draft, refining, approved)
+  - Search: title, story text, persona
+  - Sort: created_at, updated_at
+  - "Create with AI" button opens AI chat dialog
+  - "Manual" button opens manual create dialog
+  - Story cards with Refine/Approve actions
+  - Story detail dialog with full information
+  - Refine dialog with AI chat and story preview sidebar
+- **Tests:** Backend 22/22 passed (100%), Frontend all flows working
+
 ---
 
 ## Backlog
 
 ### P1 - Upcoming
 - Full E2E workflow test with all features combined
-- Contextual bug linking from Epic/Feature/Story pages
 
 ### P2 - Future
 - Implement full Stripe subscription flow
+- Contextual bug linking from Epic/Feature/Story pages
 - Export to Jira/Azure DevOps
 - Team collaboration features
