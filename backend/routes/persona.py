@@ -19,7 +19,7 @@ from services.llm_service import LLMService
 from services.epic_service import EpicService
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/personas", tags=["personas"])
+router = APIRouter(prefix="/personas", tags=["personas"])
 
 
 # Request/Response Models
