@@ -1,9 +1,11 @@
 from fastapi import APIRouter, HTTPException, Request, Response, Depends
 from pydantic import BaseModel
-import httpx
 from datetime import datetime, timezone, timedelta
+from dateutil.relativedelta import relativedelta
+import httpx
 import logging
 import uuid
+import os
 
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +16,11 @@ from db.models import User, UserSession, Subscription, SubscriptionStatus
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# Test user credentials
+TEST_USER_EMAIL = "testuser@jarlpm.dev"
+TEST_USER_NAME = "Test User"
+TEST_SESSION_TOKEN = "test_session_jarlpm_full_access_2025"
 
 
 class SessionExchangeRequest(BaseModel):
