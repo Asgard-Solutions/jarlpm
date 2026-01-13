@@ -211,6 +211,23 @@ When an Epic is locked, users enter Feature Planning Mode:
 
 ## Changelog
 
+### 2026-01-13: User Story Planning Feature (COMPLETE)
+- Added `UserStory` model with standard format: "As a [persona], I want to [action] so that [benefit]"
+- Added `UserStoryConversationEvent` model for append-only refinement conversations
+- User Story lifecycle stages: draft → refining → approved (mirrors Feature pattern)
+- Acceptance criteria use Given/When/Then format
+- Story points support (1, 2, 3, 5, 8) for sprint planning
+- New API endpoints:
+  - GET/POST /api/stories/feature/{feature_id}
+  - POST /api/stories/feature/{feature_id}/generate (AI streaming)
+  - GET/PUT/DELETE /api/stories/{story_id}
+  - POST /api/stories/{story_id}/approve
+  - POST /api/stories/{story_id}/chat (AI streaming refinement)
+- New StoryPlanning.jsx page at /feature/:featureId/stories
+- "Create User Stories" button on approved features in Epic page
+- Feature Reference sidebar shows locked feature content
+- Fixed LLM provider state management for direct navigation
+
 ### 2026-01-13: Logo and Favicon Update (COMPLETE)
 - Added Viking helmet logo images (light/dark variants) for theme support
 - Created favicon.ico, logo192.png, logo512.png, apple-touch-icon.png
