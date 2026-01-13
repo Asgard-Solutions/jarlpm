@@ -591,29 +591,28 @@ const StoryPlanning = () => {
 
         {/* Sidebar - Feature Reference */}
         <div className="w-80 flex-shrink-0 border-l border-border bg-card/50 hidden lg:flex lg:flex-col overflow-hidden" data-testid="feature-reference-sidebar">
-          <div className="p-4 border-b border-border bg-muted/30">
+          <div className="p-4 border-b border-border bg-blue-500/10">
             <h3 className="font-semibold text-foreground flex items-center gap-2">
-              <FileText className="w-4 h-4 text-muted-foreground" />
-              Feature Reference
+              <Puzzle className="w-4 h-4 text-blue-400" />
+              Working on Feature
             </h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Use this reference to ensure stories match the feature
+            </p>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            <div>
-              <h4 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                Title <Lock className="w-3 h-3" />
+            <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3">
+              <h4 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-1">
+                {feature.title}
+                <Lock className="w-3 h-3 text-success" />
               </h4>
-              <p className="text-sm text-foreground bg-muted p-2 rounded">{feature.title}</p>
+              <p className="text-xs text-muted-foreground">{feature.description}</p>
             </div>
-            <div>
-              <h4 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                Description <Lock className="w-3 h-3" />
-              </h4>
-              <p className="text-xs text-foreground bg-muted p-2 rounded">{feature.description}</p>
-            </div>
+            
             {feature.acceptance_criteria?.length > 0 && (
               <div>
                 <h4 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                  Acceptance Criteria <Lock className="w-3 h-3" />
+                  Feature Acceptance Criteria
                 </h4>
                 <ul className="text-xs text-foreground bg-muted p-2 rounded space-y-1">
                   {feature.acceptance_criteria.map((c, i) => (
@@ -625,11 +624,43 @@ const StoryPlanning = () => {
                 </ul>
               </div>
             )}
+            
             <div className="pt-2 border-t border-border">
-              <p className="text-xs text-muted-foreground italic">
-                Stories should be completable within one sprint and follow the standard user story format.
+              <p className="text-xs text-muted-foreground italic mb-3">
+                Each story should be completable within one sprint and align with the acceptance criteria above.
               </p>
+              
+              {/* Progress summary */}
+              <div className="bg-muted rounded-lg p-3 space-y-2">
+                <p className="text-xs font-medium text-foreground">Story Progress</p>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-amber-400">Drafts: {draftStories.length + generatedDrafts.length}</span>
+                  <span className="text-violet-400">Refining: {refiningStories.length}</span>
+                  <span className="text-success">Done: {approvedStories.length}</span>
+                </div>
+                {stories.length > 0 && (
+                  <div className="w-full bg-background rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="h-full bg-success transition-all duration-300" 
+                      style={{ width: `${(approvedStories.length / stories.length) * 100}%` }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
+          </div>
+          
+          {/* Bottom action */}
+          <div className="p-4 border-t border-border bg-muted/30">
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => navigate(`/epic/${feature.epic_id}`)}
+              data-testid="back-to-features-sidebar-btn"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Feature Planning
+            </Button>
           </div>
         </div>
       </div>
