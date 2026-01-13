@@ -30,7 +30,7 @@ class PersonaService:
     
     async def get_epic_with_children(self, epic_id: str, user_id: str) -> Optional[Dict[str, Any]]:
         """Get a completed epic with all its features and user stories"""
-        # Get epic
+        # Get epic - use selectinload to eagerly load all needed fields
         result = await self.session.execute(
             select(Epic).where(
                 and_(Epic.epic_id == epic_id, Epic.user_id == user_id)
@@ -45,25 +45,50 @@ class PersonaService:
         if epic.current_stage != "epic_locked":
             return None
         
+        # Access all needed fields NOW while session is active to avoid lazy loading
+        # This forces SQLAlchemy to load these attributes
+        epic_dict = {
+            "epic_id": epic.epic_id,
+            "title": epic.title,
+            "current_stage": epic.current_stage,
+            "snapshot": epic.snapshot,  # Load snapshot now
+        }
+        
         # Get features
         result = await self.session.execute(
             select(Feature).where(Feature.epic_id == epic_id).order_by(Feature.created_at)
         )
         features = list(result.scalars().all())
         
+        # Convert features to dicts to avoid lazy loading issues
+        features_data = []
+        for f in features:
+            features_data.append({
+                "feature_id": f.feature_id,
+                "title": f.title,
+                "description": f.description,
+                "acceptance_criteria": f.acceptance_criteria,
+            })
+        
         # Get user stories for all features
-        feature_ids = [f.feature_id for f in features]
-        stories = []
+        feature_ids = [f["feature_id"] for f in features_data]
+        stories_data = []
         if feature_ids:
             result = await self.session.execute(
                 select(UserStory).where(UserStory.feature_id.in_(feature_ids)).order_by(UserStory.created_at)
             )
             stories = list(result.scalars().all())
+            for s in stories:
+                stories_data.append({
+                    "feature_id": s.feature_id,
+                    "story_text": s.story_text,
+                    "acceptance_criteria": s.acceptance_criteria,
+                })
         
         return {
-            "epic": epic,
-            "features": features,
-            "stories": stories
+            "epic": epic_dict,
+            "features": features_data,
+            "stories": stories_data
         }
     
     async def get_user_settings(self, user_id: str) -> PersonaGenerationSettings:
