@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import '@/App.css';
+import { useThemeStore } from '@/store';
 
 // Pages
 import Landing from '@/pages/Landing';
@@ -9,6 +10,18 @@ import ProtectedRoute from '@/pages/ProtectedRoute';
 import Dashboard from '@/pages/Dashboard';
 import Settings from '@/pages/Settings';
 import Epic from '@/pages/Epic';
+
+// Theme initializer component
+const ThemeInitializer = ({ children }) => {
+  const initTheme = useThemeStore((state) => state.initTheme);
+
+  useEffect(() => {
+    const cleanup = initTheme();
+    return cleanup;
+  }, [initTheme]);
+
+  return children;
+};
 
 // Route handler that checks for session_id in URL hash
 const AppRouter = () => {
@@ -52,11 +65,13 @@ const AppRouter = () => {
 
 function App() {
   return (
-    <div className="App">
-      <BrowserRouter>
-        <AppRouter />
-      </BrowserRouter>
-    </div>
+    <ThemeInitializer>
+      <div className="App min-h-screen bg-background text-foreground">
+        <BrowserRouter>
+          <AppRouter />
+        </BrowserRouter>
+      </div>
+    </ThemeInitializer>
   );
 }
 
