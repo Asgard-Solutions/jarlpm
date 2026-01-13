@@ -322,7 +322,7 @@ const Settings = () => {
                       value={deliveryContext.sprint_cycle_length}
                       onChange={(e) => setDeliveryContext({ ...deliveryContext, sprint_cycle_length: e.target.value })}
                       placeholder="e.g., 14"
-                      className="bg-nordic-bg-primary border-nordic-border text-nordic-text-primary"
+                      className="bg-background border-border text-foreground placeholder:text-muted-foreground"
                       data-testid="input-sprint-length"
                     />
                   </div>
@@ -332,7 +332,7 @@ const Settings = () => {
                       type="date"
                       value={deliveryContext.sprint_start_date}
                       onChange={(e) => setDeliveryContext({ ...deliveryContext, sprint_start_date: e.target.value })}
-                      className="bg-nordic-bg-primary border-nordic-border text-nordic-text-primary"
+                      className="bg-background border-border text-foreground"
                       data-testid="input-sprint-date"
                     />
                   </div>
@@ -351,7 +351,7 @@ const Settings = () => {
                       value={deliveryContext.num_developers}
                       onChange={(e) => setDeliveryContext({ ...deliveryContext, num_developers: e.target.value })}
                       placeholder="e.g., 5"
-                      className="bg-nordic-bg-primary border-nordic-border text-nordic-text-primary"
+                      className="bg-background border-border text-foreground placeholder:text-muted-foreground"
                       data-testid="input-num-developers"
                     />
                   </div>
@@ -366,7 +366,7 @@ const Settings = () => {
                       value={deliveryContext.num_qa}
                       onChange={(e) => setDeliveryContext({ ...deliveryContext, num_qa: e.target.value })}
                       placeholder="e.g., 2"
-                      className="bg-nordic-bg-primary border-nordic-border text-nordic-text-primary"
+                      className="bg-background border-border text-foreground placeholder:text-muted-foreground"
                       data-testid="input-num-qa"
                     />
                   </div>
