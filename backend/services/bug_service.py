@@ -77,9 +77,9 @@ class BugService:
                 self.session.add(link)
         
         await self.session.commit()
-        await self.session.refresh(bug)
         
-        return bug
+        # Reload with relationships
+        return await self.get_bug(bug.bug_id)
     
     async def get_bug(self, bug_id: str, include_deleted: bool = False) -> Optional[Bug]:
         """Get a bug by ID with relationships loaded"""
