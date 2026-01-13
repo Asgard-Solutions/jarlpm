@@ -1267,6 +1267,79 @@ const Epic = () => {
   );
 };
 
+// Workflow Stepper Component
+const WorkflowStepper = ({ currentStep, featuresComplete, storiesComplete, totalFeatures, featuresWithStories }) => {
+  const getStepStatus = (stepId) => {
+    if (stepId === 'definition') {
+      return currentStep === 'definition' ? 'current' : 'complete';
+    }
+    if (stepId === 'features') {
+      if (currentStep === 'definition') return 'upcoming';
+      if (currentStep === 'features' && !featuresComplete) return 'current';
+      return 'complete';
+    }
+    if (stepId === 'stories') {
+      if (currentStep === 'definition') return 'upcoming';
+      if (currentStep === 'features' && !featuresComplete) return 'upcoming';
+      if (!storiesComplete) return 'current';
+      return 'complete';
+    }
+    if (stepId === 'complete') {
+      if (storiesComplete) return 'complete';
+      return 'upcoming';
+    }
+    return 'upcoming';
+  };
+
+  return (
+    <div className="bg-card/50 border-b border-border" data-testid="workflow-stepper">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div className="flex items-center justify-between">
+          {WORKFLOW_STEPS.map((step, index) => {
+            const status = getStepStatus(step.id);
+            const StepIcon = step.icon;
+            const isLast = index === WORKFLOW_STEPS.length - 1;
+            
+            return (
+              <div key={step.id} className="flex items-center flex-1">
+                <div className="flex items-center gap-3">
+                  <div className={`
+                    w-10 h-10 rounded-full flex items-center justify-center transition-all
+                    ${status === 'complete' ? 'bg-success text-white' : ''}
+                    ${status === 'current' ? 'bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-2 ring-offset-background' : ''}
+                    ${status === 'upcoming' ? 'bg-muted text-muted-foreground' : ''}
+                  `}>
+                    {status === 'complete' ? (
+                      <CheckCircle2 className="w-5 h-5" />
+                    ) : (
+                      <StepIcon className="w-5 h-5" />
+                    )}
+                  </div>
+                  <div className="hidden sm:block">
+                    <p className={`text-sm font-medium ${status === 'upcoming' ? 'text-muted-foreground' : 'text-foreground'}`}>
+                      {step.label}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {step.id === 'features' && totalFeatures > 0 
+                        ? `${totalFeatures} features` 
+                        : step.id === 'stories' && featuresWithStories !== undefined
+                        ? `${featuresWithStories}/${totalFeatures} ready`
+                        : step.description}
+                    </p>
+                  </div>
+                </div>
+                {!isLast && (
+                  <div className={`flex-1 h-0.5 mx-4 ${status === 'complete' ? 'bg-success' : 'bg-border'}`} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Feature Card Component
 const FeatureCard = ({ feature, onRefine, onApprove, onDelete, onCreateStories, storyCount }) => {
   const stageInfo = FEATURE_STAGES[feature.current_stage];
