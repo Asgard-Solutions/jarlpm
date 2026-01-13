@@ -39,18 +39,6 @@ const Settings = () => {
   const [savingKey, setSavingKey] = useState(false);
   const [keyError, setKeyError] = useState('');
 
-  useEffect(() => {
-    loadData();
-    
-    // Check for payment return
-    const sessionId = searchParams.get('session_id');
-    const paymentStatus = searchParams.get('payment');
-    
-    if (sessionId && paymentStatus === 'success') {
-      pollPaymentStatus(sessionId);
-    }
-  }, [searchParams]);
-
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
