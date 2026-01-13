@@ -204,11 +204,11 @@ async def init_db():
         """))
         
         # Apply monotonic stage trigger
+        await conn.execute(text("DROP TRIGGER IF EXISTS enforce_monotonic_stage ON epics"))
         await conn.execute(text("""
-            DROP TRIGGER IF EXISTS enforce_monotonic_stage ON epics;
             CREATE TRIGGER enforce_monotonic_stage
             BEFORE UPDATE OF current_stage ON epics
-            FOR EACH ROW EXECUTE FUNCTION check_monotonic_stage();
+            FOR EACH ROW EXECUTE FUNCTION check_monotonic_stage()
         """))
         
         # Create locked content check function
@@ -244,11 +244,11 @@ async def init_db():
         """))
         
         # Apply locked content trigger
+        await conn.execute(text("DROP TRIGGER IF EXISTS enforce_locked_content ON epic_snapshots"))
         await conn.execute(text("""
-            DROP TRIGGER IF EXISTS enforce_locked_content ON epic_snapshots;
             CREATE TRIGGER enforce_locked_content
             BEFORE UPDATE ON epic_snapshots
-            FOR EACH ROW EXECUTE FUNCTION check_locked_content();
+            FOR EACH ROW EXECUTE FUNCTION check_locked_content()
         """))
         
     logger.info("Database initialized with tables and constraints")
