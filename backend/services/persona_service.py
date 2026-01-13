@@ -128,7 +128,7 @@ class PersonaService:
             if snapshot.get("desired_outcomes"):
                 context_parts.append(f"Desired Outcomes: {snapshot.get('desired_outcomes')}")
             if snapshot.get("acceptance_criteria"):
-                context_parts.append(f"Acceptance Criteria:")
+                context_parts.append("Acceptance Criteria:")
                 for ac in snapshot.get("acceptance_criteria", []):
                     context_parts.append(f"  - {ac}")
         
