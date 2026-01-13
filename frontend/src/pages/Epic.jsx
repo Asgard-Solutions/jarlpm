@@ -810,6 +810,15 @@ const Epic = () => {
                       <Lock className="w-5 h-5 text-success" />
                       Approved & Locked ({approvedFeatures.length})
                     </h2>
+                    {/* Progress indicator */}
+                    {approvedFeatures.length > 0 && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-muted-foreground">Story Progress:</span>
+                        <span className="text-success font-medium">
+                          {approvedFeatures.filter(f => featureStoryCounts[f.feature_id]?.allApproved).length}/{approvedFeatures.length} complete
+                        </span>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="space-y-4">
@@ -817,6 +826,7 @@ const Epic = () => {
                       <FeatureCard 
                         key={feature.feature_id} 
                         feature={feature}
+                        storyCount={featureStoryCounts[feature.feature_id]}
                         onDelete={() => handleDeleteFeature(feature.feature_id)}
                         onCreateStories={() => navigate(`/feature/${feature.feature_id}/stories`)}
                       />
