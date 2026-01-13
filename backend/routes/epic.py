@@ -41,7 +41,7 @@ class EpicSnapshotResponse(BaseModel):
 class EpicResponse(BaseModel):
     epic_id: str
     title: str
-    current_stage: EpicStage
+    current_stage: str  # Changed from EpicStage to str
     snapshot: EpicSnapshotResponse
     pending_proposal: Optional[dict] = None
     created_at: datetime
@@ -57,7 +57,7 @@ class TranscriptEventResponse(BaseModel):
     epic_id: str
     role: str
     content: str
-    stage: EpicStage
+    stage: str  # Changed from EpicStage to str
     event_metadata: Optional[dict] = None
     created_at: datetime
 
@@ -70,8 +70,8 @@ class DecisionEventResponse(BaseModel):
     decision_id: str
     epic_id: str
     decision_type: str
-    from_stage: EpicStage
-    to_stage: Optional[EpicStage] = None
+    from_stage: str  # Changed from EpicStage to str
+    to_stage: Optional[str] = None  # Changed from EpicStage to str
     proposal_id: Optional[str] = None
     content_snapshot: Optional[str] = None
     user_id: str
@@ -85,7 +85,7 @@ class DecisionResponse(BaseModel):
 class ArtifactResponse(BaseModel):
     artifact_id: str
     epic_id: str
-    artifact_type: ArtifactType
+    artifact_type: str  # Changed from ArtifactType to str
     title: str
     description: str
     acceptance_criteria: Optional[List[str]] = None
