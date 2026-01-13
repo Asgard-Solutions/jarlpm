@@ -19,7 +19,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { 
   ArrowLeft, Send, Loader2, Lock, CheckCircle2, 
   XCircle, FileText, AlertCircle, User, Bot, Settings, 
-  Plus, Sparkles, RefreshCw, Edit3, MessageSquare, BookOpen, Trash2, Puzzle
+  Plus, Sparkles, RefreshCw, Edit3, MessageSquare, BookOpen, Trash2, Puzzle, Flag
 } from 'lucide-react';
 
 const STORY_STAGES = {
@@ -27,6 +27,14 @@ const STORY_STAGES = {
   refining: { label: 'Refining', color: 'bg-violet-500/20 text-violet-400 border-violet-500/30', icon: MessageSquare },
   approved: { label: 'Approved', color: 'bg-success/20 text-success border-success/30', icon: Lock },
 };
+
+// Workflow steps for the visual stepper
+const WORKFLOW_STEPS = [
+  { id: 'definition', label: 'Epic Definition', icon: FileText, description: 'Problem & Outcome' },
+  { id: 'features', label: 'Features', icon: Puzzle, description: 'Break down epic' },
+  { id: 'stories', label: 'User Stories', icon: BookOpen, description: 'Sprint-sized tasks' },
+  { id: 'complete', label: 'Complete', icon: Flag, description: 'Ready for development' },
+];
 
 const StoryPlanning = () => {
   const { featureId } = useParams();
