@@ -619,14 +619,7 @@ const BugDetailDialog = ({ bug, open, onClose, onTransition, onDelete, transitio
   const severityConfig = SEVERITY_CONFIG[bug.severity] || SEVERITY_CONFIG.medium;
   const statusConfig = STATUS_CONFIG[bug.status] || STATUS_CONFIG.draft;
 
-  // Load history when tab changes
-  useEffect(() => {
-    if (activeTab === 'history' && history.length === 0) {
-      loadHistory();
-    }
-  }, [activeTab]);
-
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     try {
       setLoadingHistory(true);
       const response = await bugAPI.getHistory(bug.bug_id);
@@ -636,7 +629,14 @@ const BugDetailDialog = ({ bug, open, onClose, onTransition, onDelete, transitio
     } finally {
       setLoadingHistory(false);
     }
-  };
+  }, [bug.bug_id]);
+
+  // Load history when tab changes
+  useEffect(() => {
+    if (activeTab === 'history' && history.length === 0) {
+      loadHistory();
+    }
+  }, [activeTab, history.length, loadHistory]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
