@@ -10,6 +10,7 @@ import ProtectedRoute from '@/pages/ProtectedRoute';
 import Dashboard from '@/pages/Dashboard';
 import Settings from '@/pages/Settings';
 import Epic from '@/pages/Epic';
+import StoryPlanning from '@/pages/StoryPlanning';
 
 // Theme initializer component
 const ThemeInitializer = ({ children }) => {
