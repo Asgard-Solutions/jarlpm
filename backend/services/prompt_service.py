@@ -3,7 +3,7 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.models import EpicStage, EpicSnapshot, PromptTemplate
+from db.models import EpicStage, EpicSnapshot, PromptTemplate, ProductDeliveryContext
 
 
 # Default prompt templates for each stage
