@@ -133,7 +133,43 @@ const Epic = () => {
       // Load features if epic is locked
       if (epicRes.data.current_stage === 'epic_locked') {
         const featuresRes = await featureAPI.listForEpic(epicId);
-        setFeatures(featuresRes.data || []);
+        const featuresData = featuresRes.data || [];
+        setFeatures(featuresData);
+        
+        // Check if epic is fully complete (all features approved with all stories approved)
+        if (featuresData.length > 0) {
+          const allFeaturesApproved = featuresData.every(f => f.current_stage === 'approved');
+          if (allFeaturesApproved) {
+            // Check all stories for all features
+            let allStoriesApproved = true;
+            let hasStories = false;
+            for (const feature of featuresData) {
+              try {
+                const storiesRes = await userStoryAPI.listForFeature(feature.feature_id);
+                const stories = storiesRes.data || [];
+                if (stories.length > 0) {
+                  hasStories = true;
+                  if (!stories.every(s => s.current_stage === 'approved')) {
+                    allStoriesApproved = false;
+                    break;
+                  }
+                } else {
+                  allStoriesApproved = false;
+                  break;
+                }
+              } catch (e) {
+                allStoriesApproved = false;
+                break;
+              }
+            }
+            
+            // If fully complete, redirect to review page
+            if (allStoriesApproved && hasStories) {
+              navigate(`/epic/${epicId}/review`);
+              return;
+            }
+          }
+        }
       }
     } catch (err) {
       if (err.response?.status === 404) { navigate('/dashboard'); }
