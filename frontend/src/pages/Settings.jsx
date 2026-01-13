@@ -565,10 +565,10 @@ const Settings = () => {
                   <div className="space-y-2">
                     <Label className="text-nordic-text-secondary">Provider</Label>
                     <Select value={provider} onValueChange={setProvider}>
-                      <SelectTrigger className="bg-nordic-bg-primary border-nordic-border text-nordic-text-primary" data-testid="select-provider">
+                      <SelectTrigger className="bg-background border-border text-foreground" data-testid="select-provider">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-nordic-bg-secondary border-nordic-border">
+                      <SelectContent className="bg-popover border-border shadow-lg">
                         <SelectItem value="openai">OpenAI</SelectItem>
                         <SelectItem value="anthropic">Anthropic</SelectItem>
                         <SelectItem value="local">Local / Custom</SelectItem>
@@ -583,7 +583,7 @@ const Settings = () => {
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
                       placeholder={provider === 'openai' ? 'sk-...' : provider === 'anthropic' ? 'sk-ant-...' : 'Enter API key'}
-                      className="bg-nordic-bg-primary border-nordic-border text-nordic-text-primary"
+                      className="bg-background border-border text-foreground placeholder:text-muted-foreground"
                       data-testid="input-api-key"
                     />
                   </div>
@@ -594,7 +594,7 @@ const Settings = () => {
                       value={modelName}
                       onChange={(e) => setModelName(e.target.value)}
                       placeholder={provider === 'openai' ? 'gpt-4o' : provider === 'anthropic' ? 'claude-sonnet-4-20250514' : 'model-name'}
-                      className="bg-nordic-bg-primary border-nordic-border text-nordic-text-primary"
+                      className="bg-background border-border text-foreground placeholder:text-muted-foreground"
                       data-testid="input-model-name"
                     />
                   </div>
@@ -606,7 +606,7 @@ const Settings = () => {
                         value={baseUrl}
                         onChange={(e) => setBaseUrl(e.target.value)}
                         placeholder="http://localhost:11434/v1"
-                        className="bg-nordic-bg-primary border-nordic-border text-nordic-text-primary"
+                        className="bg-background border-border text-foreground placeholder:text-muted-foreground"
                         data-testid="input-base-url"
                       />
                     </div>
