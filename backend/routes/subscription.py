@@ -190,8 +190,10 @@ async def get_subscription_status(
     if not subscription:
         return SubscriptionStatusResponse(status="inactive")
     
+    # Status is stored as string in PostgreSQL, not as enum
+    status_value = subscription.status if isinstance(subscription.status, str) else (subscription.status.value if subscription.status else "inactive")
     return SubscriptionStatusResponse(
-        status=subscription.status.value if subscription.status else "inactive",
+        status=status_value,
         stripe_subscription_id=subscription.stripe_subscription_id,
         current_period_end=subscription.current_period_end
     )
