@@ -390,8 +390,12 @@ class BugService:
         )
         self.session.add(event)
         await self.session.commit()
-        await self.session.refresh(event)
-        return event
+        
+        # Reload
+        result = await self.session.execute(
+            select(BugConversationEvent).where(BugConversationEvent.event_id == event.event_id)
+        )
+        return result.scalar_one()
     
     async def get_conversation(self, bug_id: str) -> List[BugConversationEvent]:
         """Get conversation history for a bug"""
