@@ -37,8 +37,14 @@ class EpicService:
         self.session.add(snapshot)
         
         await self.session.commit()
-        await self.session.refresh(epic)
-        return epic
+        
+        # Re-fetch with eager loading to avoid lazy load issues
+        result = await self.session.execute(
+            select(Epic)
+            .options(selectinload(Epic.snapshot))
+            .where(Epic.epic_id == epic.epic_id)
+        )
+        return result.scalar_one()
     
     async def get_epic(self, epic_id: str, user_id: str) -> Optional[Epic]:
         """Get an epic by ID (with ownership check)"""
