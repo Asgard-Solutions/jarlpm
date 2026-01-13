@@ -76,6 +76,9 @@ async def create_llm_provider(
     encryption = get_encryption_service()
     llm_service = LLMService(session)
     
+    # Get provider value as string
+    provider_value = body.provider.value if isinstance(body.provider, LLMProvider) else body.provider
+    
     # Validate the API key first
     is_valid = await llm_service.validate_api_key(
         body.provider,
@@ -87,7 +90,7 @@ async def create_llm_provider(
     if not is_valid:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid API key for {body.provider.value}. Please check your key and try again."
+            detail=f"Invalid API key for {provider_value}. Please check your key and try again."
         )
     
     # Encrypt the API key
@@ -97,7 +100,7 @@ async def create_llm_provider(
     result = await session.execute(
         select(LLMProviderConfig).where(
             LLMProviderConfig.user_id == user_id,
-            LLMProviderConfig.provider == body.provider
+            LLMProviderConfig.provider == provider_value
         )
     )
     existing = result.scalar_one_or_none()
@@ -115,7 +118,7 @@ async def create_llm_provider(
         # Create new config
         new_config = LLMProviderConfig(
             user_id=user_id,
-            provider=body.provider,
+            provider=provider_value,
             encrypted_api_key=encrypted_key,
             base_url=body.base_url,
             model_name=body.model_name,
