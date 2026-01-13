@@ -30,11 +30,13 @@ class PersonaService:
     
     async def get_epic_with_children(self, epic_id: str, user_id: str) -> Optional[Dict[str, Any]]:
         """Get a completed epic with all its features and user stories"""
-        # Get epic - use selectinload to eagerly load all needed fields
+        from sqlalchemy.orm import selectinload
+        
+        # Get epic with snapshot eagerly loaded
         result = await self.session.execute(
-            select(Epic).where(
-                and_(Epic.epic_id == epic_id, Epic.user_id == user_id)
-            )
+            select(Epic)
+            .options(selectinload(Epic.snapshot))
+            .where(and_(Epic.epic_id == epic_id, Epic.user_id == user_id))
         )
         epic = result.scalar_one_or_none()
         
@@ -46,12 +48,20 @@ class PersonaService:
             return None
         
         # Access all needed fields NOW while session is active to avoid lazy loading
-        # This forces SQLAlchemy to load these attributes
+        # Convert snapshot relationship to dict
+        snapshot_dict = None
+        if epic.snapshot:
+            snapshot_dict = {
+                "problem_statement": epic.snapshot.problem_statement,
+                "desired_outcomes": epic.snapshot.desired_outcomes,
+                "acceptance_criteria": epic.snapshot.acceptance_criteria,
+            }
+        
         epic_dict = {
             "epic_id": epic.epic_id,
             "title": epic.title,
             "current_stage": epic.current_stage,
-            "snapshot": epic.snapshot,  # Load snapshot now
+            "snapshot": snapshot_dict,
         }
         
         # Get features
