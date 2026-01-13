@@ -12,6 +12,7 @@ import Settings from '@/pages/Settings';
 import Epic from '@/pages/Epic';
 import StoryPlanning from '@/pages/StoryPlanning';
 import CompletedEpic from '@/pages/CompletedEpic';
+import Bugs from '@/pages/Bugs';
 
 // Theme initializer component
 const ThemeInitializer = ({ children }) => {
