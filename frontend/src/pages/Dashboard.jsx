@@ -53,6 +53,7 @@ const Dashboard = () => {
   const { user, logout } = useAuthStore();
   const { subscription, isActive, setSubscription } = useSubscriptionStore();
   const { activeProvider, setProviders } = useLLMProviderStore();
+  const { theme } = useThemeStore();
   
   const [epics, setEpics] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,6 +62,9 @@ const Dashboard = () => {
   const [creating, setCreating] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Select logo based on theme
+  const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
 
   const loadData = useCallback(async () => {
     setLoading(true);
