@@ -13,7 +13,12 @@ module.exports = {
                         sm: 'calc(var(--radius) - 4px)'
                 },
                 colors: {
-                        /* Semantic Theme Tokens */
+                        /* ========================================
+                           JarlPM Nordic Palette v1 — Semantic Tokens
+                           All components must reference these tokens.
+                           ======================================== */
+                        
+                        /* Core Backgrounds */
                         background: 'hsl(var(--background))',
                         foreground: 'hsl(var(--foreground))',
                         
@@ -27,43 +32,43 @@ module.exports = {
                                 foreground: 'hsl(var(--popover-foreground))'
                         },
                         
-                        /* Primary - Muted Nordic Blue */
+                        /* Primary — Nordic Blue (Muted) */
                         primary: {
                                 DEFAULT: 'hsl(var(--primary))',
                                 foreground: 'hsl(var(--primary-foreground))'
                         },
                         
-                        /* Secondary - Neutral Grays */
+                        /* Secondary — Neutral Backgrounds */
                         secondary: {
                                 DEFAULT: 'hsl(var(--secondary))',
                                 foreground: 'hsl(var(--secondary-foreground))'
                         },
                         
-                        /* Muted - Subtle backgrounds */
+                        /* Muted — Subtle backgrounds and text */
                         muted: {
                                 DEFAULT: 'hsl(var(--muted))',
                                 foreground: 'hsl(var(--muted-foreground))'
                         },
                         
-                        /* Accent - Subtle highlight */
+                        /* Accent — Soft highlight */
                         accent: {
                                 DEFAULT: 'hsl(var(--accent))',
                                 foreground: 'hsl(var(--accent-foreground))'
                         },
                         
-                        /* Destructive - Muted Nordic Red */
+                        /* Destructive — Nordic Red (Muted) */
                         destructive: {
                                 DEFAULT: 'hsl(var(--destructive))',
                                 foreground: 'hsl(var(--destructive-foreground))'
                         },
                         
-                        /* Success - Muted Nordic Green */
+                        /* Success — Status Confirmed (Nordic Green) */
                         success: {
                                 DEFAULT: 'hsl(var(--success))',
                                 foreground: 'hsl(var(--success-foreground))'
                         },
                         
-                        /* Warning - Muted Amber */
+                        /* Warning — Amber (Very Limited Use) */
                         warning: {
                                 DEFAULT: 'hsl(var(--warning))',
                                 foreground: 'hsl(var(--warning-foreground))'
@@ -74,45 +79,26 @@ module.exports = {
                         input: 'hsl(var(--input))',
                         ring: 'hsl(var(--ring))',
                         
-                        /* Nordic Color Palette - Direct access */
+                        /* Direct Nordic Palette Access (Use sparingly) */
                         nordic: {
                                 blue: {
-                                        50: 'hsl(var(--nordic-blue-50))',
-                                        100: 'hsl(var(--nordic-blue-100))',
-                                        200: 'hsl(var(--nordic-blue-200))',
-                                        300: 'hsl(var(--nordic-blue-300))',
-                                        400: 'hsl(var(--nordic-blue-400))',
-                                        500: 'hsl(var(--nordic-blue-500))',
-                                        600: 'hsl(var(--nordic-blue-600))',
-                                        700: 'hsl(var(--nordic-blue-700))',
-                                        800: 'hsl(var(--nordic-blue-800))',
-                                        900: 'hsl(var(--nordic-blue-900))',
+                                        DEFAULT: 'hsl(var(--accent-blue))',
+                                        hover: 'hsl(var(--accent-blue-hover))',
+                                        soft: 'hsl(var(--accent-blue-soft))',
                                 },
                                 red: {
-                                        50: 'hsl(var(--nordic-red-50))',
-                                        100: 'hsl(var(--nordic-red-100))',
-                                        200: 'hsl(var(--nordic-red-200))',
-                                        300: 'hsl(var(--nordic-red-300))',
-                                        400: 'hsl(var(--nordic-red-400))',
-                                        500: 'hsl(var(--nordic-red-500))',
-                                        600: 'hsl(var(--nordic-red-600))',
-                                        700: 'hsl(var(--nordic-red-700))',
-                                        800: 'hsl(var(--nordic-red-800))',
-                                        900: 'hsl(var(--nordic-red-900))',
+                                        DEFAULT: 'hsl(var(--accent-red))',
+                                        hover: 'hsl(var(--accent-red-hover))',
+                                        soft: 'hsl(var(--accent-red-soft))',
                                 },
-                                gray: {
-                                        50: 'hsl(var(--nordic-gray-50))',
-                                        100: 'hsl(var(--nordic-gray-100))',
-                                        200: 'hsl(var(--nordic-gray-200))',
-                                        300: 'hsl(var(--nordic-gray-300))',
-                                        400: 'hsl(var(--nordic-gray-400))',
-                                        500: 'hsl(var(--nordic-gray-500))',
-                                        600: 'hsl(var(--nordic-gray-600))',
-                                        700: 'hsl(var(--nordic-gray-700))',
-                                        800: 'hsl(var(--nordic-gray-800))',
-                                        900: 'hsl(var(--nordic-gray-900))',
-                                        950: 'hsl(var(--nordic-gray-950))',
-                                },
+                                amber: 'hsl(var(--accent-amber))',
+                        },
+                        
+                        /* Status Colors (Always pair with icons) */
+                        status: {
+                                confirmed: 'hsl(var(--status-confirmed))',
+                                pending: 'hsl(var(--status-pending))',
+                                locked: 'hsl(var(--status-locked))',
                         },
                         
                         /* Chart colors */
