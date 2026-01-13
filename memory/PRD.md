@@ -298,6 +298,25 @@ When an Epic is locked, users enter Feature Planning Mode:
   - Only ARCHIVED epics prevent all mutations
 - Comprehensive backend tests: 22/22 passed (100%)
 
+### 2026-01-13: Feature → User Story UX Improvements (COMPLETE)
+- **Feature Planning Page (Epic.jsx):**
+  - Added story count badges on approved feature cards showing status:
+    - "No Stories" (amber) - feature needs stories created
+    - "X/Y Stories" (blue) - stories in progress
+    - "X Stories Done" (green) - all stories approved
+  - Dynamic button text based on story status:
+    - "Create User Stories" when no stories
+    - "Continue Stories (X/Y)" when stories in progress
+    - "View Stories" when all stories complete
+  - Added overall progress indicator: "Story Progress: X/Y complete"
+- **Story Planning Page (StoryPlanning.jsx):**
+  - Enhanced feature reference sidebar with prominent feature context box
+  - Added progress bar showing Drafts/Refining/Done counts
+  - Added completion banner with 🎉 when all stories approved
+  - "Return to Feature Planning" button for easy navigation
+  - "Back to Feature Planning" button always visible in sidebar
+- Frontend tests: 15/15 passed (100%)
+
 ---
 
 ## Backlog
@@ -305,7 +324,6 @@ When an Epic is locked, users enter Feature Planning Mode:
 ### P1 - Upcoming
 - Bug creation stage (children of Features) - follows Feature/Story lifecycle pattern
 - Full E2E workflow test with locking model
-- Frontend UI updates to show locked/unlocked states based on permissions API
 
 ### P2 - Future
 - Implement full Stripe subscription flow
