@@ -157,8 +157,10 @@ class PersonaService:
         # Epic info (accessing as dict now)
         context_parts.append("=== EPIC ===")
         context_parts.append(f"Title: {epic['title']}")
-        if epic.get("snapshot"):
-            snapshot = epic["snapshot"] if isinstance(epic["snapshot"], dict) else json.loads(epic["snapshot"]) if epic["snapshot"] else {}
+        
+        # Snapshot is already a dict (converted in get_epic_with_children)
+        snapshot = epic.get("snapshot")
+        if snapshot:
             if snapshot.get("problem_statement"):
                 context_parts.append(f"Problem Statement: {snapshot.get('problem_statement')}")
             if snapshot.get("desired_outcomes"):
