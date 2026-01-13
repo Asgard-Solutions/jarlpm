@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { epicAPI, featureAPI, userStoryAPI } from '@/api';
+import { epicAPI, featureAPI, userStoryAPI, personaAPI } from '@/api';
 import { useThemeStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,11 +10,15 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import ThemeToggle from '@/components/ThemeToggle';
 import { 
   ArrowLeft, Loader2, Lock, CheckCircle2, 
   ChevronDown, ChevronRight, FileText, Settings,
-  Layers, Puzzle, BookOpen, Trophy, Calendar
+  Layers, Puzzle, BookOpen, Trophy, Calendar,
+  Users, Sparkles, User, AlertCircle
 } from 'lucide-react';
 
 const CompletedEpic = () => {
@@ -27,6 +31,14 @@ const CompletedEpic = () => {
   const [storiesByFeature, setStoriesByFeature] = useState({});
   const [loading, setLoading] = useState(true);
   const [expandedFeatures, setExpandedFeatures] = useState({});
+  
+  // Persona state
+  const [personas, setPersonas] = useState([]);
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false);
+  const [personaCount, setPersonaCount] = useState(3);
+  const [generating, setGenerating] = useState(false);
+  const [generationStatus, setGenerationStatus] = useState('');
+  const [generationError, setGenerationError] = useState(null);
 
   const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
 
