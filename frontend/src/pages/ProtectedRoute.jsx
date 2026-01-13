@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { authAPI } from '@/api';
 import { useAuthStore } from '@/store';
@@ -8,46 +8,55 @@ const ProtectedRoute = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, setUser } = useAuthStore();
-  const [isChecking, setIsChecking] = useState(true);
-  const [authDone, setAuthDone] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    location.state?.user ? true : (user ? true : null)
+  );
+  const hasChecked = useRef(false);
 
-  const checkAuth = useCallback(async () => {
-    // If user data was passed from AuthCallback, use it
-    if (location.state?.user) {
-      setUser(location.state.user);
-      setAuthDone(true);
-      return;
-    }
-
-    // If we already have user from store, skip API call
-    if (user) {
-      setAuthDone(true);
-      return;
-    }
-
+  const performAuthCheck = useCallback(async () => {
     // Server verification
     try {
       const response = await authAPI.getCurrentUser();
       setUser(response.data);
-      setAuthDone(true);
+      return true;
     } catch (error) {
       console.error('Auth check failed:', error);
       setUser(null);
-      navigate('/', { replace: true });
+      return false;
     }
-  }, [location.state, user, setUser, navigate]);
+  }, [setUser]);
 
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-
-  useEffect(() => {
-    if (authDone) {
-      setIsChecking(false);
+    // If user data was passed from AuthCallback, use it
+    if (location.state?.user && !hasChecked.current) {
+      hasChecked.current = true;
+      setUser(location.state.user);
+      setIsAuthenticated(true);
+      return;
     }
-  }, [authDone]);
 
-  if (isChecking) {
+    // If we already have user from store, skip API call
+    if (user && !hasChecked.current) {
+      hasChecked.current = true;
+      setIsAuthenticated(true);
+      return;
+    }
+
+    // Need to check server
+    if (!hasChecked.current) {
+      hasChecked.current = true;
+      performAuthCheck().then((isValid) => {
+        if (isValid) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+          navigate('/', { replace: true });
+        }
+      });
+    }
+  }, [location.state, user, setUser, performAuthCheck, navigate]);
+
+  if (isAuthenticated === null) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-center">
@@ -56,6 +65,10 @@ const ProtectedRoute = ({ children }) => {
         </div>
       </div>
     );
+  }
+
+  if (!isAuthenticated) {
+    return null;
   }
 
   return children;
