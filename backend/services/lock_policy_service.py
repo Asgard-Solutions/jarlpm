@@ -265,12 +265,12 @@ class LockPolicyService:
     # ============================================
     
     def can_mutate_stories(self, epic_status: EpicStatus) -> PolicyResult:
-        """Check if User Story mutations are allowed at all"""
-        if epic_status == EpicStatus.LOCKED:
-            return PolicyResult(
-                allowed=False,
-                reason="Epic is locked. User Stories cannot be added, modified, or deleted."
-            )
+        """
+        Check if User Story mutations are allowed at all.
+        
+        NOTE: User Stories are created WHEN epic is LOCKED, for approved features.
+        Only ARCHIVED epics prevent story mutations.
+        """
         if epic_status == EpicStatus.ARCHIVED:
             return PolicyResult(
                 allowed=False,
@@ -279,20 +279,29 @@ class LockPolicyService:
         return PolicyResult(allowed=True)
     
     def can_create_story(self, epic_status: EpicStatus) -> PolicyResult:
-        """Check if new User Stories can be created"""
-        if epic_status == EpicStatus.LOCKED:
+        """
+        Check if new User Stories can be created.
+        
+        Stories are created for approved features during Feature Planning Mode.
+        """
+        if epic_status == EpicStatus.ARCHIVED:
             return PolicyResult(
                 allowed=False,
-                reason="Cannot add User Stories to a locked Epic."
+                reason="Cannot add User Stories to an archived Epic."
             )
         return PolicyResult(allowed=True)
     
     def can_edit_story(self, epic_status: EpicStatus) -> PolicyResult:
-        """Check if User Story can be edited"""
-        if epic_status == EpicStatus.LOCKED:
+        """
+        Check if User Story can be edited.
+        
+        Stories can be edited while in draft/refining stage.
+        Individual story approval is checked at the service layer.
+        """
+        if epic_status == EpicStatus.ARCHIVED:
             return PolicyResult(
                 allowed=False,
-                reason="Cannot edit User Stories on a locked Epic."
+                reason="Cannot edit User Stories on an archived Epic."
             )
         return PolicyResult(allowed=True)
     
@@ -304,11 +313,15 @@ class LockPolicyService:
         return epic_status == EpicStatus.IN_PROGRESS
     
     def can_delete_story(self, epic_status: EpicStatus) -> PolicyResult:
-        """Check if User Story can be deleted"""
-        if epic_status == EpicStatus.LOCKED:
+        """
+        Check if User Story can be deleted.
+        
+        Stories can be deleted during Feature Planning Mode.
+        """
+        if epic_status == EpicStatus.ARCHIVED:
             return PolicyResult(
                 allowed=False,
-                reason="Cannot delete User Stories from a locked Epic."
+                reason="Cannot delete User Stories from an archived Epic."
             )
         return PolicyResult(allowed=True)
     
