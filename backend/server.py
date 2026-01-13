@@ -27,11 +27,13 @@ from routes.auth import router as auth_router
 from routes.subscription import router as subscription_router
 from routes.llm_provider import router as llm_provider_router
 from routes.epic import router as epic_router
+from routes.delivery_context import router as delivery_context_router
 
 api_router.include_router(auth_router)
 api_router.include_router(subscription_router)
 api_router.include_router(llm_provider_router)
 api_router.include_router(epic_router)
+api_router.include_router(delivery_context_router)
 
 # Health check endpoint
 @api_router.get("/")
