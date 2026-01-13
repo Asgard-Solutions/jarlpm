@@ -335,7 +335,7 @@ const Dashboard = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">Delete Epic?</AlertDialogTitle>
             <AlertDialogDescription className="text-slate-400">
-              This will permanently delete "{deleteConfirm?.title}" and all its data. 
+              This will permanently delete &quot;{deleteConfirm?.title}&quot; and all its data. 
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
