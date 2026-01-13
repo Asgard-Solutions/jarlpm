@@ -335,7 +335,7 @@ async def update_story(
     body: UserStoryUpdate,
     session: AsyncSession = Depends(get_db)
 ):
-    """Update a user story (only if not approved)"""
+    """Update a user story (only if not approved and epic not locked)"""
     user_id = await get_current_user_id(request, session)
     
     story_service = UserStoryService(session)
@@ -348,6 +348,12 @@ async def update_story(
     epic = await story_service.get_epic_for_feature(story.feature_id, user_id)
     if not epic:
         raise HTTPException(status_code=404, detail="User story not found")
+    
+    # Check lock policy
+    epic_status = lock_policy.get_epic_status(epic.current_stage)
+    policy_result = lock_policy.can_edit_story(epic_status)
+    if not policy_result.allowed:
+        raise HTTPException(status_code=409, detail=policy_result.reason)
     
     try:
         updated = await story_service.update_user_story(
@@ -369,7 +375,7 @@ async def delete_story(
     story_id: str,
     session: AsyncSession = Depends(get_db)
 ):
-    """Delete a user story"""
+    """Delete a user story (only if epic not locked)"""
     user_id = await get_current_user_id(request, session)
     
     story_service = UserStoryService(session)
@@ -382,6 +388,12 @@ async def delete_story(
     epic = await story_service.get_epic_for_feature(story.feature_id, user_id)
     if not epic:
         raise HTTPException(status_code=404, detail="User story not found")
+    
+    # Check lock policy
+    epic_status = lock_policy.get_epic_status(epic.current_stage)
+    policy_result = lock_policy.can_delete_story(epic_status)
+    if not policy_result.allowed:
+        raise HTTPException(status_code=409, detail=policy_result.reason)
     
     await story_service.delete_user_story(story_id)
     return {"message": "User story deleted"}
