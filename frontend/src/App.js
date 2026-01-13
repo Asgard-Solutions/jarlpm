@@ -58,6 +58,12 @@ const AppRouter = () => {
         </ProtectedRoute>
       } />
       
+      <Route path="/feature/:featureId/stories" element={
+        <ProtectedRoute>
+          <StoryPlanning />
+        </ProtectedRoute>
+      } />
+      
       {/* Catch-all redirect to landing */}
       <Route path="*" element={<Landing />} />
     </Routes>
