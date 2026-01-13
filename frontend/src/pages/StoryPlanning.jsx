@@ -72,7 +72,7 @@ const StoryPlanning = () => {
           llmProviderAPI.list()
         ]);
         setSubscription(subRes.data);
-        setProviders(llmRes.data.configs || []);
+        setProviders(llmRes.data || []);
       } catch (err) {
         console.error('Failed to fetch user settings:', err);
       }
