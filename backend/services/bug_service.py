@@ -259,8 +259,9 @@ class BugService:
         bug.status = target_status.value
         
         await self.session.commit()
-        await self.session.refresh(bug)
-        return bug
+        
+        # Reload with relationships
+        return await self.get_bug(bug_id)
     
     async def get_status_history(self, bug_id: str) -> List[BugStatusHistory]:
         """Get status history for a bug"""
