@@ -101,14 +101,14 @@ const Settings = () => {
   };
 
   const handleDeleteProvider = async (configId) => {
-    try { await llmProviderAPI.delete(configId); const provRes = await llmProviderAPI.list(); setProviders(provRes.data); } catch (error) {}
+    try { await llmProviderAPI.delete(configId); const provRes = await llmProviderAPI.list(); setProviders(provRes.data); } catch (error) { console.error('Delete provider failed:', error); }
   };
 
   const handleActivateProvider = async (configId) => {
-    try { await llmProviderAPI.activate(configId); const provRes = await llmProviderAPI.list(); setProviders(provRes.data); } catch (error) {}
+    try { await llmProviderAPI.activate(configId); const provRes = await llmProviderAPI.list(); setProviders(provRes.data); } catch (error) { console.error('Activate provider failed:', error); }
   };
 
-  const handleLogout = async () => { try { await authAPI.logout(); } catch (error) {} logout(); navigate('/'); };
+  const handleLogout = async () => { try { await authAPI.logout(); } catch (error) { console.error('Logout failed:', error); } logout(); navigate('/'); };
 
   const defaultModels = { openai: 'gpt-4o', anthropic: 'claude-sonnet-4-20250514', local: 'default' };
 
