@@ -179,6 +179,39 @@ async def get_epic(
     return epic_to_response(epic)
 
 
+@router.get("/{epic_id}/permissions")
+async def get_epic_permissions(
+    request: Request, 
+    epic_id: str,
+    session: AsyncSession = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    Get edit permissions for an epic and its children.
+    
+    Returns a permission map that the frontend can use to determine
+    which actions are allowed at the current epic stage.
+    """
+    user_id = await get_current_user_id(request, session)
+    
+    epic_service = EpicService(session)
+    epic = await epic_service.get_epic(epic_id, user_id)
+    
+    if not epic:
+        raise HTTPException(status_code=404, detail="Epic not found")
+    
+    # Get epic status from current stage
+    epic_status = lock_policy.get_epic_status(epic.current_stage)
+    
+    # Get all permissions
+    permissions = lock_policy.get_edit_permissions(epic_status, epic.current_stage)
+    
+    return {
+        "epic_id": epic_id,
+        "current_stage": epic.current_stage,
+        "permissions": permissions
+    }
+
+
 @router.delete("/{epic_id}")
 async def delete_epic(
     request: Request, 
