@@ -775,6 +775,7 @@ const Epic = () => {
                         key={feature.feature_id} 
                         feature={feature}
                         onDelete={() => handleDeleteFeature(feature.feature_id)}
+                        onCreateStories={() => navigate(`/feature/${feature.feature_id}/stories`)}
                       />
                     ))}
                   </div>
