@@ -31,7 +31,6 @@ const ProtectedRoute = ({ children }) => {
     if (location.state?.user && !hasChecked.current) {
       hasChecked.current = true;
       setUser(location.state.user);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsAuthenticated(true);
       return;
     }
