@@ -17,7 +17,17 @@ import os
 import json
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
+# Read from .env file directly
+def get_base_url():
+    env_path = '/app/frontend/.env'
+    if os.path.exists(env_path):
+        with open(env_path, 'r') as f:
+            for line in f:
+                if line.startswith('REACT_APP_BACKEND_URL='):
+                    return line.split('=', 1)[1].strip().strip('"\'')
+    return os.environ.get('REACT_APP_BACKEND_URL', 'https://epic-forge.preview.emergentagent.com').rstrip('/')
+
+BASE_URL = get_base_url()
 
 @pytest.fixture(scope="module")
 def session():
