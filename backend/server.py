@@ -30,6 +30,7 @@ from routes.epic import router as epic_router
 from routes.delivery_context import router as delivery_context_router
 from routes.feature import router as feature_router
 from routes.user_story import router as user_story_router
+from routes.bug import router as bug_router
 
 api_router.include_router(auth_router)
 api_router.include_router(subscription_router)
@@ -38,6 +39,7 @@ api_router.include_router(epic_router)
 api_router.include_router(delivery_context_router)
 api_router.include_router(feature_router)
 api_router.include_router(user_story_router)
+api_router.include_router(bug_router)
 
 # Health check endpoint
 @api_router.get("/")
