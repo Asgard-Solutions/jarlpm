@@ -66,13 +66,19 @@ class LockPolicyService:
     
     @staticmethod
     def derive_feature_locked(epic_status: EpicStatus) -> bool:
-        """Features are locked when Epic is locked"""
-        return epic_status == EpicStatus.LOCKED
+        """
+        Features are fully locked when Epic is ARCHIVED.
+        In LOCKED status, features can still be created/edited until individually approved.
+        """
+        return epic_status == EpicStatus.ARCHIVED
     
     @staticmethod
     def derive_story_frozen(epic_status: EpicStatus) -> bool:
-        """Stories are frozen when Epic is locked"""
-        return epic_status == EpicStatus.LOCKED
+        """
+        Stories are frozen when Epic is ARCHIVED.
+        In LOCKED status, stories can still be created/edited until individually approved.
+        """
+        return epic_status == EpicStatus.ARCHIVED
     
     # ============================================
     # EPIC POLICY CHECKS
