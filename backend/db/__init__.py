@@ -3,5 +3,6 @@ from .models import (
     Base, User, UserSession, Subscription, SubscriptionStatus,
     LLMProviderConfig, LLMProvider, Epic, EpicStage, EpicSnapshot,
     EpicTranscriptEvent, EpicDecision, EpicArtifact, ArtifactType,
-    PromptTemplate, PaymentTransaction, PaymentStatus
+    PromptTemplate, PaymentTransaction, PaymentStatus,
+    ProductDeliveryContext, DeliveryMethodology, DeliveryPlatform
 )
