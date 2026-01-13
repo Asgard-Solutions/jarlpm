@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import ThemeToggle from '@/components/ThemeToggle';
 import {
   Dialog,
   DialogContent,
@@ -30,12 +31,12 @@ import {
 } from 'lucide-react';
 
 const STAGE_COLORS = {
-  problem_capture: 'bg-blue-500/20 text-blue-400 border-blue-500',
-  problem_confirmed: 'bg-emerald-500/20 text-emerald-400 border-emerald-500',
-  outcome_capture: 'bg-amber-500/20 text-amber-400 border-amber-500',
-  outcome_confirmed: 'bg-emerald-500/20 text-emerald-400 border-emerald-500',
-  epic_drafted: 'bg-purple-500/20 text-purple-400 border-purple-500',
-  epic_locked: 'bg-emerald-500/20 text-emerald-400 border-emerald-500',
+  problem_capture: 'bg-primary/20 text-primary border-primary',
+  problem_confirmed: 'bg-success/20 text-success border-success',
+  outcome_capture: 'bg-warning/20 text-warning border-warning',
+  outcome_confirmed: 'bg-success/20 text-success border-success',
+  epic_drafted: 'bg-primary/20 text-primary border-primary',
+  epic_locked: 'bg-success/20 text-success border-success',
 };
 
 const STAGE_LABELS = {
@@ -133,34 +134,37 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <Layers className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <Layers className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold text-white">JarlPM</span>
+              <span className="text-xl font-bold text-foreground">JarlPM</span>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-slate-400">{user?.name || user?.email}</span>
+              <span className="text-sm text-muted-foreground">{user?.name || user?.email}</span>
+              <ThemeToggle />
               <Button 
                 variant="ghost" 
                 size="icon" 
                 onClick={() => navigate('/settings')}
+                className="text-muted-foreground hover:text-foreground"
                 data-testid="settings-btn"
               >
-                <Settings className="w-5 h-5 text-slate-400" />
+                <Settings className="w-5 h-5" />
               </Button>
               <Button 
                 variant="ghost" 
                 size="icon" 
                 onClick={handleLogout}
+                className="text-muted-foreground hover:text-foreground"
                 data-testid="logout-btn"
               >
-                <LogOut className="w-5 h-5 text-slate-400" />
+                <LogOut className="w-5 h-5" />
               </Button>
             </div>
           </div>
@@ -170,16 +174,16 @@ const Dashboard = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Alerts */}
         {!isActive && (
-          <Card className="bg-amber-500/10 border-amber-500/50 mb-6">
+          <Card className="bg-warning/10 border-warning/30 mb-6">
             <CardContent className="flex items-center gap-4 py-4">
-              <AlertCircle className="w-6 h-6 text-amber-400" />
+              <AlertCircle className="w-6 h-6 text-warning" />
               <div className="flex-1">
-                <p className="text-amber-200 font-medium">Subscription Required</p>
-                <p className="text-amber-300/70 text-sm">Subscribe to use AI features</p>
+                <p className="text-foreground font-medium">Subscription Required</p>
+                <p className="text-muted-foreground text-sm">Subscribe to use AI features</p>
               </div>
               <Button 
                 onClick={() => navigate('/settings')}
-                className="bg-amber-500 hover:bg-amber-600 text-black"
+                className="bg-warning hover:bg-warning/90 text-warning-foreground"
                 data-testid="subscribe-cta-btn"
               >
                 Subscribe Now
@@ -189,17 +193,17 @@ const Dashboard = () => {
         )}
 
         {!activeProvider && isActive && (
-          <Card className="bg-blue-500/10 border-blue-500/50 mb-6">
+          <Card className="bg-primary/10 border-primary/30 mb-6">
             <CardContent className="flex items-center gap-4 py-4">
-              <AlertCircle className="w-6 h-6 text-blue-400" />
+              <AlertCircle className="w-6 h-6 text-primary" />
               <div className="flex-1">
-                <p className="text-blue-200 font-medium">No LLM Provider Configured</p>
-                <p className="text-blue-300/70 text-sm">Add your API key to use AI features</p>
+                <p className="text-foreground font-medium">No LLM Provider Configured</p>
+                <p className="text-muted-foreground text-sm">Add your API key to use AI features</p>
               </div>
               <Button 
                 onClick={() => navigate('/settings')}
                 variant="outline"
-                className="border-blue-500 text-blue-400 hover:bg-blue-500/20"
+                className="border-primary text-primary hover:bg-primary/10"
                 data-testid="add-llm-cta-btn"
               >
                 Add API Key
@@ -211,12 +215,12 @@ const Dashboard = () => {
         {/* Title & Actions */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white">Your Epics</h1>
-            <p className="text-slate-400 mt-1">Create and manage product epics</p>
+            <h1 className="text-3xl font-bold text-foreground">Your Epics</h1>
+            <p className="text-muted-foreground mt-1">Create and manage product epics</p>
           </div>
           <Button 
             onClick={() => setShowNewEpicDialog(true)}
-            className="bg-indigo-600 hover:bg-indigo-700"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
             data-testid="new-epic-btn"
           >
             <Plus className="w-4 h-4 mr-2" /> New Epic
@@ -226,17 +230,17 @@ const Dashboard = () => {
         {/* Epics Grid */}
         {loading ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
           </div>
         ) : epics.length === 0 ? (
-          <Card className="bg-slate-900/50 border-slate-800">
+          <Card className="bg-card border-border">
             <CardContent className="py-20 text-center">
-              <FileText className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">No Epics Yet</h3>
-              <p className="text-slate-400 mb-6">Create your first epic to get started</p>
+              <FileText className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">No Epics Yet</h3>
+              <p className="text-muted-foreground mb-6">Create your first epic to get started</p>
               <Button 
                 onClick={() => setShowNewEpicDialog(true)}
-                className="bg-indigo-600 hover:bg-indigo-700"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 data-testid="empty-new-epic-btn"
               >
                 <Plus className="w-4 h-4 mr-2" /> Create Epic
@@ -248,13 +252,13 @@ const Dashboard = () => {
             {epics.map((epic) => (
               <Card 
                 key={epic.epic_id} 
-                className="bg-slate-900/50 border-slate-800 hover:border-indigo-500/50 transition-all cursor-pointer group"
+                className="bg-card border-border hover:border-primary/30 transition-all cursor-pointer group"
                 onClick={() => navigate(`/epic/${epic.epic_id}`)}
                 data-testid={`epic-card-${epic.epic_id}`}
               >
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
-                    <CardTitle className="text-white line-clamp-2">{epic.title}</CardTitle>
+                    <CardTitle className="text-foreground line-clamp-2">{epic.title}</CardTitle>
                     <Button 
                       variant="ghost" 
                       size="icon"
@@ -265,7 +269,7 @@ const Dashboard = () => {
                       }}
                       data-testid={`delete-epic-${epic.epic_id}`}
                     >
-                      <Trash2 className="w-4 h-4 text-red-400" />
+                      <Trash2 className="w-4 h-4 text-destructive" />
                     </Button>
                   </div>
                 </CardHeader>
@@ -280,13 +284,13 @@ const Dashboard = () => {
                       ) : null}
                       {STAGE_LABELS[epic.current_stage]}
                     </Badge>
-                    <span className="text-xs text-slate-500 flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {formatDate(epic.updated_at)}
                     </span>
                   </div>
                   {epic.snapshot?.problem_statement && (
-                    <p className="text-sm text-slate-400 mt-3 line-clamp-2">
+                    <p className="text-sm text-muted-foreground mt-3 line-clamp-2">
                       {epic.snapshot.problem_statement}
                     </p>
                   )}
@@ -299,10 +303,10 @@ const Dashboard = () => {
 
       {/* New Epic Dialog */}
       <Dialog open={showNewEpicDialog} onOpenChange={setShowNewEpicDialog}>
-        <DialogContent className="bg-slate-900 border-slate-800">
+        <DialogContent className="bg-card border-border">
           <DialogHeader>
-            <DialogTitle className="text-white">Create New Epic</DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogTitle className="text-foreground">Create New Epic</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
               Give your epic a clear, descriptive title
             </DialogDescription>
           </DialogHeader>
@@ -310,7 +314,7 @@ const Dashboard = () => {
             placeholder="e.g., User Authentication System"
             value={newEpicTitle}
             onChange={(e) => setNewEpicTitle(e.target.value)}
-            className="bg-slate-800 border-slate-700 text-white"
+            className="bg-background border-border text-foreground"
             onKeyDown={(e) => e.key === 'Enter' && handleCreateEpic()}
             data-testid="new-epic-title-input"
           />
@@ -319,7 +323,7 @@ const Dashboard = () => {
             <Button 
               onClick={handleCreateEpic} 
               disabled={!newEpicTitle.trim() || creating}
-              className="bg-indigo-600 hover:bg-indigo-700"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
               data-testid="create-epic-confirm-btn"
             >
               {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
@@ -331,19 +335,19 @@ const Dashboard = () => {
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
-        <AlertDialogContent className="bg-slate-900 border-slate-800">
+        <AlertDialogContent className="bg-card border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Delete Epic?</AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-400">
+            <AlertDialogTitle className="text-foreground">Delete Epic?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
               This will permanently delete &quot;{deleteConfirm?.title}&quot; and all its data. 
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-slate-700 text-slate-300">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="border-border text-foreground">Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={() => handleDeleteEpic(deleteConfirm?.epic_id)}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               disabled={deleting}
               data-testid="confirm-delete-btn"
             >
