@@ -295,7 +295,7 @@ class PromptService:
             if not existing:
                 prompt = PromptTemplate(
                     template_id=prompt_data["template_id"],
-                    stage=stage,
+                    stage=stage.value,  # Store as string value
                     system_prompt=prompt_data["system_prompt"],
                     user_prompt_template=prompt_data["user_prompt_template"],
                     invariants=prompt_data.get("invariants", []),
