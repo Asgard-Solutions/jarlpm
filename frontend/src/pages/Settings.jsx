@@ -55,6 +55,9 @@ const Settings = () => {
   const [contextError, setContextError] = useState('');
   const [contextSuccess, setContextSuccess] = useState(false);
 
+  // Select logo based on theme
+  const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
