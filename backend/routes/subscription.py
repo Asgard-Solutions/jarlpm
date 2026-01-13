@@ -1,12 +1,18 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 from pydantic import BaseModel
 from datetime import datetime, timezone
+from dateutil.relativedelta import relativedelta
 import os
 import logging
+
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from emergentintegrations.payments.stripe.checkout import (
     StripeCheckout, CheckoutSessionRequest, CheckoutSessionResponse, CheckoutStatusResponse
 )
+from db import get_db
+from db.models import Subscription, SubscriptionStatus, PaymentTransaction, PaymentStatus
 from routes.auth import get_current_user_id
 
 logger = logging.getLogger(__name__)
@@ -29,10 +35,13 @@ class SubscriptionStatusResponse(BaseModel):
 
 
 @router.post("/create-checkout")
-async def create_checkout_session(request: Request, body: CreateCheckoutRequest):
+async def create_checkout_session(
+    request: Request, 
+    body: CreateCheckoutRequest,
+    session: AsyncSession = Depends(get_db)
+):
     """Create a Stripe checkout session for subscription"""
-    db = request.app.state.db
-    user_id = await get_current_user_id(request)
+    user_id = await get_current_user_id(request, session)
     
     # Get Stripe API key
     stripe_api_key = os.environ.get("STRIPE_API_KEY")
@@ -61,34 +70,34 @@ async def create_checkout_session(request: Request, body: CreateCheckoutRequest)
     )
     
     try:
-        session: CheckoutSessionResponse = await stripe_checkout.create_checkout_session(checkout_request)
+        checkout_session: CheckoutSessionResponse = await stripe_checkout.create_checkout_session(checkout_request)
     except Exception as e:
         logger.error(f"Stripe checkout creation failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to create checkout session")
     
     # Create payment transaction record
-    import uuid
-    transaction_doc = {
-        "transaction_id": f"txn_{uuid.uuid4().hex[:12]}",
-        "user_id": user_id,
-        "session_id": session.session_id,
-        "amount": SUBSCRIPTION_PRICE,
-        "currency": SUBSCRIPTION_CURRENCY,
-        "payment_status": "initiated",
-        "metadata": {"type": "subscription"},
-        "created_at": datetime.now(timezone.utc),
-        "updated_at": datetime.now(timezone.utc)
-    }
-    await db.payment_transactions.insert_one(transaction_doc)
+    transaction = PaymentTransaction(
+        user_id=user_id,
+        session_id=checkout_session.session_id,
+        amount=SUBSCRIPTION_PRICE,
+        currency=SUBSCRIPTION_CURRENCY,
+        payment_status=PaymentStatus.INITIATED,
+        payment_metadata={"type": "subscription"}
+    )
+    session.add(transaction)
+    await session.commit()
     
-    return {"checkout_url": session.url, "session_id": session.session_id}
+    return {"checkout_url": checkout_session.url, "session_id": checkout_session.session_id}
 
 
 @router.get("/checkout-status/{session_id}")
-async def get_checkout_status(request: Request, session_id: str):
+async def get_checkout_status(
+    request: Request, 
+    session_id: str,
+    session: AsyncSession = Depends(get_db)
+):
     """Get the status of a checkout session and update subscription if paid"""
-    db = request.app.state.db
-    user_id = await get_current_user_id(request)
+    user_id = await get_current_user_id(request, session)
     
     # Get Stripe API key
     stripe_api_key = os.environ.get("STRIPE_API_KEY")
@@ -107,48 +116,55 @@ async def get_checkout_status(request: Request, session_id: str):
         raise HTTPException(status_code=500, detail="Failed to check payment status")
     
     # Update transaction record
-    await db.payment_transactions.update_one(
-        {"session_id": session_id, "user_id": user_id},
-        {
-            "$set": {
-                "payment_status": status.payment_status,
-                "updated_at": datetime.now(timezone.utc)
-            }
-        }
+    result = await session.execute(
+        select(PaymentTransaction).where(
+            PaymentTransaction.session_id == session_id,
+            PaymentTransaction.user_id == user_id
+        )
     )
+    transaction = result.scalar_one_or_none()
+    
+    if transaction:
+        # Map status string to enum
+        status_map = {
+            "paid": PaymentStatus.PAID,
+            "pending": PaymentStatus.PENDING,
+            "failed": PaymentStatus.FAILED,
+            "expired": PaymentStatus.EXPIRED
+        }
+        transaction.payment_status = status_map.get(status.payment_status, PaymentStatus.PENDING)
+        transaction.updated_at = datetime.now(timezone.utc)
     
     # If paid, activate subscription (only once)
     if status.payment_status == "paid":
-        # Check if already processed
-        existing = await db.payment_transactions.find_one(
-            {"session_id": session_id, "processed": True},
-            {"_id": 0}
-        )
-        
-        if not existing:
+        if transaction and not transaction.processed:
             # Mark as processed
-            await db.payment_transactions.update_one(
-                {"session_id": session_id},
-                {"$set": {"processed": True}}
-            )
+            transaction.processed = True
             
-            # Activate subscription
-            await db.subscriptions.update_one(
-                {"user_id": user_id},
-                {
-                    "$set": {
-                        "status": "active",
-                        "stripe_session_id": session_id,
-                        "current_period_start": datetime.now(timezone.utc),
-                        "current_period_end": datetime.now(timezone.utc).replace(
-                            month=datetime.now(timezone.utc).month + 1 if datetime.now(timezone.utc).month < 12 else 1,
-                            year=datetime.now(timezone.utc).year if datetime.now(timezone.utc).month < 12 else datetime.now(timezone.utc).year + 1
-                        ),
-                        "updated_at": datetime.now(timezone.utc)
-                    }
-                },
-                upsert=True
+            # Get or create subscription
+            sub_result = await session.execute(
+                select(Subscription).where(Subscription.user_id == user_id)
             )
+            subscription = sub_result.scalar_one_or_none()
+            
+            now = datetime.now(timezone.utc)
+            next_month = now + relativedelta(months=1)
+            
+            if subscription:
+                subscription.status = SubscriptionStatus.ACTIVE
+                subscription.current_period_start = now
+                subscription.current_period_end = next_month
+                subscription.updated_at = now
+            else:
+                subscription = Subscription(
+                    user_id=user_id,
+                    status=SubscriptionStatus.ACTIVE,
+                    current_period_start=now,
+                    current_period_end=next_month
+                )
+                session.add(subscription)
+    
+    await session.commit()
     
     return {
         "status": status.status,
@@ -159,30 +175,31 @@ async def get_checkout_status(request: Request, session_id: str):
 
 
 @router.get("/status", response_model=SubscriptionStatusResponse)
-async def get_subscription_status(request: Request):
+async def get_subscription_status(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
     """Get current subscription status"""
-    db = request.app.state.db
-    user_id = await get_current_user_id(request)
+    user_id = await get_current_user_id(request, session)
     
-    sub_doc = await db.subscriptions.find_one(
-        {"user_id": user_id},
-        {"_id": 0}
+    result = await session.execute(
+        select(Subscription).where(Subscription.user_id == user_id)
     )
+    subscription = result.scalar_one_or_none()
     
-    if not sub_doc:
+    if not subscription:
         return SubscriptionStatusResponse(status="inactive")
     
     return SubscriptionStatusResponse(
-        status=sub_doc.get("status", "inactive"),
-        stripe_subscription_id=sub_doc.get("stripe_subscription_id"),
-        current_period_end=sub_doc.get("current_period_end")
+        status=subscription.status.value if subscription.status else "inactive",
+        stripe_subscription_id=subscription.stripe_subscription_id,
+        current_period_end=subscription.current_period_end
     )
 
 
-@router.post("/webhook/stripe")
 async def stripe_webhook(request: Request):
     """Handle Stripe webhook events"""
-    db = request.app.state.db
+    from db.database import AsyncSessionLocal
     
     stripe_api_key = os.environ.get("STRIPE_API_KEY")
     if not stripe_api_key:
@@ -200,16 +217,27 @@ async def stripe_webhook(request: Request):
         
         if event.payment_status == "paid":
             user_id = event.metadata.get("user_id")
-            if user_id:
-                await db.subscriptions.update_one(
-                    {"user_id": user_id},
-                    {
-                        "$set": {
-                            "status": "active",
-                            "updated_at": datetime.now(timezone.utc)
-                        }
-                    }
-                )
+            if user_id and AsyncSessionLocal:
+                async with AsyncSessionLocal() as session:
+                    result = await session.execute(
+                        select(Subscription).where(Subscription.user_id == user_id)
+                    )
+                    subscription = result.scalar_one_or_none()
+                    
+                    now = datetime.now(timezone.utc)
+                    if subscription:
+                        subscription.status = SubscriptionStatus.ACTIVE
+                        subscription.updated_at = now
+                    else:
+                        subscription = Subscription(
+                            user_id=user_id,
+                            status=SubscriptionStatus.ACTIVE,
+                            current_period_start=now,
+                            current_period_end=now + relativedelta(months=1)
+                        )
+                        session.add(subscription)
+                    
+                    await session.commit()
         
         return {"received": True}
     except Exception as e:
