@@ -123,6 +123,7 @@ class User(Base):
     subscription: Mapped[Optional["Subscription"]] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")
     llm_configs: Mapped[List["LLMProviderConfig"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     epics: Mapped[List["Epic"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    delivery_context: Mapped[Optional["ProductDeliveryContext"]] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")
     
     __table_args__ = (
         Index('idx_users_user_id', 'user_id'),
