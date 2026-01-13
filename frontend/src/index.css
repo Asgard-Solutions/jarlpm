@@ -3,173 +3,182 @@
 @tailwind utilities;
 
 /*
- * JarlPM Nordic Theme System
+ * JarlPM Nordic Palette v1 — LOCKED
  * 
- * Design Philosophy:
- * - Muted, desaturated colors inspired by Nordic/Scandinavian design
- * - Norwegian flag as color reference (NOT literal usage)
- * - Calm, professional, restrained aesthetics
- * - Suitable for long-form professional use
+ * Muted Nordic blues and deep reds, heavily grounded in cool neutrals,
+ * optimized for professional clarity and long-form use.
  * 
- * Color Roles:
- * - Primary: Muted Nordic Blue (actions, navigation, focus)
- * - Destructive: Muted Nordic Red (warnings, critical actions - used sparingly)
- * - Success: Muted Nordic Green (confirmations, positive states)
- * - Warning: Muted Amber (cautions)
- * - Neutrals: Cool grays that dominate the UI
+ * Neutrals dominate. Accents whisper.
+ * 
+ * FORBIDDEN:
+ * - Pure white #FFFFFF
+ * - Pure black #000000
+ * - Flag-accurate reds/blues
+ * - Neon or high-saturation colors
+ * - Gradients as decoration
+ * - Color-only status indicators
  */
 
 @layer base {
   :root {
     /* ========================================
-       NORDIC COLOR PALETTE (HSL Values)
-       Muted, desaturated, gray-shifted
+       LIGHT THEME — JarlPM Nordic v1
        ======================================== */
     
-    /* Nordic Blue Scale - Desaturated, calm blue */
-    --nordic-blue-50: 210 25% 96%;
-    --nordic-blue-100: 210 22% 90%;
-    --nordic-blue-200: 210 20% 80%;
-    --nordic-blue-300: 210 18% 68%;
-    --nordic-blue-400: 210 20% 52%;
-    --nordic-blue-500: 210 25% 42%;
-    --nordic-blue-600: 210 30% 35%;
-    --nordic-blue-700: 210 32% 28%;
-    --nordic-blue-800: 210 35% 22%;
-    --nordic-blue-900: 210 38% 16%;
+    /* Backgrounds */
+    --bg-primary: 210 17% 96%;     /* #F4F6F8 - Soft Nordic off-white */
+    --bg-secondary: 210 15% 93%;   /* #E9EDF1 - Panels, cards */
+    --bg-tertiary: 210 14% 89%;    /* #DDE3E8 - Subtle contrast layers */
     
-    /* Nordic Red Scale - Deepened, softened, NOT bold */
-    --nordic-red-50: 5 20% 96%;
-    --nordic-red-100: 5 18% 90%;
-    --nordic-red-200: 5 18% 82%;
-    --nordic-red-300: 5 20% 70%;
-    --nordic-red-400: 5 25% 55%;
-    --nordic-red-500: 5 30% 45%;
-    --nordic-red-600: 5 32% 38%;
-    --nordic-red-700: 5 35% 30%;
-    --nordic-red-800: 5 35% 24%;
-    --nordic-red-900: 5 35% 18%;
+    /* Text */
+    --text-primary: 210 22% 16%;   /* #1F2933 - Charcoal, not black */
+    --text-secondary: 218 11% 34%; /* #4B5563 - Muted gray */
+    --text-muted: 220 9% 46%;      /* #6B7280 */
     
-    /* Nordic Gray Scale - Cool, blue-shifted grays */
-    --nordic-gray-50: 210 15% 98%;
-    --nordic-gray-100: 210 12% 94%;
-    --nordic-gray-200: 210 10% 88%;
-    --nordic-gray-300: 210 8% 78%;
-    --nordic-gray-400: 210 6% 58%;
-    --nordic-gray-500: 210 5% 46%;
-    --nordic-gray-600: 210 6% 36%;
-    --nordic-gray-700: 210 8% 28%;
-    --nordic-gray-800: 210 10% 20%;
-    --nordic-gray-900: 210 12% 14%;
-    --nordic-gray-950: 210 15% 10%;
-
+    /* Borders & Dividers */
+    --border-subtle: 212 19% 80%;  /* #CBD5E1 */
+    --border-muted: 210 14% 85%;   /* #D1D9E0 */
+    
+    /* Primary Accent — Nordic Blue (Muted) */
+    --accent-blue: 210 50% 37%;        /* #2F5D8C */
+    --accent-blue-hover: 210 50% 31%;  /* #284F78 */
+    --accent-blue-soft: 210 45% 44%;   /* #3B6FA3 - Rare use */
+    
+    /* Secondary Accent — Nordic Red (Muted) */
+    --accent-red: 0 42% 39%;           /* #8F3A3A */
+    --accent-red-hover: 0 42% 34%;     /* #7C3232 */
+    --accent-red-soft: 0 38% 46%;      /* #A14A4A - Very limited */
+    
+    /* Utility Accent (Very Limited) */
+    --accent-amber: 43 55% 39%;        /* #9A7B2F */
+    
+    /* Status Colors (Muted & Paired with Icons) */
+    --status-confirmed: 150 30% 33%;   /* #3A6B4F - Muted Nordic green */
+    --status-pending: 220 9% 46%;      /* #6B7280 - Neutral gray */
+    --status-locked: 215 16% 35%;      /* #475569 - Slate */
+    
     /* ========================================
-       LIGHT THEME (Default)
-       Off-white backgrounds, never pure white
+       SEMANTIC MAPPINGS (Light)
        ======================================== */
+    --background: var(--bg-primary);
+    --foreground: var(--text-primary);
     
-    --background: 210 15% 97%;
-    --foreground: 210 12% 16%;
+    --card: var(--bg-secondary);
+    --card-foreground: var(--text-primary);
     
-    --card: 210 12% 99%;
-    --card-foreground: 210 12% 16%;
+    --popover: var(--bg-secondary);
+    --popover-foreground: var(--text-primary);
     
-    --popover: 210 12% 99%;
-    --popover-foreground: 210 12% 16%;
+    --primary: var(--accent-blue);
+    --primary-foreground: 210 17% 96%;
     
-    /* Primary - Muted Nordic Blue */
-    --primary: 210 25% 42%;
-    --primary-foreground: 210 15% 98%;
+    --secondary: var(--bg-tertiary);
+    --secondary-foreground: var(--text-primary);
     
-    /* Secondary - Neutral */
-    --secondary: 210 10% 92%;
-    --secondary-foreground: 210 10% 24%;
+    --muted: var(--bg-tertiary);
+    --muted-foreground: var(--text-muted);
     
-    /* Muted - Subtle backgrounds */
-    --muted: 210 10% 94%;
-    --muted-foreground: 210 6% 46%;
+    --accent: var(--bg-secondary);
+    --accent-foreground: var(--accent-blue);
     
-    /* Accent - Soft highlight */
-    --accent: 210 15% 92%;
-    --accent-foreground: 210 25% 35%;
+    --destructive: var(--accent-red);
+    --destructive-foreground: 210 17% 96%;
     
-    /* Status Colors - Muted */
-    --destructive: 5 30% 45%;
-    --destructive-foreground: 5 15% 98%;
+    --success: var(--status-confirmed);
+    --success-foreground: 210 17% 96%;
     
-    --success: 150 20% 38%;
-    --success-foreground: 150 15% 98%;
+    --warning: var(--accent-amber);
+    --warning-foreground: 210 22% 16%;
     
-    --warning: 38 25% 50%;
-    --warning-foreground: 38 30% 15%;
-    
-    /* UI Elements */
-    --border: 210 10% 88%;
-    --input: 210 10% 88%;
-    --ring: 210 25% 42%;
+    --border: var(--border-subtle);
+    --input: var(--border-muted);
+    --ring: var(--accent-blue);
     
     /* Chart colors - Muted palette */
-    --chart-1: 210 25% 42%;
-    --chart-2: 150 20% 38%;
-    --chart-3: 38 25% 50%;
+    --chart-1: var(--accent-blue);
+    --chart-2: var(--status-confirmed);
+    --chart-3: var(--accent-amber);
     --chart-4: 280 15% 45%;
-    --chart-5: 5 25% 45%;
+    --chart-5: var(--accent-red);
     
     --radius: 0.5rem;
   }
 
   /* ========================================
-     DARK THEME
-     Deep charcoal/blue-gray, never pure black
-     Softened contrast for long sessions
+     DARK THEME — JarlPM Nordic v1
      ======================================== */
   .dark {
-    --background: 210 15% 10%;
-    --foreground: 210 10% 90%;
+    /* Backgrounds */
+    --bg-primary: 214 25% 9%;      /* #12161C - Deep charcoal-blue */
+    --bg-secondary: 216 20% 13%;   /* #1A2029 - Panels, cards */
+    --bg-tertiary: 214 18% 17%;    /* #232B36 */
     
-    --card: 210 12% 12%;
-    --card-foreground: 210 10% 90%;
+    /* Text */
+    --text-primary: 220 13% 91%;   /* #E5E7EB - Soft off-white */
+    --text-secondary: 213 17% 76%; /* #B6C0CC */
+    --text-muted: 215 13% 59%;     /* #8A94A6 */
     
-    --popover: 210 12% 12%;
-    --popover-foreground: 210 10% 90%;
+    /* Borders & Dividers */
+    --border-subtle: 214 18% 23%;  /* #2E3744 */
+    --border-muted: 213 17% 28%;   /* #394455 */
     
-    /* Primary - Slightly lighter in dark mode */
-    --primary: 210 22% 55%;
-    --primary-foreground: 210 15% 10%;
+    /* Accents remain consistent but may need subtle adjustment for contrast */
+    --accent-blue: 210 50% 37%;
+    --accent-blue-hover: 210 45% 44%;
+    --accent-blue-soft: 210 40% 50%;
     
-    /* Secondary */
-    --secondary: 210 10% 18%;
-    --secondary-foreground: 210 8% 78%;
+    --accent-red: 0 42% 39%;
+    --accent-red-hover: 0 38% 46%;
+    --accent-red-soft: 0 35% 50%;
     
-    /* Muted */
-    --muted: 210 10% 16%;
-    --muted-foreground: 210 6% 58%;
+    --accent-amber: 43 55% 45%;
     
-    /* Accent */
-    --accent: 210 12% 20%;
-    --accent-foreground: 210 20% 70%;
+    --status-confirmed: 150 28% 38%;
+    --status-pending: 215 13% 59%;
+    --status-locked: 215 16% 45%;
     
-    /* Status Colors - Adjusted for dark mode */
-    --destructive: 5 25% 50%;
-    --destructive-foreground: 5 15% 95%;
+    /* ========================================
+       SEMANTIC MAPPINGS (Dark)
+       ======================================== */
+    --background: var(--bg-primary);
+    --foreground: var(--text-primary);
     
-    --success: 150 18% 45%;
-    --success-foreground: 150 15% 95%;
+    --card: var(--bg-secondary);
+    --card-foreground: var(--text-primary);
     
-    --warning: 38 22% 55%;
-    --warning-foreground: 38 30% 10%;
+    --popover: var(--bg-secondary);
+    --popover-foreground: var(--text-primary);
     
-    /* UI Elements */
-    --border: 210 10% 20%;
-    --input: 210 10% 20%;
-    --ring: 210 22% 55%;
+    --primary: var(--accent-blue);
+    --primary-foreground: 220 13% 91%;
     
-    /* Chart colors - Dark mode adjusted */
-    --chart-1: 210 22% 55%;
-    --chart-2: 150 18% 45%;
-    --chart-3: 38 22% 55%;
+    --secondary: var(--bg-tertiary);
+    --secondary-foreground: var(--text-primary);
+    
+    --muted: var(--bg-tertiary);
+    --muted-foreground: var(--text-muted);
+    
+    --accent: var(--bg-secondary);
+    --accent-foreground: 210 40% 55%;
+    
+    --destructive: var(--accent-red);
+    --destructive-foreground: 220 13% 91%;
+    
+    --success: var(--status-confirmed);
+    --success-foreground: 220 13% 91%;
+    
+    --warning: var(--accent-amber);
+    --warning-foreground: 214 25% 9%;
+    
+    --border: var(--border-subtle);
+    --input: var(--border-muted);
+    --ring: var(--accent-blue);
+    
+    --chart-1: 210 40% 50%;
+    --chart-2: 150 25% 45%;
+    --chart-3: 43 50% 50%;
     --chart-4: 280 15% 55%;
-    --chart-5: 5 22% 55%;
+    --chart-5: 0 35% 50%;
   }
 }
 
@@ -198,16 +207,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--muted));
+  background: hsl(var(--bg-tertiary));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3);
+  background: hsl(var(--border-muted));
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5);
+  background: hsl(var(--text-muted) / 0.5);
 }
 
 /* Smooth animations */
