@@ -71,6 +71,21 @@ class PaymentStatus(str, PyEnum):
     REFUNDED = "refunded"
 
 
+class DeliveryMethodology(str, PyEnum):
+    WATERFALL = "waterfall"
+    AGILE = "agile"
+    SCRUM = "scrum"
+    KANBAN = "kanban"
+    HYBRID = "hybrid"
+
+
+class DeliveryPlatform(str, PyEnum):
+    JIRA = "jira"
+    AZURE_DEVOPS = "azure_devops"
+    NONE = "none"
+    OTHER = "other"
+
+
 # Stage ordering for validation
 STAGE_ORDER = {
     EpicStage.PROBLEM_CAPTURE: 0,
