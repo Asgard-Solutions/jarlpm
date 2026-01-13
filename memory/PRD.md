@@ -211,6 +211,13 @@ When an Epic is locked, users enter Feature Planning Mode:
 
 ## Changelog
 
+### 2026-01-13: Logo and Favicon Update (COMPLETE)
+- Added Viking helmet logo images (light/dark variants) for theme support
+- Created favicon.ico, logo192.png, logo512.png, apple-touch-icon.png
+- Updated index.html with proper favicon, meta description, and title
+- Updated Landing.jsx, Dashboard.jsx, Settings.jsx to use theme-aware logo
+- Logo switches between light/dark versions based on current theme
+
 ### 2026-01-13: Landing Page Copy Update (COMPLETE)
 - Updated hero section with new tagline: "Lead like a Jarl — calm authority, decisions that stick."
 - New description copy emphasizing clarity and discipline
