@@ -158,16 +158,26 @@ class EpicService:
         )
         return list(result.scalars().all())
     
-    def can_advance_stage(self, current_stage: EpicStage, target_stage: EpicStage) -> bool:
+    def can_advance_stage(self, current_stage: str, target_stage: str) -> bool:
         """Check if stage advancement is valid (monotonic progression only)"""
-        current_order = STAGE_ORDER.get(current_stage, -1)
-        target_order = STAGE_ORDER.get(target_stage, -1)
+        # Convert string to enum for comparison
+        try:
+            current_enum = EpicStage(current_stage) if isinstance(current_stage, str) else current_stage
+            target_enum = EpicStage(target_stage) if isinstance(target_stage, str) else target_stage
+        except ValueError:
+            return False
+        current_order = STAGE_ORDER.get(current_enum, -1)
+        target_order = STAGE_ORDER.get(target_enum, -1)
         # Can only advance forward by exactly one stage
         return target_order == current_order + 1
     
-    def get_next_stage(self, current_stage: EpicStage) -> Optional[EpicStage]:
+    def get_next_stage(self, current_stage: str) -> Optional[EpicStage]:
         """Get the next stage in the progression"""
-        current_order = STAGE_ORDER.get(current_stage, -1)
+        try:
+            current_enum = EpicStage(current_stage) if isinstance(current_stage, str) else current_stage
+        except ValueError:
+            return None
+        current_order = STAGE_ORDER.get(current_enum, -1)
         for stage, order in STAGE_ORDER.items():
             if order == current_order + 1:
                 return stage
