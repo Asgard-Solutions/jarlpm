@@ -175,6 +175,95 @@ async def logout(
     return {"message": "Logged out successfully"}
 
 
+@router.post("/test-login")
+async def test_login(
+    response: Response,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Login as test user with full access (active subscription).
+    For development/testing purposes only.
+    """
+    # Check if test user exists
+    result = await session.execute(select(User).where(User.email == TEST_USER_EMAIL))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        # Create test user
+        user_id = f"user_test_{uuid.uuid4().hex[:8]}"
+        user = User(
+            user_id=user_id,
+            email=TEST_USER_EMAIL,
+            name=TEST_USER_NAME,
+            picture=None
+        )
+        session.add(user)
+        await session.flush()
+        
+        # Create ACTIVE subscription for test user (1 year from now)
+        subscription = Subscription(
+            user_id=user_id,
+            status=SubscriptionStatus.ACTIVE.value,
+            current_period_start=datetime.now(timezone.utc),
+            current_period_end=datetime.now(timezone.utc) + relativedelta(years=1)
+        )
+        session.add(subscription)
+        logger.info(f"Created test user: {user_id} with active subscription")
+    else:
+        user_id = user.user_id
+        # Ensure subscription is active
+        sub_result = await session.execute(
+            select(Subscription).where(Subscription.user_id == user_id)
+        )
+        subscription = sub_result.scalar_one_or_none()
+        if subscription:
+            subscription.status = SubscriptionStatus.ACTIVE.value
+            subscription.current_period_end = datetime.now(timezone.utc) + relativedelta(years=1)
+        else:
+            subscription = Subscription(
+                user_id=user_id,
+                status=SubscriptionStatus.ACTIVE.value,
+                current_period_start=datetime.now(timezone.utc),
+                current_period_end=datetime.now(timezone.utc) + relativedelta(years=1)
+            )
+            session.add(subscription)
+    
+    # Remove old sessions for this user
+    await session.execute(
+        delete(UserSession).where(UserSession.user_id == user_id)
+    )
+    
+    # Create new session with long expiry
+    expires_at = datetime.now(timezone.utc) + timedelta(days=365)
+    user_session = UserSession(
+        user_id=user_id,
+        session_token=TEST_SESSION_TOKEN,
+        expires_at=expires_at
+    )
+    session.add(user_session)
+    
+    await session.commit()
+    
+    # Set httpOnly cookie
+    response.set_cookie(
+        key="session_token",
+        value=TEST_SESSION_TOKEN,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=365 * 24 * 60 * 60  # 1 year
+    )
+    
+    return {
+        "message": "Logged in as test user",
+        "user_id": user_id,
+        "email": TEST_USER_EMAIL,
+        "name": TEST_USER_NAME,
+        "subscription_status": "active"
+    }
+
+
 # Helper function to get current user (for use in other routes)
 async def get_current_user_id(request: Request, session: AsyncSession) -> str:
     """Extract and validate current user ID from request"""
