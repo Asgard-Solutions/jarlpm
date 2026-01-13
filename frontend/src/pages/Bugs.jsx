@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ThemeToggle from '@/components/ThemeToggle';
-import useAuthStore from '@/store';
+import { useAuthStore } from '@/store';
 import { bugAPI, epicAPI, featureAPI } from '@/api';
 import { 
   Bug, Plus, Search, Filter, ArrowLeft, Settings, 
