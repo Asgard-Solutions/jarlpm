@@ -342,12 +342,20 @@ const Bugs = () => {
             </div>
             <div className="flex items-center gap-2">
               <Button 
+                onClick={startAIChat}
+                className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white"
+                data-testid="ai-new-bug-btn"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Report Bug with AI
+              </Button>
+              <Button 
+                variant="outline"
                 onClick={() => setShowCreateDialog(true)}
-                className="bg-red-500 hover:bg-red-600 text-white"
-                data-testid="new-bug-btn"
+                data-testid="manual-new-bug-btn"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                New Bug
+                Manual
               </Button>
               <ThemeToggle />
               <Button 
