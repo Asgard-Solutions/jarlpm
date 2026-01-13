@@ -692,11 +692,11 @@ Start the conversation by asking about the problem they encountered."""
     
     async def generate():
         full_response = ""
-        async for chunk in llm_service.stream_completion(
-            config=config,
+        async for chunk in llm_service.generate_stream(
+            user_id=user_id,
             system_prompt=system_prompt,
             user_prompt=body.content,
-            context=formatted_history if formatted_history else None
+            conversation_history=formatted_history if formatted_history else None
         ):
             full_response += chunk
             yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
