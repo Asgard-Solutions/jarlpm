@@ -18,7 +18,11 @@ const SHOW_TEST_LOGIN = process.env.NODE_ENV === 'development' || process.env.RE
 const Landing = () => {
   const navigate = useNavigate();
   const { setUser } = useAuthStore();
+  const { theme } = useThemeStore();
   const [testLoading, setTestLoading] = useState(false);
+
+  // Select logo based on theme
+  const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
 
   const handleGetStarted = () => {
     // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
