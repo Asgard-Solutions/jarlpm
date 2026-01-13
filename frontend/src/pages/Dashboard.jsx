@@ -65,7 +65,7 @@ const Dashboard = () => {
     loadData();
   }, []);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       // Load subscription status
