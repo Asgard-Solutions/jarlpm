@@ -98,9 +98,12 @@ async def init_db():
         return
     
     from .models import Base
+    from .feature_models import Feature, FeatureConversationEvent  # Import to register models
     
     async with engine.begin() as conn:
         # Drop all existing tables and types for clean start (development only)
+        await conn.execute(text("DROP TABLE IF EXISTS feature_conversation_events CASCADE"))
+        await conn.execute(text("DROP TABLE IF EXISTS features CASCADE"))
         await conn.execute(text("DROP TABLE IF EXISTS product_delivery_contexts CASCADE"))
         await conn.execute(text("DROP TABLE IF EXISTS epic_artifacts CASCADE"))
         await conn.execute(text("DROP TABLE IF EXISTS epic_decisions CASCADE"))
