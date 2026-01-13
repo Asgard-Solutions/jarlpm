@@ -86,11 +86,11 @@ async def get_current_user_id(request: Request, session: AsyncSession) -> str:
     if not session_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    from db.models import SessionToken
+    from db.models import UserSession
     from sqlalchemy import select
     
     result = await session.execute(
-        select(SessionToken).where(SessionToken.token == session_token)
+        select(UserSession).where(UserSession.token == session_token)
     )
     session_record = result.scalar_one_or_none()
     
