@@ -2,48 +2,174 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family:
-    source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
-}
+/*
+ * JarlPM Nordic Theme System
+ * 
+ * Design Philosophy:
+ * - Muted, desaturated colors inspired by Nordic/Scandinavian design
+ * - Norwegian flag as color reference (NOT literal usage)
+ * - Calm, professional, restrained aesthetics
+ * - Suitable for long-form professional use
+ * 
+ * Color Roles:
+ * - Primary: Muted Nordic Blue (actions, navigation, focus)
+ * - Destructive: Muted Nordic Red (warnings, critical actions - used sparingly)
+ * - Success: Muted Nordic Green (confirmations, positive states)
+ * - Warning: Muted Amber (cautions)
+ * - Neutrals: Cool grays that dominate the UI
+ */
 
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* ========================================
+       NORDIC COLOR PALETTE (HSL Values)
+       Muted, desaturated, gray-shifted
+       ======================================== */
+    
+    /* Nordic Blue Scale - Desaturated, calm blue */
+    --nordic-blue-50: 210 25% 96%;
+    --nordic-blue-100: 210 22% 90%;
+    --nordic-blue-200: 210 20% 80%;
+    --nordic-blue-300: 210 18% 68%;
+    --nordic-blue-400: 210 20% 52%;
+    --nordic-blue-500: 210 25% 42%;
+    --nordic-blue-600: 210 30% 35%;
+    --nordic-blue-700: 210 32% 28%;
+    --nordic-blue-800: 210 35% 22%;
+    --nordic-blue-900: 210 38% 16%;
+    
+    /* Nordic Red Scale - Deepened, softened, NOT bold */
+    --nordic-red-50: 5 20% 96%;
+    --nordic-red-100: 5 18% 90%;
+    --nordic-red-200: 5 18% 82%;
+    --nordic-red-300: 5 20% 70%;
+    --nordic-red-400: 5 25% 55%;
+    --nordic-red-500: 5 30% 45%;
+    --nordic-red-600: 5 32% 38%;
+    --nordic-red-700: 5 35% 30%;
+    --nordic-red-800: 5 35% 24%;
+    --nordic-red-900: 5 35% 18%;
+    
+    /* Nordic Gray Scale - Cool, blue-shifted grays */
+    --nordic-gray-50: 210 15% 98%;
+    --nordic-gray-100: 210 12% 94%;
+    --nordic-gray-200: 210 10% 88%;
+    --nordic-gray-300: 210 8% 78%;
+    --nordic-gray-400: 210 6% 58%;
+    --nordic-gray-500: 210 5% 46%;
+    --nordic-gray-600: 210 6% 36%;
+    --nordic-gray-700: 210 8% 28%;
+    --nordic-gray-800: 210 10% 20%;
+    --nordic-gray-900: 210 12% 14%;
+    --nordic-gray-950: 210 15% 10%;
+
+    /* ========================================
+       LIGHT THEME (Default)
+       Off-white backgrounds, never pure white
+       ======================================== */
+    
+    --background: 210 15% 97%;
+    --foreground: 210 12% 16%;
+    
+    --card: 210 12% 99%;
+    --card-foreground: 210 12% 16%;
+    
+    --popover: 210 12% 99%;
+    --popover-foreground: 210 12% 16%;
+    
+    /* Primary - Muted Nordic Blue */
+    --primary: 210 25% 42%;
+    --primary-foreground: 210 15% 98%;
+    
+    /* Secondary - Neutral */
+    --secondary: 210 10% 92%;
+    --secondary-foreground: 210 10% 24%;
+    
+    /* Muted - Subtle backgrounds */
+    --muted: 210 10% 94%;
+    --muted-foreground: 210 6% 46%;
+    
+    /* Accent - Soft highlight */
+    --accent: 210 15% 92%;
+    --accent-foreground: 210 25% 35%;
+    
+    /* Status Colors - Muted */
+    --destructive: 5 30% 45%;
+    --destructive-foreground: 5 15% 98%;
+    
+    --success: 150 20% 38%;
+    --success-foreground: 150 15% 98%;
+    
+    --warning: 38 25% 50%;
+    --warning-foreground: 38 30% 15%;
+    
+    /* UI Elements */
+    --border: 210 10% 88%;
+    --input: 210 10% 88%;
+    --ring: 210 25% 42%;
+    
+    /* Chart colors - Muted palette */
+    --chart-1: 210 25% 42%;
+    --chart-2: 150 20% 38%;
+    --chart-3: 38 25% 50%;
+    --chart-4: 280 15% 45%;
+    --chart-5: 5 25% 45%;
+    
     --radius: 0.5rem;
+  }
+
+  /* ========================================
+     DARK THEME
+     Deep charcoal/blue-gray, never pure black
+     Softened contrast for long sessions
+     ======================================== */
+  .dark {
+    --background: 210 15% 10%;
+    --foreground: 210 10% 90%;
+    
+    --card: 210 12% 12%;
+    --card-foreground: 210 10% 90%;
+    
+    --popover: 210 12% 12%;
+    --popover-foreground: 210 10% 90%;
+    
+    /* Primary - Slightly lighter in dark mode */
+    --primary: 210 22% 55%;
+    --primary-foreground: 210 15% 10%;
+    
+    /* Secondary */
+    --secondary: 210 10% 18%;
+    --secondary-foreground: 210 8% 78%;
+    
+    /* Muted */
+    --muted: 210 10% 16%;
+    --muted-foreground: 210 6% 58%;
+    
+    /* Accent */
+    --accent: 210 12% 20%;
+    --accent-foreground: 210 20% 70%;
+    
+    /* Status Colors - Adjusted for dark mode */
+    --destructive: 5 25% 50%;
+    --destructive-foreground: 5 15% 95%;
+    
+    --success: 150 18% 45%;
+    --success-foreground: 150 15% 95%;
+    
+    --warning: 38 22% 55%;
+    --warning-foreground: 38 30% 10%;
+    
+    /* UI Elements */
+    --border: 210 10% 20%;
+    --input: 210 10% 20%;
+    --ring: 210 22% 55%;
+    
+    /* Chart colors - Dark mode adjusted */
+    --chart-1: 210 22% 55%;
+    --chart-2: 150 18% 45%;
+    --chart-3: 38 22% 55%;
+    --chart-4: 280 15% 55%;
+    --chart-5: 5 22% 55%;
   }
 }
 
@@ -51,28 +177,37 @@ code {
   * {
     @apply border-border;
   }
+  
   body {
     @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+      "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
   }
 }
 
-/* Custom scrollbar for dark theme */
+/* Custom scrollbar - Nordic styled */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgb(15 23 42);
+  background: hsl(var(--muted));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(51 65 85);
+  background: hsl(var(--muted-foreground) / 0.3);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(71 85 105);
+  background: hsl(var(--muted-foreground) / 0.5);
 }
 
 /* Smooth animations */
@@ -106,6 +241,7 @@ code {
   overflow: hidden;
 }
 
+/* Debug wrapper compatibility */
 @layer base {
   [data-debug-wrapper="true"] {
     display: contents !important;
@@ -135,5 +271,12 @@ code {
     border-right-color: inherit;
     border-top-color: inherit;
     border-bottom-color: inherit;
+  }
+}
+
+/* Focus visible styles - Accessible but not harsh */
+@layer utilities {
+  .focus-nordic {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
 }
