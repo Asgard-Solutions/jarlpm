@@ -180,8 +180,6 @@ class PersonaService:
                             context_parts.append(f"      • {sac}")
         
         return "\n".join(context_parts)
-        
-        return "\n".join(context_parts)
     
     async def generate_personas(
         self,
