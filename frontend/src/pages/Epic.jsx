@@ -22,7 +22,7 @@ import {
   ArrowLeft, Send, Loader2, Lock, CheckCircle2, 
   XCircle, FileText, History, AlertCircle, Layers,
   User, Bot, Settings, Plus, Puzzle, BookOpen, Bug, Trash2,
-  ChevronRight, Sparkles, RefreshCw, Edit3, MessageSquare
+  ChevronRight, Sparkles, RefreshCw, Edit3, MessageSquare, Target, Flag
 } from 'lucide-react';
 
 const STAGES = [
@@ -48,6 +48,14 @@ const FEATURE_STAGES = {
   refining: { label: 'Refining', color: 'bg-violet-500/20 text-violet-400 border-violet-500/30', icon: MessageSquare },
   approved: { label: 'Approved', color: 'bg-success/20 text-success border-success/30', icon: Lock },
 };
+
+// Workflow steps for the visual stepper
+const WORKFLOW_STEPS = [
+  { id: 'definition', label: 'Epic Definition', icon: FileText, description: 'Problem & Outcome' },
+  { id: 'features', label: 'Features', icon: Puzzle, description: 'Break down epic' },
+  { id: 'stories', label: 'User Stories', icon: BookOpen, description: 'Sprint-sized tasks' },
+  { id: 'complete', label: 'Complete', icon: Flag, description: 'Ready for development' },
+];
 
 const Epic = () => {
   const { epicId } = useParams();
