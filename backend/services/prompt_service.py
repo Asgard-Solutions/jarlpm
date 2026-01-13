@@ -253,14 +253,66 @@ class PromptService:
         # Fall back to default prompts
         return DEFAULT_PROMPTS.get(stage_enum)
     
+    async def get_delivery_context(self, user_id: str) -> Optional[ProductDeliveryContext]:
+        """Get user's Product Delivery Context"""
+        result = await self.session.execute(
+            select(ProductDeliveryContext).where(ProductDeliveryContext.user_id == user_id)
+        )
+        return result.scalar_one_or_none()
+    
+    def format_delivery_context(self, context: Optional[ProductDeliveryContext]) -> str:
+        """Format delivery context as read-only text for LLM prompts"""
+        if not context:
+            return """
+PRODUCT DELIVERY CONTEXT (Read-Only):
+- Industry: Not specified
+- Delivery Methodology: Not specified
+- Sprint Cycle Length: Not specified
+- Sprint Start Date: Not specified
+- Team Size: Not specified
+- Delivery Platform: Not specified
+"""
+        
+        # Format each field, handling None values
+        industry = context.industry if context.industry else "Not specified"
+        methodology = context.delivery_methodology.replace("_", " ").title() if context.delivery_methodology else "Not specified"
+        sprint_length = f"{context.sprint_cycle_length} days" if context.sprint_cycle_length else "Not specified"
+        sprint_start = context.sprint_start_date.strftime("%Y-%m-%d") if context.sprint_start_date else "Not specified"
+        
+        # Team size
+        devs = context.num_developers if context.num_developers is not None else None
+        qas = context.num_qa if context.num_qa is not None else None
+        if devs is not None or qas is not None:
+            team_parts = []
+            if devs is not None:
+                team_parts.append(f"{devs} developer{'s' if devs != 1 else ''}")
+            if qas is not None:
+                team_parts.append(f"{qas} QA")
+            team_size = ", ".join(team_parts)
+        else:
+            team_size = "Not specified"
+        
+        platform = context.delivery_platform.replace("_", " ").title() if context.delivery_platform else "Not specified"
+        
+        return f"""
+PRODUCT DELIVERY CONTEXT (Read-Only):
+- Industry: {industry}
+- Delivery Methodology: {methodology}
+- Sprint Cycle Length: {sprint_length}
+- Sprint Start Date: {sprint_start}
+- Team Size: {team_size}
+- Delivery Platform: {platform}
+"""
+    
     def render_prompt(
         self,
         template: dict,
         epic_title: str,
         user_message: str,
-        snapshot: Optional[EpicSnapshot]
+        snapshot: Optional[EpicSnapshot],
+        delivery_context: Optional[ProductDeliveryContext] = None
     ) -> tuple[str, str]:
-        """Render system and user prompts with context"""
+        """Render system and user prompts with context, including delivery context"""
         
         # Build context dictionary
         context = {
@@ -277,9 +329,15 @@ class PromptService:
             if value is None:
                 context[key] = "Not yet defined"
         
-        # Render prompts
+        # Format delivery context
+        delivery_context_text = self.format_delivery_context(delivery_context)
+        
+        # Render prompts and inject delivery context
         system_prompt = template["system_prompt"].format(**context)
         user_prompt = template["user_prompt_template"].format(**context)
+        
+        # Inject delivery context at the beginning of system prompt
+        system_prompt = f"{delivery_context_text}\n{system_prompt}"
         
         return system_prompt, user_prompt
     
