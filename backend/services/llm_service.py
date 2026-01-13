@@ -44,13 +44,14 @@ class LLMService:
         
         api_key = self._decrypt_api_key(config)
         
-        if config.provider == LLMProvider.OPENAI:
+        # Compare with string values since provider is now stored as string
+        if config.provider == LLMProvider.OPENAI.value:
             async for chunk in self._openai_stream(api_key, config.model_name, system_prompt, user_prompt, conversation_history):
                 yield chunk
-        elif config.provider == LLMProvider.ANTHROPIC:
+        elif config.provider == LLMProvider.ANTHROPIC.value:
             async for chunk in self._anthropic_stream(api_key, config.model_name, system_prompt, user_prompt, conversation_history):
                 yield chunk
-        elif config.provider == LLMProvider.LOCAL:
+        elif config.provider == LLMProvider.LOCAL.value:
             async for chunk in self._local_stream(api_key, config.base_url, config.model_name, system_prompt, user_prompt, conversation_history):
                 yield chunk
         else:
