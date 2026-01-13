@@ -284,13 +284,28 @@ When an Epic is locked, users enter Feature Planning Mode:
   - Locked content protection trigger for snapshots
 - All enum types stored as strings for compatibility
 
+### 2026-01-13: State-Driven Locking Model (COMPLETE)
+- Implemented `LockPolicyService` as the central policy module for all mutation permissions
+- Added `GET /api/epics/{epic_id}/permissions` endpoint to expose field-level permissions to frontend
+- Integrated lock policy checks into feature and user story routes (update/delete operations)
+- Updated frontend API client with `epicAPI.getPermissions()` method
+- Fixed cascade delete bug for append-only conversation tables in feature/story deletion
+- **Policy Rules:**
+  - Epic anchors (Problem + Outcome) become immutable after confirmation
+  - Features/Stories can be created and edited during Feature Planning Mode (epic_locked stage)
+  - Features become immutable when individually approved
+  - User Stories become immutable when individually approved
+  - Only ARCHIVED epics prevent all mutations
+- Comprehensive backend tests: 22/22 passed (100%)
+
 ---
 
 ## Backlog
 
 ### P1 - Upcoming
-- Story and Bug creation stages (children of Features)
-- Full E2E workflow test
+- Bug creation stage (children of Features) - follows Feature/Story lifecycle pattern
+- Full E2E workflow test with locking model
+- Frontend UI updates to show locked/unlocked states based on permissions API
 
 ### P2 - Future
 - Implement full Stripe subscription flow
