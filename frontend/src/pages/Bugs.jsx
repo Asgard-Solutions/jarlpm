@@ -635,6 +635,138 @@ const Bugs = () => {
         </DialogContent>
       </Dialog>
 
+      {/* AI-Assisted Bug Creation Dialog */}
+      <Dialog open={showAICreateDialog} onOpenChange={setShowAICreateDialog}>
+        <DialogContent className="max-w-3xl h-[80vh] flex flex-col p-0">
+          <DialogHeader className="p-4 pb-2 border-b border-border">
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-violet-500" />
+              Report Bug with AI Assistant
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Describe your bug and I&apos;ll help you create a comprehensive bug report.
+            </p>
+          </DialogHeader>
+          
+          {/* Chat Area */}
+          <div 
+            ref={aiChatRef}
+            className="flex-1 overflow-y-auto p-4 space-y-4"
+            data-testid="ai-chat-area"
+          >
+            {aiMessages.map((msg, idx) => (
+              <div 
+                key={idx} 
+                className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                {msg.role === 'assistant' && (
+                  <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+                    <Bot className="w-4 h-4 text-violet-400" />
+                  </div>
+                )}
+                <div className={`max-w-[80%] rounded-lg p-3 ${
+                  msg.role === 'user' 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-muted text-foreground'
+                }`}>
+                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                </div>
+                {msg.role === 'user' && (
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <UserIcon className="w-4 h-4 text-primary" />
+                  </div>
+                )}
+              </div>
+            ))}
+            
+            {/* Streaming response */}
+            {aiStreamingContent && (
+              <div className="flex gap-3 justify-start">
+                <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+                  <Bot className="w-4 h-4 text-violet-400" />
+                </div>
+                <div className="max-w-[80%] rounded-lg p-3 bg-muted text-foreground">
+                  <p className="text-sm whitespace-pre-wrap">{aiStreamingContent}</p>
+                </div>
+              </div>
+            )}
+            
+            {/* AI typing indicator */}
+            {aiSending && !aiStreamingContent && (
+              <div className="flex gap-3 justify-start">
+                <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+                  <Bot className="w-4 h-4 text-violet-400" />
+                </div>
+                <div className="bg-muted rounded-lg p-3">
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{animationDelay: '0ms'}} />
+                    <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{animationDelay: '150ms'}} />
+                    <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{animationDelay: '300ms'}} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Proposal Preview */}
+          {aiProposal && (
+            <div className="mx-4 mb-2 p-4 bg-success/10 border border-success/30 rounded-lg">
+              <h4 className="font-semibold text-foreground flex items-center gap-2 mb-2">
+                <CheckCircle2 className="w-4 h-4 text-success" />
+                Bug Report Ready
+              </h4>
+              <div className="space-y-2 text-sm">
+                <p><span className="text-muted-foreground">Title:</span> <span className="text-foreground font-medium">{aiProposal.title}</span></p>
+                <p><span className="text-muted-foreground">Severity:</span> <Badge variant="outline" className={SEVERITY_CONFIG[aiProposal.severity]?.color}>{aiProposal.severity}</Badge></p>
+                {aiProposal.priority && <p><span className="text-muted-foreground">Priority:</span> {PRIORITY_CONFIG[aiProposal.priority]?.label || aiProposal.priority}</p>}
+              </div>
+              <div className="flex gap-2 mt-3">
+                <Button 
+                  onClick={createFromAIProposal}
+                  disabled={creatingFromProposal}
+                  className="bg-success hover:bg-success/90"
+                  data-testid="create-from-proposal-btn"
+                >
+                  {creatingFromProposal ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                  Create Bug
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setAiProposal(null)}
+                >
+                  Continue Refining
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {/* Input Area */}
+          <div className="p-4 border-t border-border">
+            <form 
+              onSubmit={(e) => { e.preventDefault(); sendAIMessage(); }}
+              className="flex gap-2"
+            >
+              <Input
+                value={aiInput}
+                onChange={(e) => setAiInput(e.target.value)}
+                placeholder="Describe your bug or answer the AI's questions..."
+                disabled={aiSending}
+                data-testid="ai-chat-input"
+                className="flex-1"
+              />
+              <Button 
+                type="submit"
+                disabled={!aiInput.trim() || aiSending}
+                className="bg-violet-500 hover:bg-violet-600"
+                data-testid="ai-send-btn"
+              >
+                {aiSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </Button>
+            </form>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Bug Detail Dialog */}
       {selectedBug && (
         <BugDetailDialog
