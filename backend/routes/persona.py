@@ -218,6 +218,18 @@ async def generate_personas_for_epic(
     # Pre-build the context for LLM
     context = persona_service.build_context_for_generation(epic_data)
     
+    # Pre-fetch LLM config BEFORE the generator starts
+    llm_config = await llm_service.get_user_llm_config(user_id)
+    if not llm_config:
+        raise HTTPException(status_code=400, detail="No LLM provider configured")
+    
+    # Get the decrypted API key before generator
+    from services.encryption_service import EncryptionService
+    encryption_service = EncryptionService()
+    api_key = encryption_service.decrypt(llm_config.encrypted_api_key)
+    provider = llm_config.provider
+    model_name = llm_config.model_name
+    
     async def generate():
         # Import here to create fresh session for generator
         from db.database import AsyncSessionLocal
