@@ -56,6 +56,12 @@ class FeatureResponse(BaseModel):
     current_stage: str
     source: str
     priority: Optional[int] = None
+    moscow_score: Optional[str] = None
+    rice_reach: Optional[int] = None
+    rice_impact: Optional[float] = None
+    rice_confidence: Optional[float] = None
+    rice_effort: Optional[float] = None
+    rice_total: Optional[float] = None
     created_at: datetime
     updated_at: datetime
     approved_at: Optional[datetime] = None
@@ -84,6 +90,12 @@ def feature_to_response(feature: Feature) -> FeatureResponse:
         current_stage=feature.current_stage,
         source=feature.source,
         priority=feature.priority,
+        moscow_score=feature.moscow_score,
+        rice_reach=feature.rice_reach,
+        rice_impact=feature.rice_impact,
+        rice_confidence=feature.rice_confidence,
+        rice_effort=feature.rice_effort,
+        rice_total=feature.rice_total,
         created_at=feature.created_at,
         updated_at=feature.updated_at,
         approved_at=feature.approved_at
