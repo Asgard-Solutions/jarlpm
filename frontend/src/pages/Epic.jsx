@@ -786,6 +786,7 @@ const Epic = () => {
                         onRefine={() => handleOpenRefinement(feature)}
                         onApprove={() => handleApproveFeature(feature.feature_id)}
                         onDelete={() => handleDeleteFeature(feature.feature_id)}
+                        onScoreUpdate={() => loadFeatures()}
                       />
                     ))}
                   </div>
@@ -810,6 +811,7 @@ const Epic = () => {
                         onRefine={() => handleOpenRefinement(feature)}
                         onApprove={() => handleApproveFeature(feature.feature_id)}
                         onDelete={() => handleDeleteFeature(feature.feature_id)}
+                        onScoreUpdate={() => loadFeatures()}
                       />
                     ))}
                   </div>
@@ -843,6 +845,7 @@ const Epic = () => {
                         storyCount={featureStoryCounts[feature.feature_id]}
                         onDelete={() => handleDeleteFeature(feature.feature_id)}
                         onCreateStories={() => navigate(`/feature/${feature.feature_id}/stories`)}
+                        onScoreUpdate={() => loadFeatures()}
                       />
                     ))}
                   </div>
