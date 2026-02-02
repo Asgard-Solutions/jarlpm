@@ -471,13 +471,7 @@ export const RICEScoringDialog = ({
     rice_total: null,
   });
 
-  useEffect(() => {
-    if (open && entityId) {
-      loadScores();
-    }
-  }, [open, entityId]);
-
-  const loadScores = async () => {
+  const loadScores = useCallback(async () => {
     try {
       const api = entityType === 'story' ? scoringAPI.getStoryRICE : scoringAPI.getBugRICE;
       const { data } = await api(entityId);
@@ -491,7 +485,13 @@ export const RICEScoringDialog = ({
     } catch (err) {
       console.error('Failed to load scores:', err);
     }
-  };
+  }, [entityId, entityType]);
+
+  useEffect(() => {
+    if (open && entityId) {
+      loadScores();
+    }
+  }, [open, entityId, loadScores]);
 
   const handleRICEChange = async (field, value) => {
     const newScores = { ...scores, [field]: value };
