@@ -32,6 +32,7 @@ from routes.feature import router as feature_router
 from routes.user_story import router as user_story_router
 from routes.bug import router as bug_router
 from routes.persona import router as persona_router
+from routes.scoring import router as scoring_router
 
 api_router.include_router(auth_router)
 api_router.include_router(subscription_router)
@@ -42,6 +43,7 @@ api_router.include_router(feature_router)
 api_router.include_router(user_story_router)
 api_router.include_router(bug_router)
 api_router.include_router(persona_router)
+api_router.include_router(scoring_router)
 
 # Health check endpoint
 @api_router.get("/")
