@@ -121,7 +121,7 @@ export const MoSCoWEditor = ({ value, onChange, onSuggest, loading = false, disa
           <SelectItem value="wont_have">
             <span className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-slate-400" />
-              Won't Have
+              Won&apos;t Have
             </span>
           </SelectItem>
         </SelectContent>
