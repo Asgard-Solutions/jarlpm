@@ -153,7 +153,10 @@ async def update_epic_moscow(
             moscow_label=label
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        error_msg = str(e)
+        if "not found" in error_msg.lower():
+            raise HTTPException(status_code=404, detail=error_msg)
+        raise HTTPException(status_code=400, detail=error_msg)
 
 
 @router.post("/epic/{epic_id}/moscow/suggest")
