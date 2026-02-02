@@ -465,7 +465,7 @@ async def get_story_rice(
     session: AsyncSession = Depends(get_db)
 ):
     """Get RICE score for a User Story"""
-    user_id = await get_current_user_id(request, session)
+    await get_current_user_id(request, session)  # Auth check
     scoring_service = ScoringService(session)
     
     story = await scoring_service.get_user_story(story_id)
@@ -492,7 +492,7 @@ async def update_story_rice(
     session: AsyncSession = Depends(get_db)
 ):
     """Update RICE score for a User Story"""
-    user_id = await get_current_user_id(request, session)
+    await get_current_user_id(request, session)  # Auth check
     scoring_service = ScoringService(session)
     
     try:
