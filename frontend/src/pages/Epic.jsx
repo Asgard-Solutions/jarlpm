@@ -1524,6 +1524,16 @@ const FeatureCard = ({ feature, onRefine, onApprove, onDelete, onCreateStories, 
         )}
       </CardContent>
     </Card>
+    
+    {/* Scoring Dialog */}
+    <FeatureScoringDialog
+      open={showScoring}
+      onOpenChange={setShowScoring}
+      featureId={feature.feature_id}
+      featureTitle={feature.title}
+      onUpdate={onScoreUpdate}
+    />
+    </>
   );
 };
 
