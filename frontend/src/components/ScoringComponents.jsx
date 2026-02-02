@@ -265,13 +265,7 @@ export const FeatureScoringDialog = ({ open, onOpenChange, featureId, featureTit
     rice_total: null,
   });
 
-  useEffect(() => {
-    if (open && featureId) {
-      loadScores();
-    }
-  }, [open, featureId]);
-
-  const loadScores = async () => {
+  const loadScores = useCallback(async () => {
     try {
       const { data } = await scoringAPI.getFeatureScores(featureId);
       setScores({
@@ -285,7 +279,13 @@ export const FeatureScoringDialog = ({ open, onOpenChange, featureId, featureTit
     } catch (err) {
       console.error('Failed to load scores:', err);
     }
-  };
+  }, [featureId]);
+
+  useEffect(() => {
+    if (open && featureId) {
+      loadScores();
+    }
+  }, [open, featureId, loadScores]);
 
   const handleMoSCoWChange = async (value) => {
     try {
