@@ -1356,10 +1356,11 @@ const WorkflowStepper = ({ currentStep, featuresComplete, storiesComplete, total
 };
 
 // Feature Card Component
-const FeatureCard = ({ feature, onRefine, onApprove, onDelete, onCreateStories, storyCount }) => {
+const FeatureCard = ({ feature, onRefine, onApprove, onDelete, onCreateStories, storyCount, onScoreUpdate }) => {
   const stageInfo = FEATURE_STAGES[feature.current_stage];
   const StageIcon = stageInfo?.icon || Edit3;
   const isApproved = feature.current_stage === 'approved';
+  const [showScoring, setShowScoring] = useState(false);
   
   // Determine story status for approved features
   const hasStories = storyCount && storyCount.total > 0;
@@ -1367,88 +1368,104 @@ const FeatureCard = ({ feature, onRefine, onApprove, onDelete, onCreateStories, 
   const storiesInProgress = hasStories && !allStoriesApproved;
 
   return (
-    <Card className={`border-${isApproved ? 'success' : feature.current_stage === 'refining' ? 'violet-500' : 'amber-500'}/30 bg-${isApproved ? 'success' : feature.current_stage === 'refining' ? 'violet-500' : 'amber-500'}/5`} data-testid={`feature-card-${feature.feature_id}`}>
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isApproved ? 'bg-success/20' : feature.current_stage === 'refining' ? 'bg-violet-500/20' : 'bg-amber-500/20'}`}>
-              <StageIcon className={`w-5 h-5 ${isApproved ? 'text-success' : feature.current_stage === 'refining' ? 'text-violet-400' : 'text-amber-400'}`} />
-            </div>
-            <div>
-              <CardTitle className="text-base text-foreground">{feature.title}</CardTitle>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <Badge variant="outline" className={`text-xs ${stageInfo?.color}`}>
-                  {isApproved && <Lock className="w-3 h-3 mr-1" />}
-                  {stageInfo?.label}
-                </Badge>
-                <Badge variant="outline" className="text-xs bg-muted text-muted-foreground">
-                  {feature.source === 'ai_generated' ? 'AI' : 'Manual'}
-                </Badge>
-                {/* Story status badge for approved features */}
-                {isApproved && (
-                  allStoriesApproved ? (
-                    <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30">
-                      <CheckCircle2 className="w-3 h-3 mr-1" />
-                      {storyCount.total} Stories Done
-                    </Badge>
-                  ) : hasStories ? (
-                    <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/30">
-                      <BookOpen className="w-3 h-3 mr-1" />
-                      {storyCount.approved}/{storyCount.total} Stories
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-400 border-amber-500/30">
-                      <AlertCircle className="w-3 h-3 mr-1" />
-                      No Stories
-                    </Badge>
-                  )
-                )}
+    <>
+      <Card className={`border-${isApproved ? 'success' : feature.current_stage === 'refining' ? 'violet-500' : 'amber-500'}/30 bg-${isApproved ? 'success' : feature.current_stage === 'refining' ? 'violet-500' : 'amber-500'}/5`} data-testid={`feature-card-${feature.feature_id}`}>
+        <CardHeader className="pb-2">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isApproved ? 'bg-success/20' : feature.current_stage === 'refining' ? 'bg-violet-500/20' : 'bg-amber-500/20'}`}>
+                <StageIcon className={`w-5 h-5 ${isApproved ? 'text-success' : feature.current_stage === 'refining' ? 'text-violet-400' : 'text-amber-400'}`} />
+              </div>
+              <div>
+                <CardTitle className="text-base text-foreground">{feature.title}</CardTitle>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <Badge variant="outline" className={`text-xs ${stageInfo?.color}`}>
+                    {isApproved && <Lock className="w-3 h-3 mr-1" />}
+                    {stageInfo?.label}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs bg-muted text-muted-foreground">
+                    {feature.source === 'ai_generated' ? 'AI' : 'Manual'}
+                  </Badge>
+                  {/* Scoring badges */}
+                  {feature.moscow_score && <MoSCoWBadge score={feature.moscow_score} size="sm" />}
+                  {feature.rice_total && <RICEBadge score={feature.rice_total} size="sm" />}
+                  {/* Story status badge for approved features */}
+                  {isApproved && (
+                    allStoriesApproved ? (
+                      <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30">
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        {storyCount.total} Stories Done
+                      </Badge>
+                    ) : hasStories ? (
+                      <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/30">
+                        <BookOpen className="w-3 h-3 mr-1" />
+                        {storyCount.approved}/{storyCount.total} Stories
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-400 border-amber-500/30">
+                        <AlertCircle className="w-3 h-3 mr-1" />
+                        No Stories
+                      </Badge>
+                    )
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-          {onDelete && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onDelete}
-              className="text-muted-foreground hover:text-destructive"
-              data-testid={`delete-feature-btn-${feature.feature_id}`}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">{feature.description}</p>
-        
-        {feature.acceptance_criteria?.length > 0 && (
-          <div className="bg-background/50 rounded-lg p-3">
-            <p className="text-xs font-medium text-foreground mb-2">Acceptance Criteria:</p>
-            <ul className="text-xs text-muted-foreground space-y-1">
-              {feature.acceptance_criteria.map((c, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  {isApproved ? (
-                    <CheckCircle2 className="w-3 h-3 mt-0.5 text-success flex-shrink-0" />
-                  ) : (
-                    <span className={feature.current_stage === 'refining' ? 'text-violet-400' : 'text-amber-400'}>•</span>
-                  )}
-                  {c}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        
-        {!isApproved && (
-          <div className="flex gap-2 pt-2">
-            {onApprove && (
-              <Button 
-                size="sm" 
-                onClick={onApprove}
-                className="bg-success hover:bg-success/90 text-white"
-                data-testid={`approve-btn-${feature.feature_id}`}
+            <div className="flex items-center gap-1">
+              {/* Prioritize button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowScoring(true)}
+                className="text-violet-400 hover:text-violet-500 hover:bg-violet-500/10"
+                data-testid={`prioritize-feature-btn-${feature.feature_id}`}
               >
+                <TrendingUp className="w-4 h-4" />
+              </Button>
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onDelete}
+                  className="text-muted-foreground hover:text-destructive"
+                  data-testid={`delete-feature-btn-${feature.feature_id}`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">{feature.description}</p>
+          
+          {feature.acceptance_criteria?.length > 0 && (
+            <div className="bg-background/50 rounded-lg p-3">
+              <p className="text-xs font-medium text-foreground mb-2">Acceptance Criteria:</p>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                {feature.acceptance_criteria.map((c, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    {isApproved ? (
+                      <CheckCircle2 className="w-3 h-3 mt-0.5 text-success flex-shrink-0" />
+                    ) : (
+                      <span className={feature.current_stage === 'refining' ? 'text-violet-400' : 'text-amber-400'}>•</span>
+                    )}
+                    {c}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          {!isApproved && (
+            <div className="flex gap-2 pt-2">
+              {onApprove && (
+                <Button 
+                  size="sm" 
+                  onClick={onApprove}
+                  className="bg-success hover:bg-success/90 text-white"
+                  data-testid={`approve-btn-${feature.feature_id}`}
+                >
                 <CheckCircle2 className="w-4 h-4 mr-1" />
                 Approve & Lock
               </Button>
