@@ -83,6 +83,13 @@ class UserStory(Base):
     # Priority order within feature or standalone list
     priority: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     
+    # RICE Scoring (Reach * Impact * Confidence / Effort)
+    rice_reach: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # 1-10 scale
+    rice_impact: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # 0.25, 0.5, 1, 2, 3
+    rice_confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # 0.5, 0.8, 1.0
+    rice_effort: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # 0.5-10 person-months
+    rice_total: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # Calculated score
+    
     # Versioning support
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     parent_story_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # Lineage for versions
