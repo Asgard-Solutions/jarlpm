@@ -257,7 +257,7 @@ async def get_feature_scores(
     session: AsyncSession = Depends(get_db)
 ):
     """Get all scores for a Feature"""
-    user_id = await get_current_user_id(request, session)
+    await get_current_user_id(request, session)  # Auth check
     scoring_service = ScoringService(session)
     
     feature = await scoring_service.get_feature(feature_id)
