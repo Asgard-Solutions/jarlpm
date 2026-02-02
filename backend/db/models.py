@@ -237,7 +237,7 @@ class PaymentTransaction(Base):
     currency: Mapped[str] = mapped_column(String(10), default="usd", nullable=False)
     payment_status: Mapped[str] = mapped_column(String(50), default="pending", nullable=False)  # pending, paid, failed, expired
     transaction_type: Mapped[str] = mapped_column(String(50), default="subscription", nullable=False)  # subscription, one_time
-    metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    payment_metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
