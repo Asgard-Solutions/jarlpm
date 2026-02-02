@@ -83,7 +83,7 @@ async def create_checkout_session(
         currency=SUBSCRIPTION_CURRENCY,
         payment_status="pending",
         transaction_type="subscription",
-        metadata={"type": "subscription"}
+        payment_metadata={"type": "subscription"}
     )
     session.add(transaction)
     await session.commit()
