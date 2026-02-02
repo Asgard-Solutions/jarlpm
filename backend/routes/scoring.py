@@ -323,7 +323,7 @@ async def update_feature_rice(
     session: AsyncSession = Depends(get_db)
 ):
     """Update RICE score for a Feature"""
-    user_id = await get_current_user_id(request, session)
+    await get_current_user_id(request, session)  # Auth check
     scoring_service = ScoringService(session)
     
     try:
