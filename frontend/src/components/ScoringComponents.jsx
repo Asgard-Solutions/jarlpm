@@ -373,7 +373,9 @@ export const FeatureScoringDialog = ({ open, onOpenChange, featureId, featureTit
               } else if (data.type === 'error') {
                 toast.error(data.message);
               }
-            } catch (e) {}
+            } catch (parseError) {
+              // Ignore malformed JSON lines in stream
+            }
           }
         }
       }
