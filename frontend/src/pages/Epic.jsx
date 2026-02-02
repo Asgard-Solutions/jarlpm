@@ -18,11 +18,12 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import ThemeToggle from '@/components/ThemeToggle';
+import { MoSCoWBadge, RICEBadge, FeatureScoringDialog } from '@/components/ScoringComponents';
 import { 
   ArrowLeft, Send, Loader2, Lock, CheckCircle2, 
   XCircle, FileText, History, AlertCircle, Layers,
   User, Bot, Settings, Plus, Puzzle, BookOpen, Bug, Trash2,
-  ChevronRight, Sparkles, RefreshCw, Edit3, MessageSquare, Target, Flag
+  ChevronRight, Sparkles, RefreshCw, Edit3, MessageSquare, Target, Flag, TrendingUp
 } from 'lucide-react';
 
 const STAGES = [
