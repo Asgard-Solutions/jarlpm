@@ -459,15 +459,52 @@ When an Epic is locked, users enter Feature Planning Mode:
 - **Bug Fix:** Fixed streaming generator database session issue (greenlet_spawn error)
 - **UX Improvement:** Added clear messaging when epic isn't completed yet, with disabled Generate button and "Continue Epic Workflow" CTA
 
+### 2026-02-02: RICE & MoSCoW Scoring with AI Assistance (COMPLETE)
+- **MoSCoW Scoring for Epics:** Must Have, Should Have, Could Have, Won't Have prioritization
+- **MoSCoW + RICE Scoring for Features:** Combined prioritization framework
+- **RICE Scoring for User Stories:** Reach × Impact × Confidence / Effort calculation
+- **RICE Scoring for Bugs:** Prioritize bug fixes based on impact and effort
+- **Database Schema Updates:**
+  - `Epic.moscow_score` field
+  - `Feature.moscow_score`, `rice_reach`, `rice_impact`, `rice_confidence`, `rice_effort`, `rice_total` fields
+  - `UserStory.rice_reach`, `rice_impact`, `rice_confidence`, `rice_effort`, `rice_total` fields
+  - `Bug.rice_reach`, `rice_impact`, `rice_confidence`, `rice_effort`, `rice_total` fields
+- **Backend API Endpoints:**
+  - GET /api/scoring/options - Scoring options for UI dropdowns
+  - GET/PUT /api/scoring/epic/{id}/moscow - Epic MoSCoW CRUD
+  - POST /api/scoring/epic/{id}/moscow/suggest - AI suggestion for Epic MoSCoW
+  - GET /api/scoring/feature/{id} - Feature scores (MoSCoW + RICE)
+  - PUT /api/scoring/feature/{id}/moscow - Feature MoSCoW update
+  - PUT /api/scoring/feature/{id}/rice - Feature RICE update
+  - POST /api/scoring/feature/{id}/suggest - AI suggestion for Feature scores
+  - GET/PUT /api/scoring/story/{id}/rice - User Story RICE CRUD
+  - POST /api/scoring/story/{id}/suggest - AI suggestion for Story RICE
+  - GET/PUT /api/scoring/bug/{id}/rice - Bug RICE CRUD
+  - POST /api/scoring/bug/{id}/suggest - AI suggestion for Bug RICE
+- **Frontend Components:**
+  - `ScoringComponents.jsx` with: MoSCoWBadge, RICEBadge, ScoringDisplay, MoSCoWEditor, RICEEditor
+  - `FeatureScoringDialog` - Full MoSCoW + RICE editor with AI suggestion
+  - `RICEScoringDialog` - RICE-only editor for Stories and Bugs
+  - `EpicMoSCoWDialog` - MoSCoW-only editor for Epics
+- **FeatureCard Updates:** TrendingUp prioritize button opens scoring dialog
+- **Scoring Badges:** Display MoSCoW and RICE scores on cards
+- **Tests:** 34/34 backend tests passed, 100% frontend coverage
+
 ---
 
 ## Backlog
 
+### P0 - Critical
+- Fix AI-Assisted User Persona Generation (broken - async session/lazy-loading issue)
+
 ### P1 - Upcoming
+- Implement full Stripe subscription flow ($20/month for AI features)
 - Full E2E workflow test with all features combined
 
 ### P2 - Future
-- Implement full Stripe subscription flow
+- Google OAuth authentication
 - Contextual bug linking from Epic/Feature/Story pages
 - Export to Jira/Azure DevOps
 - Team collaboration features
+- Hard-delete functionality for Epics
+- Markdown export
