@@ -519,7 +519,10 @@ async def update_story_rice(
             rice_total=story.rice_total
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        error_msg = str(e)
+        if "not found" in error_msg.lower():
+            raise HTTPException(status_code=404, detail=error_msg)
+        raise HTTPException(status_code=400, detail=error_msg)
 
 
 @router.post("/story/{story_id}/suggest")
@@ -676,7 +679,10 @@ async def update_bug_rice(
             rice_total=bug.rice_total
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        error_msg = str(e)
+        if "not found" in error_msg.lower():
+            raise HTTPException(status_code=404, detail=error_msg)
+        raise HTTPException(status_code=400, detail=error_msg)
 
 
 @router.post("/bug/{bug_id}/suggest")
