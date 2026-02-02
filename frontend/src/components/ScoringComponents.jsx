@@ -612,20 +612,20 @@ export const EpicMoSCoWDialog = ({ open, onOpenChange, epicId, epicTitle, onUpda
   const [aiLoading, setAiLoading] = useState(false);
   const [score, setScore] = useState(null);
 
-  useEffect(() => {
-    if (open && epicId) {
-      loadScore();
-    }
-  }, [open, epicId]);
-
-  const loadScore = async () => {
+  const loadScore = useCallback(async () => {
     try {
       const { data } = await scoringAPI.getEpicMoSCoW(epicId);
       setScore(data.moscow_score);
     } catch (err) {
       console.error('Failed to load score:', err);
     }
-  };
+  }, [epicId]);
+
+  useEffect(() => {
+    if (open && epicId) {
+      loadScore();
+    }
+  }, [open, epicId, loadScore]);
 
   const handleChange = async (value) => {
     try {
