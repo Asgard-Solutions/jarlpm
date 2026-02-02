@@ -51,7 +51,7 @@ class PersonaService:
         if epic.snapshot:
             snapshot_dict = {
                 "problem_statement": epic.snapshot.problem_statement,
-                "desired_outcomes": epic.snapshot.desired_outcomes,
+                "desired_outcome": epic.snapshot.desired_outcome,
                 "acceptance_criteria": epic.snapshot.acceptance_criteria,
             }
         
