@@ -224,6 +224,33 @@ class Subscription(Base):
     )
 
 
+class PaymentTransaction(Base):
+    """Track all payment transactions through Stripe"""
+    __tablename__ = "payment_transactions"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    transaction_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("txn_"))
+    user_id: Mapped[str] = mapped_column(String(50), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    stripe_session_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    stripe_payment_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    amount: Mapped[float] = mapped_column(Float, nullable=False)
+    currency: Mapped[str] = mapped_column(String(10), default="usd", nullable=False)
+    payment_status: Mapped[str] = mapped_column(String(50), default="pending", nullable=False)  # pending, paid, failed, expired
+    transaction_type: Mapped[str] = mapped_column(String(50), default="subscription", nullable=False)  # subscription, one_time
+    metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    user: Mapped["User"] = relationship(backref="payment_transactions")
+    
+    __table_args__ = (
+        Index('idx_payment_transactions_user_id', 'user_id'),
+        Index('idx_payment_transactions_session_id', 'stripe_session_id'),
+        Index('idx_payment_transactions_status', 'payment_status'),
+    )
+
+
 # ============================================
 # LLM PROVIDER MODELS
 # ============================================
