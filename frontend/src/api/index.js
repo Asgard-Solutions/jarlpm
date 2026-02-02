@@ -234,4 +234,55 @@ export const personaAPI = {
     api.post(`/personas/${personaId}/regenerate-portrait`, { prompt }),
 };
 
+// Scoring API (RICE & MoSCoW)
+export const scoringAPI = {
+  // Get scoring options for UI
+  getOptions: () => api.get('/scoring/options'),
+  
+  // Epic MoSCoW scoring
+  getEpicMoSCoW: (epicId) => api.get(`/scoring/epic/${epicId}/moscow`),
+  updateEpicMoSCoW: (epicId, score) => api.put(`/scoring/epic/${epicId}/moscow`, { score }),
+  suggestEpicMoSCoW: (epicId) => {
+    return fetch(`${API}/scoring/epic/${epicId}/moscow/suggest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+  },
+  
+  // Feature scoring (MoSCoW + RICE)
+  getFeatureScores: (featureId) => api.get(`/scoring/feature/${featureId}`),
+  updateFeatureMoSCoW: (featureId, score) => api.put(`/scoring/feature/${featureId}/moscow`, { score }),
+  updateFeatureRICE: (featureId, data) => api.put(`/scoring/feature/${featureId}/rice`, data),
+  suggestFeatureScores: (featureId) => {
+    return fetch(`${API}/scoring/feature/${featureId}/suggest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+  },
+  
+  // User Story RICE scoring
+  getStoryRICE: (storyId) => api.get(`/scoring/story/${storyId}`),
+  updateStoryRICE: (storyId, data) => api.put(`/scoring/story/${storyId}/rice`, data),
+  suggestStoryRICE: (storyId) => {
+    return fetch(`${API}/scoring/story/${storyId}/suggest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+  },
+  
+  // Bug RICE scoring
+  getBugRICE: (bugId) => api.get(`/scoring/bug/${bugId}`),
+  updateBugRICE: (bugId, data) => api.put(`/scoring/bug/${bugId}/rice`, data),
+  suggestBugRICE: (bugId) => {
+    return fetch(`${API}/scoring/bug/${bugId}/suggest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+  },
+};
+
 export default api;
