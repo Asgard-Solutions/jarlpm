@@ -10,7 +10,7 @@ from enum import Enum as PyEnum
 import uuid
 
 from sqlalchemy import (
-    String, Text, Boolean, Integer, DateTime, JSON,
+    String, Text, Boolean, Integer, Float, DateTime, JSON,
     ForeignKey, Index, CheckConstraint
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
