@@ -7,7 +7,7 @@ Tests that deleting an Epic cascades to all related entities:
 - Transcript Events
 - Snapshots
 
-This test uses only API calls to test the cascade delete functionality.
+This test uses API calls and psycopg2 for direct DB access to test cascade delete.
 
 Modules tested:
 - Epic creation API
@@ -22,14 +22,44 @@ Modules tested:
 import pytest
 import requests
 import os
-import subprocess
-import json
+import uuid
+import psycopg2
+from urllib.parse import urlparse
 
 # Get base URL from environment
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://priorityforge.preview.emergentagent.com').rstrip('/')
 
 # Test user credentials (created by Test Login button)
 TEST_SESSION_TOKEN = "test_session_jarlpm_full_access_2025"
+
+
+def get_db_connection():
+    """Get a psycopg2 connection to the database"""
+    db_url = os.environ.get('DATABASE_URL', '')
+    if not db_url:
+        # Read from backend .env
+        with open('/app/backend/.env', 'r') as f:
+            for line in f:
+                if line.startswith('DATABASE_URL='):
+                    db_url = line.split('=', 1)[1].strip().strip('"')
+                    break
+    
+    if not db_url:
+        raise Exception("DATABASE_URL not found")
+    
+    # Parse the URL
+    parsed = urlparse(db_url)
+    
+    # Connect with SSL
+    conn = psycopg2.connect(
+        host=parsed.hostname,
+        port=parsed.port or 5432,
+        database=parsed.path.lstrip('/'),
+        user=parsed.username,
+        password=parsed.password,
+        sslmode='require'
+    )
+    return conn
 
 
 @pytest.fixture(scope="module")
@@ -162,58 +192,55 @@ class TestEpicDeleteAPI:
 
 
 def create_locked_epic_with_children(user_id: str):
-    """Helper function to create a locked epic with features and stories using psql"""
-    import uuid
-    
+    """Helper function to create a locked epic with features and stories using psycopg2"""
     epic_id = f"epic_cascade_{uuid.uuid4().hex[:8]}"
     feature_id = f"feat_cascade_{uuid.uuid4().hex[:8]}"
     story_id = f"story_cascade_{uuid.uuid4().hex[:8]}"
+    event_id_1 = f"evt_{uuid.uuid4().hex[:12]}"
+    event_id_2 = f"evt_{uuid.uuid4().hex[:12]}"
     
-    # SQL to create the hierarchy
-    sql = f"""
-    -- Create epic
-    INSERT INTO epics (epic_id, user_id, title, current_stage, created_at, updated_at)
-    VALUES ('{epic_id}', '{user_id}', 'TEST_Cascade Epic', 'epic_locked', NOW(), NOW());
-    
-    -- Create snapshot
-    INSERT INTO epic_snapshots (epic_id, problem_statement, desired_outcome, epic_summary)
-    VALUES ('{epic_id}', 'Cascade test problem', 'Cascade test outcome', 'Cascade test summary');
-    
-    -- Create transcript events
-    INSERT INTO epic_transcript_events (event_id, epic_id, role, content, stage, created_at)
-    VALUES ('evt_{uuid.uuid4().hex[:12]}', '{epic_id}', 'system', 'Event 1', 'epic_locked', NOW());
-    INSERT INTO epic_transcript_events (event_id, epic_id, role, content, stage, created_at)
-    VALUES ('evt_{uuid.uuid4().hex[:12]}', '{epic_id}', 'system', 'Event 2', 'epic_locked', NOW());
-    
-    -- Create feature
-    INSERT INTO features (feature_id, epic_id, title, description, current_stage, source, created_at, updated_at)
-    VALUES ('{feature_id}', '{epic_id}', 'TEST_Cascade Feature', 'Feature for cascade test', 'approved', 'manual', NOW(), NOW());
-    
-    -- Create user story
-    INSERT INTO user_stories (story_id, feature_id, persona, action, benefit, story_text, current_stage, source, created_at, updated_at)
-    VALUES ('{story_id}', '{feature_id}', 'cascade user', 'test cascade', 'verify cascade', 'As a cascade user, I want to test cascade so that verify cascade.', 'draft', 'manual', NOW(), NOW());
-    """
-    
-    # Execute via psql
-    db_url = os.environ.get('DATABASE_URL', '')
-    if not db_url:
-        # Read from backend .env
-        with open('/app/backend/.env', 'r') as f:
-            for line in f:
-                if line.startswith('DATABASE_URL='):
-                    db_url = line.split('=', 1)[1].strip().strip('"')
-                    break
-    
-    # Run psql command
-    result = subprocess.run(
-        ['psql', db_url, '-c', sql],
-        capture_output=True,
-        text=True,
-        timeout=30
-    )
-    
-    if result.returncode != 0:
-        raise Exception(f"Failed to create test data: {result.stderr}")
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            # Create epic
+            cur.execute("""
+                INSERT INTO epics (epic_id, user_id, title, current_stage, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, NOW(), NOW())
+            """, (epic_id, user_id, 'TEST_Cascade Epic', 'epic_locked'))
+            
+            # Create snapshot
+            cur.execute("""
+                INSERT INTO epic_snapshots (epic_id, problem_statement, desired_outcome, epic_summary)
+                VALUES (%s, %s, %s, %s)
+            """, (epic_id, 'Cascade test problem', 'Cascade test outcome', 'Cascade test summary'))
+            
+            # Create transcript events
+            cur.execute("""
+                INSERT INTO epic_transcript_events (event_id, epic_id, role, content, stage, created_at)
+                VALUES (%s, %s, %s, %s, %s, NOW())
+            """, (event_id_1, epic_id, 'system', 'Event 1', 'epic_locked'))
+            
+            cur.execute("""
+                INSERT INTO epic_transcript_events (event_id, epic_id, role, content, stage, created_at)
+                VALUES (%s, %s, %s, %s, %s, NOW())
+            """, (event_id_2, epic_id, 'system', 'Event 2', 'epic_locked'))
+            
+            # Create feature
+            cur.execute("""
+                INSERT INTO features (feature_id, epic_id, title, description, current_stage, source, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+            """, (feature_id, epic_id, 'TEST_Cascade Feature', 'Feature for cascade test', 'approved', 'manual'))
+            
+            # Create user story
+            cur.execute("""
+                INSERT INTO user_stories (story_id, feature_id, persona, action, benefit, story_text, current_stage, source, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+            """, (story_id, feature_id, 'cascade user', 'test cascade', 'verify cascade', 
+                  'As a cascade user, I want to test cascade so that verify cascade.', 'draft', 'manual'))
+            
+            conn.commit()
+    finally:
+        conn.close()
     
     return {
         "epic_id": epic_id,
@@ -227,11 +254,8 @@ class TestCascadeDeleteFeatures:
     
     def test_cascade_delete_features(self, auth_headers, test_user_id):
         """Test that deleting an epic cascades to delete features"""
-        # Create test data via psql
-        try:
-            data = create_locked_epic_with_children(test_user_id)
-        except Exception as e:
-            pytest.skip(f"Could not create test data: {e}")
+        # Create test data via psycopg2
+        data = create_locked_epic_with_children(test_user_id)
         
         epic_id = data["epic_id"]
         feature_id = data["feature_id"]
@@ -269,11 +293,8 @@ class TestCascadeDeleteUserStories:
     
     def test_cascade_delete_user_stories(self, auth_headers, test_user_id):
         """Test that deleting an epic cascades to delete user stories via feature"""
-        # Create test data via psql
-        try:
-            data = create_locked_epic_with_children(test_user_id)
-        except Exception as e:
-            pytest.skip(f"Could not create test data: {e}")
+        # Create test data via psycopg2
+        data = create_locked_epic_with_children(test_user_id)
         
         epic_id = data["epic_id"]
         story_id = data["story_id"]
@@ -311,11 +332,8 @@ class TestCascadeDeleteTranscriptEvents:
     
     def test_cascade_delete_transcript_events(self, auth_headers, test_user_id):
         """Test that deleting an epic cascades to delete transcript events"""
-        # Create test data via psql
-        try:
-            data = create_locked_epic_with_children(test_user_id)
-        except Exception as e:
-            pytest.skip(f"Could not create test data: {e}")
+        # Create test data via psycopg2
+        data = create_locked_epic_with_children(test_user_id)
         
         epic_id = data["epic_id"]
         
@@ -354,11 +372,8 @@ class TestCascadeDeleteSnapshots:
     
     def test_cascade_delete_snapshots(self, auth_headers, test_user_id):
         """Test that deleting an epic cascades to delete snapshots"""
-        # Create test data via psql
-        try:
-            data = create_locked_epic_with_children(test_user_id)
-        except Exception as e:
-            pytest.skip(f"Could not create test data: {e}")
+        # Create test data via psycopg2
+        data = create_locked_epic_with_children(test_user_id)
         
         epic_id = data["epic_id"]
         
@@ -397,11 +412,8 @@ class TestDatabaseIntegrityAfterDelete:
     
     def test_no_orphaned_records_after_delete(self, auth_headers, test_user_id):
         """Verify no orphaned records in database after deleting epic with all children"""
-        # Create test data via psql
-        try:
-            data = create_locked_epic_with_children(test_user_id)
-        except Exception as e:
-            pytest.skip(f"Could not create test data: {e}")
+        # Create test data via psycopg2
+        data = create_locked_epic_with_children(test_user_id)
         
         epic_id = data["epic_id"]
         feature_id = data["feature_id"]
@@ -436,60 +448,37 @@ class TestDatabaseIntegrityAfterDelete:
         response = requests.get(f"{BASE_URL}/api/stories/{story_id}", headers=auth_headers, timeout=10)
         assert response.status_code == 404, f"Story should return 404: {response.text}"
         
-        print(f"✓ All entities verified to be deleted (CASCADE WORKS!)")
+        print(f"✓ All entities verified to be deleted via API (CASCADE WORKS!)")
         
-        # Verify no orphans in database via psql
-        db_url = os.environ.get('DATABASE_URL', '')
-        if not db_url:
-            with open('/app/backend/.env', 'r') as f:
-                for line in f:
-                    if line.startswith('DATABASE_URL='):
-                        db_url = line.split('=', 1)[1].strip().strip('"')
-                        break
-        
-        # Check for orphaned snapshots
-        result = subprocess.run(
-            ['psql', db_url, '-t', '-c', f"SELECT COUNT(*) FROM epic_snapshots WHERE epic_id = '{epic_id}'"],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
-        count = int(result.stdout.strip()) if result.returncode == 0 else -1
-        assert count == 0, f"Orphaned snapshots found: {count}"
-        print(f"✓ No orphaned snapshots in database")
-        
-        # Check for orphaned transcript events
-        result = subprocess.run(
-            ['psql', db_url, '-t', '-c', f"SELECT COUNT(*) FROM epic_transcript_events WHERE epic_id = '{epic_id}'"],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
-        count = int(result.stdout.strip()) if result.returncode == 0 else -1
-        assert count == 0, f"Orphaned transcript events found: {count}"
-        print(f"✓ No orphaned transcript events in database")
-        
-        # Check for orphaned features
-        result = subprocess.run(
-            ['psql', db_url, '-t', '-c', f"SELECT COUNT(*) FROM features WHERE epic_id = '{epic_id}'"],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
-        count = int(result.stdout.strip()) if result.returncode == 0 else -1
-        assert count == 0, f"Orphaned features found: {count}"
-        print(f"✓ No orphaned features in database")
-        
-        # Check for orphaned user stories
-        result = subprocess.run(
-            ['psql', db_url, '-t', '-c', f"SELECT COUNT(*) FROM user_stories WHERE feature_id = '{feature_id}'"],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
-        count = int(result.stdout.strip()) if result.returncode == 0 else -1
-        assert count == 0, f"Orphaned user stories found: {count}"
-        print(f"✓ No orphaned user stories in database")
+        # Verify no orphans in database via psycopg2
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                # Check for orphaned snapshots
+                cur.execute("SELECT COUNT(*) FROM epic_snapshots WHERE epic_id = %s", (epic_id,))
+                count = cur.fetchone()[0]
+                assert count == 0, f"Orphaned snapshots found: {count}"
+                print(f"✓ No orphaned snapshots in database")
+                
+                # Check for orphaned transcript events
+                cur.execute("SELECT COUNT(*) FROM epic_transcript_events WHERE epic_id = %s", (epic_id,))
+                count = cur.fetchone()[0]
+                assert count == 0, f"Orphaned transcript events found: {count}"
+                print(f"✓ No orphaned transcript events in database")
+                
+                # Check for orphaned features
+                cur.execute("SELECT COUNT(*) FROM features WHERE epic_id = %s", (epic_id,))
+                count = cur.fetchone()[0]
+                assert count == 0, f"Orphaned features found: {count}"
+                print(f"✓ No orphaned features in database")
+                
+                # Check for orphaned user stories
+                cur.execute("SELECT COUNT(*) FROM user_stories WHERE feature_id = %s", (feature_id,))
+                count = cur.fetchone()[0]
+                assert count == 0, f"Orphaned user stories found: {count}"
+                print(f"✓ No orphaned user stories in database")
+        finally:
+            conn.close()
         
         print(f"✓ Full cascade delete test completed successfully!")
 
