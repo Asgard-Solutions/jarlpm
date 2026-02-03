@@ -104,6 +104,7 @@ class UserStory(Base):
     approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     
     # Relationships
+    feature: Mapped[Optional["Feature"]] = relationship(back_populates="user_stories")
     conversation_events: Mapped[List["UserStoryConversationEvent"]] = relationship(back_populates="user_story", cascade="all, delete-orphan")
     versions: Mapped[List["UserStoryVersion"]] = relationship(back_populates="story", cascade="all, delete-orphan")
     
