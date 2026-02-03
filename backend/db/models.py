@@ -199,6 +199,28 @@ class UserSession(Base):
     )
 
 
+class VerificationToken(Base):
+    """Token for email verification and password reset"""
+    __tablename__ = "verification_tokens"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    token_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, default=lambda: generate_uuid("vtoken_"))
+    user_id: Mapped[str] = mapped_column(String(50), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    token: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    token_type: Mapped[str] = mapped_column(String(50), nullable=False)  # 'email_verification' or 'password_reset'
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    user: Mapped["User"] = relationship(backref="verification_tokens")
+    
+    __table_args__ = (
+        Index('idx_verification_tokens_user_id', 'user_id'),
+        Index('idx_verification_tokens_token', 'token'),
+    )
+
+
 # ============================================
 # SUBSCRIPTION MODELS
 # ============================================
