@@ -192,7 +192,7 @@ const Export = () => {
     
     setLoading(true);
     try {
-      const response = await fetch(`${API}/export/azure-devops`, {
+      const response = await fetch(`${API}/api/export/azure-devops`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
