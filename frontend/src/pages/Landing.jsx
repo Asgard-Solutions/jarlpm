@@ -109,6 +109,14 @@ const Landing = () => {
             <div className="flex items-center gap-2">
               <ThemeToggle />
               <Button 
+                variant="ghost"
+                onClick={handleSignIn}
+                className="text-muted-foreground hover:text-foreground"
+                data-testid="nav-signin-btn"
+              >
+                Sign in
+              </Button>
+              <Button 
                 onClick={handleGetStarted}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 data-testid="nav-get-started-btn"
