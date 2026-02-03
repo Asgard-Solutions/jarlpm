@@ -473,7 +473,7 @@ class ExportService:
                         if story.get("rice_total"):
                             lines.append(f"     - RICE Score: {story['rice_total']:.1f}")
                         if story.get("acceptance_criteria"):
-                            lines.append(f"     - Acceptance Criteria:")
+                            lines.append("     - Acceptance Criteria:")
                             for ac in story["acceptance_criteria"]:
                                 lines.append(f"       - {ac}")
                     lines.append("")
