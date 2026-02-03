@@ -447,31 +447,6 @@ class PromptTemplate(Base):
 
 
 # ============================================
-# PAYMENT
-# ============================================
-
-class PaymentTransaction(Base):
-    __tablename__ = "payment_transactions"
-    
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    transaction_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("txn_"))
-    user_id: Mapped[str] = mapped_column(String(50), nullable=False)
-    session_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
-    amount: Mapped[float] = mapped_column(Float, nullable=False)
-    currency: Mapped[str] = mapped_column(String(10), default="usd", nullable=False)
-    payment_status: Mapped[str] = mapped_column(String(50), default=PaymentStatus.INITIATED.value, nullable=False)
-    processed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    payment_metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-    
-    __table_args__ = (
-        Index('idx_payments_session', 'session_id'),
-    )
-
-
-
-# ============================================
 # PRODUCT DELIVERY CONTEXT
 # ============================================
 
