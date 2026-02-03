@@ -203,6 +203,21 @@ async def signup(
     
     await session.commit()
     
+    # Send verification email (async, non-blocking)
+    email_service = get_email_service()
+    # Get base URL from request origin or use a default
+    base_url = str(request.headers.get("origin", "https://pm-nordic.preview.emergentagent.com"))
+    try:
+        await email_service.send_verification_email(
+            to_email=body.email,
+            user_name=body.name,
+            verification_token=verification_token,
+            base_url=base_url
+        )
+    except Exception as e:
+        logger.error(f"Failed to send verification email: {e}")
+        # Don't fail signup if email fails
+    
     # Set httpOnly cookie
     response.set_cookie(
         key="session_token",
