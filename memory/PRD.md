@@ -542,6 +542,23 @@ When an Epic is locked, users enter Feature Planning Mode:
   - Export results dialog showing created items and errors
 - **Tests:** 21/21 backend tests passed, 100% frontend coverage
 
+### 2026-02-03: Contextual Bug Linking (COMPLETE)
+- **LinkedBugs Component:** Reusable component for viewing and managing linked bugs
+- **Placement:** Added to Epic page, StoryPlanning (Feature) page, and Story detail dialog
+- **Features:**
+  - View bugs linked to the current entity (Epic/Feature/Story)
+  - Create new bugs directly linked to the entity
+  - Link existing bugs to the entity
+  - Unlink bugs from the entity
+  - Navigate to bug details from linked bug cards
+- **Bug Cards:** Display severity and status badges with color coding
+- **API Endpoints Used:**
+  - GET /api/bugs/by-entity/{entity_type}/{entity_id}
+  - POST /api/bugs (with links array)
+  - POST /api/bugs/{bug_id}/links
+  - DELETE /api/bugs/{bug_id}/links/{link_id}
+- **Tests:** 16/16 backend tests passed, 100% frontend coverage
+
 ---
 
 ## Backlog
@@ -554,6 +571,4 @@ When an Epic is locked, users enter Feature Planning Mode:
 
 ### P2 - Future
 - Google OAuth authentication (nice-to-have)
-- Contextual bug linking from Epic/Feature/Story pages
 - Team collaboration features
-- Markdown export for documentation
