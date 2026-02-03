@@ -917,6 +917,16 @@ const Epic = () => {
                   </ul>
                 </div>
               )}
+              
+              {/* Linked Bugs Section */}
+              <div className="pt-4">
+                <LinkedBugs
+                  entityType="epic"
+                  entityId={epic.epic_id}
+                  entityTitle={epic.title}
+                  collapsed={true}
+                />
+              </div>
             </div>
           </div>
         </div>
