@@ -119,29 +119,6 @@ const Landing = () => {
             >
               Start Building Epics <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-            {/* Test Login - Internal Only */}
-            {SHOW_TEST_LOGIN && (
-              <Button 
-                size="lg" 
-                variant="outline" 
-                onClick={handleTestLogin}
-                disabled={testLoading}
-                className="border-muted-foreground/30 text-muted-foreground hover:bg-muted/50 text-lg px-8"
-                data-testid="hero-test-login-btn"
-              >
-                {testLoading ? (
-                  <>
-                    <Loader2 className="mr-2 w-5 h-5 animate-spin" />
-                    Logging in...
-                  </>
-                ) : (
-                  <>
-                    <FlaskConical className="mr-2 w-5 h-5" />
-                    Test Login
-                  </>
-                )}
-              </Button>
-            )}
           </div>
           <p className="text-sm text-muted-foreground mt-4">
             Get started in minutes. No demos. No setup friction.
