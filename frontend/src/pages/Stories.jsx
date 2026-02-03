@@ -1020,6 +1020,16 @@ const StoryDetailDialog = ({ story, open, onClose, onRefine, onApprove, onDelete
               <p className="text-foreground mt-1">{new Date(story.approved_at).toLocaleString()}</p>
             </div>
           )}
+          
+          {/* Linked Bugs */}
+          <div className="pt-2 border-t border-border">
+            <LinkedBugs
+              entityType="story"
+              entityId={story.story_id}
+              entityTitle={story.title || story.story_text?.slice(0, 50)}
+              collapsed={false}
+            />
+          </div>
         </div>
 
         <DialogFooter className="border-t border-border pt-4">
