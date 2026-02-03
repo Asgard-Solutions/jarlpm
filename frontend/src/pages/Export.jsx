@@ -48,16 +48,6 @@ const Export = () => {
     pat: ''
   });
 
-  useEffect(() => {
-    loadEpics();
-  }, []);
-
-  useEffect(() => {
-    if (selectedEpic) {
-      loadPreview();
-    }
-  }, [selectedEpic, includeBugs, loadPreview]);
-
   const loadEpics = async () => {
     try {
       const { data } = await epicAPI.list();
@@ -84,7 +74,17 @@ const Export = () => {
     } finally {
       setPreviewLoading(false);
     }
-  };
+  }, [selectedEpic, includeBugs]);
+
+  useEffect(() => {
+    loadEpics();
+  }, []);
+
+  useEffect(() => {
+    if (selectedEpic) {
+      loadPreview();
+    }
+  }, [selectedEpic, includeBugs, loadPreview]);
 
   const handleFileExport = async (format) => {
     if (!selectedEpic) {
