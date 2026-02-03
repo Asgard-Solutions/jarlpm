@@ -15,6 +15,7 @@ import CompletedEpic from '@/pages/CompletedEpic';
 import Bugs from '@/pages/Bugs';
 import Stories from '@/pages/Stories';
 import Personas from '@/pages/Personas';
+import Export from '@/pages/Export';
 
 // Theme initializer component
 const ThemeInitializer = ({ children }) => {
