@@ -145,6 +145,13 @@ const Login = () => {
             </form>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
+            <Link 
+              to="/forgot-password" 
+              className="text-sm text-primary hover:underline"
+              data-testid="login-forgot-password-link"
+            >
+              Forgot your password?
+            </Link>
             <div className="text-sm text-center text-muted-foreground">
               Don't have an account?{' '}
               <Link to="/signup" className="text-primary hover:underline" data-testid="login-signup-link">
