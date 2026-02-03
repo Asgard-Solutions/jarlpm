@@ -335,9 +335,9 @@ class ExportService:
         epic_row = [
             "Epic",
             epic_data["title"],
-            epic_data.get("problem_statement", ""),
+            epic_data.get("problem_statement") or "",
             MOSCOW_TO_PRIORITY.get(epic_data.get("moscow_score"), 3),
-            "\n".join(epic_data.get("acceptance_criteria", [])),
+            "\n".join(epic_data.get("acceptance_criteria") or []),
             "",
             "",
             "jarlpm-export"
@@ -345,13 +345,13 @@ class ExportService:
         writer.writerow(epic_row)
         
         # Export Features
-        for feature in epic_data.get("features", []):
+        for feature in epic_data.get("features") or []:
             feature_row = [
                 "Feature",
                 feature["title"],
-                feature.get("description", ""),
+                feature.get("description") or "",
                 MOSCOW_TO_PRIORITY.get(feature.get("moscow_score"), 3),
-                "\n".join(feature.get("acceptance_criteria", [])),
+                "\n".join(feature.get("acceptance_criteria") or []),
                 str(feature.get("rice_total", "")) if feature.get("rice_total") else "",
                 "",
                 "jarlpm-export;feature"
@@ -359,13 +359,13 @@ class ExportService:
             writer.writerow(feature_row)
             
             # Export User Stories
-            for story in feature.get("user_stories", []):
+            for story in feature.get("user_stories") or []:
                 story_row = [
                     "User Story",
                     story["story_text"],
-                    f"As a {story.get('persona', '')}, I want to {story.get('action', '')} so that {story.get('benefit', '')}",
+                    f"As a {story.get('persona') or ''}, I want to {story.get('action') or ''} so that {story.get('benefit') or ''}",
                     3,
-                    "\n".join(story.get("acceptance_criteria", [])),
+                    "\n".join(story.get("acceptance_criteria") or []),
                     str(story.get("story_points", "")) if story.get("story_points") else "",
                     "",
                     "jarlpm-export;user-story"
@@ -377,7 +377,7 @@ class ExportService:
             bug_row = [
                 "Bug",
                 bug["title"],
-                f"{bug.get('description', '')}\n\nSteps to Reproduce:\n{bug.get('steps_to_reproduce', '')}\n\nExpected: {bug.get('expected_behavior', '')}\n\nActual: {bug.get('actual_behavior', '')}",
+                f"{bug.get('description') or ''}\n\nSteps to Reproduce:\n{bug.get('steps_to_reproduce') or ''}\n\nExpected: {bug.get('expected_behavior') or ''}\n\nActual: {bug.get('actual_behavior') or ''}",
                 MOSCOW_TO_PRIORITY.get(bug.get("severity", "minor").lower(), 3),
                 "",
                 "",
