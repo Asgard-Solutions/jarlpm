@@ -617,6 +617,7 @@ async def verify_email(
 @router.post("/resend-verification")
 async def resend_verification_email(
     body: ResendVerificationRequest,
+    request: Request,
     session: AsyncSession = Depends(get_db)
 ):
     """Resend email verification link"""
@@ -643,16 +644,23 @@ async def resend_verification_email(
     
     await session.commit()
     
-    # In production, send email here
-    # For now, log the token (REMOVE IN PRODUCTION)
-    logger.info(f"Verification token for {user.email}: {token}")
+    # Send verification email
+    email_service = get_email_service()
+    base_url = str(request.headers.get("origin", "https://pm-nordic.preview.emergentagent.com"))
     
-    # Return the token in development (REMOVE IN PRODUCTION)
-    return {
-        "message": "Verification email sent",
-        "token": token,  # REMOVE IN PRODUCTION - only for testing
-        "note": "In production, this token would be sent via email"
-    }
+    email_sent = await email_service.send_verification_email(
+        to_email=user.email,
+        user_name=user.name,
+        verification_token=token,
+        base_url=base_url
+    )
+    
+    if email_sent:
+        logger.info(f"Verification email sent to {user.email}")
+    else:
+        logger.warning(f"Failed to send verification email to {user.email}")
+    
+    return {"message": "Verification email sent"}
 
 
 # ============================================
