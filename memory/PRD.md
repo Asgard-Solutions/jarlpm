@@ -206,7 +206,7 @@ When an Epic is locked, users enter Feature Planning Mode:
 
 ## Subscription Model
 
-- Price: $20/month
+- Price: $45/month
 - Covers: Database storage, persistence, system infrastructure
 - Does NOT cover: Tokens, models, AI usage (user-provided keys)
 - Inactive subscription blocks AI execution but preserves data
@@ -495,7 +495,7 @@ When an Epic is locked, users enter Feature Planning Mode:
 - **Tests:** 34/34 backend tests passed, 100% frontend coverage
 
 ### 2026-02-03: Stripe Subscription Implementation (COMPLETE)
-- **Checkout Flow:** Users can subscribe for $20/month via Stripe Checkout
+- **Checkout Flow:** Users can subscribe for $45/month via Stripe Checkout
 - **Payment Transaction Tracking:** All payments tracked in `payment_transactions` table
 - **Status Polling:** Frontend polls for payment completion and activates subscription
 - **Webhook Support:** Backend handles Stripe webhook events
