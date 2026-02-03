@@ -499,3 +499,253 @@ async def get_current_user_id(request: Request, session: AsyncSession) -> str:
         raise HTTPException(status_code=401, detail="Session expired")
     
     return user_session.user_id
+
+
+
+# ============================================
+# Email Verification Routes
+# ============================================
+
+EMAIL_VERIFICATION_EXPIRY_HOURS = 24
+PASSWORD_RESET_EXPIRY_HOURS = 1
+
+
+async def create_verification_token(
+    session: AsyncSession,
+    user_id: str,
+    token_type: str,
+    expiry_hours: int
+) -> str:
+    """Create a verification token for email verification or password reset"""
+    # Invalidate any existing tokens of the same type
+    await session.execute(
+        delete(VerificationToken).where(
+            VerificationToken.user_id == user_id,
+            VerificationToken.token_type == token_type,
+            VerificationToken.used_at.is_(None)
+        )
+    )
+    
+    # Create new token
+    token = generate_verification_token()
+    verification_token = VerificationToken(
+        user_id=user_id,
+        token=token,
+        token_type=token_type,
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=expiry_hours)
+    )
+    session.add(verification_token)
+    await session.flush()
+    
+    return token
+
+
+@router.post("/verify-email")
+async def verify_email(
+    body: VerifyEmailRequest,
+    session: AsyncSession = Depends(get_db)
+):
+    """Verify user's email address using token"""
+    # Find the token
+    result = await session.execute(
+        select(VerificationToken).where(
+            VerificationToken.token == body.token,
+            VerificationToken.token_type == "email_verification",
+            VerificationToken.used_at.is_(None)
+        )
+    )
+    verification_token = result.scalar_one_or_none()
+    
+    if not verification_token:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification link")
+    
+    # Check expiry
+    if verification_token.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Verification link has expired")
+    
+    # Find the user
+    result = await session.execute(
+        select(User).where(User.user_id == verification_token.user_id)
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Mark email as verified
+    user.email_verified = True
+    user.updated_at = datetime.now(timezone.utc)
+    
+    # Mark token as used
+    verification_token.used_at = datetime.now(timezone.utc)
+    
+    await session.commit()
+    
+    logger.info(f"Email verified for user: {user.user_id}")
+    
+    return {"message": "Email verified successfully"}
+
+
+@router.post("/resend-verification")
+async def resend_verification_email(
+    body: ResendVerificationRequest,
+    session: AsyncSession = Depends(get_db)
+):
+    """Resend email verification link"""
+    # Find the user
+    result = await session.execute(
+        select(User).where(User.email == body.email)
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        # Don't reveal if email exists
+        return {"message": "If the email exists, a verification link has been sent"}
+    
+    if user.email_verified:
+        return {"message": "Email is already verified"}
+    
+    # Create new verification token
+    token = await create_verification_token(
+        session,
+        user.user_id,
+        "email_verification",
+        EMAIL_VERIFICATION_EXPIRY_HOURS
+    )
+    
+    await session.commit()
+    
+    # In production, send email here
+    # For now, log the token (REMOVE IN PRODUCTION)
+    logger.info(f"Verification token for {user.email}: {token}")
+    
+    # Return the token in development (REMOVE IN PRODUCTION)
+    return {
+        "message": "Verification email sent",
+        "token": token,  # REMOVE IN PRODUCTION - only for testing
+        "note": "In production, this token would be sent via email"
+    }
+
+
+# ============================================
+# Password Reset Routes
+# ============================================
+
+@router.post("/forgot-password")
+async def forgot_password(
+    body: ForgotPasswordRequest,
+    session: AsyncSession = Depends(get_db)
+):
+    """Request a password reset email"""
+    # Find the user
+    result = await session.execute(
+        select(User).where(User.email == body.email)
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        # Don't reveal if email exists - always return success message
+        return {"message": "If the email exists, a password reset link has been sent"}
+    
+    # Create password reset token
+    token = await create_verification_token(
+        session,
+        user.user_id,
+        "password_reset",
+        PASSWORD_RESET_EXPIRY_HOURS
+    )
+    
+    await session.commit()
+    
+    # In production, send email here
+    # For now, log the token (REMOVE IN PRODUCTION)
+    logger.info(f"Password reset token for {user.email}: {token}")
+    
+    # Return the token in development (REMOVE IN PRODUCTION)
+    return {
+        "message": "If the email exists, a password reset link has been sent",
+        "token": token,  # REMOVE IN PRODUCTION - only for testing
+        "note": "In production, this token would be sent via email"
+    }
+
+
+@router.post("/reset-password")
+async def reset_password(
+    body: ResetPasswordRequest,
+    session: AsyncSession = Depends(get_db)
+):
+    """Reset password using token"""
+    # Validate password
+    if len(body.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    
+    # Find the token
+    result = await session.execute(
+        select(VerificationToken).where(
+            VerificationToken.token == body.token,
+            VerificationToken.token_type == "password_reset",
+            VerificationToken.used_at.is_(None)
+        )
+    )
+    verification_token = result.scalar_one_or_none()
+    
+    if not verification_token:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+    
+    # Check expiry
+    if verification_token.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Password reset link has expired")
+    
+    # Find the user
+    result = await session.execute(
+        select(User).where(User.user_id == verification_token.user_id)
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update password
+    user.password_hash = hash_password(body.new_password)
+    user.updated_at = datetime.now(timezone.utc)
+    
+    # Mark token as used
+    verification_token.used_at = datetime.now(timezone.utc)
+    
+    # Invalidate all existing sessions for this user (force re-login)
+    await session.execute(
+        delete(UserSession).where(UserSession.user_id == user.user_id)
+    )
+    
+    await session.commit()
+    
+    logger.info(f"Password reset for user: {user.user_id}")
+    
+    return {"message": "Password reset successfully. Please login with your new password."}
+
+
+@router.get("/check-token/{token}")
+async def check_token_validity(
+    token: str,
+    session: AsyncSession = Depends(get_db)
+):
+    """Check if a verification/reset token is valid"""
+    result = await session.execute(
+        select(VerificationToken).where(
+            VerificationToken.token == token,
+            VerificationToken.used_at.is_(None)
+        )
+    )
+    verification_token = result.scalar_one_or_none()
+    
+    if not verification_token:
+        return {"valid": False, "reason": "Token not found or already used"}
+    
+    if verification_token.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        return {"valid": False, "reason": "Token has expired"}
+    
+    return {
+        "valid": True,
+        "token_type": verification_token.token_type,
+        "expires_at": verification_token.expires_at.isoformat()
+    }
