@@ -505,6 +505,13 @@ When an Epic is locked, users enter Feature Planning Mode:
 - **Fixed:** Field name mismatch in `persona_service.py` (`desired_outcomes` → `desired_outcome`)
 - **Status:** Service code corrected, ready for testing with completed epic
 
+### 2026-02-03: Epic Hard Delete with Cascade (COMPLETE)
+- **Full Cascade Delete:** Deleting an Epic removes ALL related entities
+- **Cascades:** Epic → Features → User Stories (with conversations, versions)
+- **Also Deletes:** Snapshots, Transcript Events, Decisions, Artifacts, Personas
+- **Implementation:** Added `back_populates` and `cascade="all, delete-orphan"` to all relationships
+- **Tests:** 10/10 backend tests passed
+
 ---
 
 ## Backlog
@@ -521,5 +528,4 @@ When an Epic is locked, users enter Feature Planning Mode:
 - Contextual bug linking from Epic/Feature/Story pages
 - Export to Jira/Azure DevOps
 - Team collaboration features
-- Hard-delete functionality for Epics
 - Markdown export
