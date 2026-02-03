@@ -27,7 +27,7 @@ import psycopg2
 from urllib.parse import urlparse
 
 # Get base URL from environment
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://priorityforge.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://pm-nordic.preview.emergentagent.com').rstrip('/')
 
 # Test user credentials (created by Test Login button)
 TEST_SESSION_TOKEN = "test_session_jarlpm_full_access_2025"

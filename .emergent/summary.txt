@@ -1,28 +1,37 @@
 <analysis>original_problem_statement:
 The user wants to build **JarlPM**, an AI-agnostic, conversation-driven Product Management system.
 
+The most recent user requests are:
+1.  Remove all branding, libraries, and integrations related to Emergent.
+2.  Implement a standard email/password authentication system (signup and login) to replace the previous Test Login and Emergent OAuth flows.
+3.  Use placeholders for OpenAI and Stripe API keys, which the user will provide later.
+
 **PRODUCT REQUIREMENTS (Authoritative):**
 
-1.  **Core Product:** A tool for Product Managers to create and refine Epics, Features, User Stories, and Bugs. The core unit of value is the Epic.
-2.  **LLM Architecture:** AI-Agnostic, using a server-side Prompt Registry.
+1.  **Core Product:** A tool for Product Managers to create and refine Epics, Features, User Stories, and Bugs.
+2.  **LLM Architecture:** AI-Agnostic.
 3.  **Subscription Model:** A 0/month subscription is required for AI features, managed via Stripe.
 4.  **Epic Lifecycle (Monotonic State Machine):** An Epic must progress through defined stages without regression.
 5.  **Sacred Invariants:** Confirmed decisions, conversation history, and user intent are immutable.
 6.  **Database Migration (MongoDB to PostgreSQL):** COMPLETED.
 7.  **Data Model (PostgreSQL):** Includes tables for , , , , , , etc.
-8.  **Frontend Requirements:** An Epic Page, a Story Planning Page, a Bugs Page, a Completed Epic view, and settings. Authentication via Google OAuth and a test login.
+8.  **Frontend Requirements:** An Epic Page, a Story Planning Page, a Bugs Page, a Completed Epic view, and settings.
 9.  **UI/Branding (Nordic Theme):** A muted, professional, calm Nordic color palette, supporting both light and dark modes, with custom logos.
 10. **State-Driven Locking Model:** Implement a decision-discipline locking model across Epics, Features, and User Stories.
-11. **Bug Tracking System:** A first-class bug tracking system that supports standalone bugs and optional linking to other entities (Epics, Features, Stories). Includes AI assistance for creation.
-12. **Standalone User Stories:** Ability to create user stories that are not tied to a specific feature, with AI assistance.
+11. **Bug Tracking System:** A first-class bug tracking system that supports standalone bugs and contextual linking.
+12. **Standalone User Stories:** Ability to create user stories that are not tied to a specific feature.
+13. **AI-Assisted User Personas:** Generate multiple user personas with images based on a completed Epic's content.
+14. **Prioritization Scoring:** Implement **MoSCoW** and **RICE** scoring frameworks.
+15. **Data Export:** Export to Jira, Azure DevOps (CSV), JSON, and Markdown.
+16. **Deletion:** Implement hard-delete for Epics with full cascade to child entities.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack app with a FastAPI backend, React frontend, and PostgreSQL database. Core workflows for Epics, Features, and linked User Stories are implemented. A state-driven locking model ensures data integrity. A complete, end-to-end bug tracking system has been built, featuring a dedicated UI, standalone bug creation, optional entity linking, and a conversational AI assistant for drafting bug reports. The UI has a Nordic theme with custom, theme-aware logos, and includes a visual workflow stepper for better user guidance. A Test Login provides easy access to a pre-configured test environment.
+The application is a full-stack app with a FastAPI backend, React frontend, and PostgreSQL database. It has end-to-end workflows for managing Epics, Features, User Stories, and Bugs. Key features like RICE/MoSCoW scoring, contextual bug linking, and data export (Jira, Azure DevOps, etc.) are implemented and tested. A Stripe subscription flow and a bug fix for AI User Persona generation were also completed. The agent was in the middle of a major refactor to remove all Emergent dependencies and implement a standard email/password authentication system.
 
 **Last working item**:
-    - Last item agent was working on: The agent began implementing standalone user stories. The first step was to update the  model in  by making the  optional and adding a  to handle ownership for stories not linked to a feature.
+    - Last item agent was working on: The agent was implementing a standard email/password authentication system. It installed the necessary dependencies (, , ) and overwrote the existing  with a new structure for registration and token-based login. The immediate next step is to modify the User model to support password hashing.
     - Status: IN PROGRESS
     - Agent Testing Done: N
     - Which testing method agent to use? both
@@ -33,143 +42,236 @@ The application is a full-stack app with a FastAPI backend, React frontend, and 
   
   Issues Detail:
   - Issue 1: Authenticated Screenshot Failures
-     - Attempted fixes: None. This is a known issue from previous sessions.
-     - Next debug checklist: The screenshot tool fails on authenticated pages because the session cookie is set for , but the tool navigates to the preview domain. The fix likely involves configuring the screenshot tool to use cookies for the correct domain or finding a way to pass the session token.
-     - Why fix this issue and what will be achieved with the fix? Solving this will enable visual verification of authenticated frontend pages, improving testing efficiency for UI changes.
+     - Attempted fixes: None in this session.
+     - Next debug checklist: The screenshot tool fails on authenticated pages because the session cookie is set for , but the tool navigates to the preview domain. The fix likely involves configuring the screenshot tool to use cookies for the correct domain.
+     - Why fix this issue and what will be achieved with the fix? Solving this will enable visual verification of authenticated frontend pages, improving testing efficiency after the new authentication is in place.
      - Status:  NOT STARTED
      - Is recurring issue? Y
      - Should Test frontend/backend/both after fix? frontend
-     - Blocked on other issue: None
+     - Blocked on other issue: Blocked on the completion of the new email/password authentication system.
 
 **In progress Task List**:
-  - Task 1:  Implement Standalone User Stories with AI Assistance (Priority: P0)
-     - Where to resume: The database model () has been updated. The next steps are:
-        1.  **Backend:** Update  to handle logic for standalone stories. Create API routes (e.g., in  or a new file) for creating, listing, and managing standalone stories, including an endpoint for the AI conversational creation flow (similar to the bug creation flow).
-        2.  **Frontend:** Create a new page (e.g., ) to list all user stories (both linked and standalone). Add a link to this page in the main navigation (e.g., Dashboard). Implement a new AI-powered conversational dialog for creating standalone user stories.
-     - What will be achieved with this? Users will be able to create user stories conversationally with an AI, without needing to link them to a feature, providing more flexibility.
+  - Task 1:  Implement Email/Password Authentication (Priority: P0)
+     - Where to resume: 
+        1.  **Backend:** Add a  field to the  model in . Ensure the new  is complete and functional. Create placeholders for JWT secrets in .
+        2.  **Frontend:** Create new pages/components for user signup and login. Remove the Test Login button and the Emergent OAuth redirect from . Update the application's auth flow to use JWT tokens.
+     - What will be achieved with this? This will complete the user's request to remove Emergent dependencies and establish a self-contained authentication system.
      - Status:  IN PROGRESS
      - Should Test frontend/backend/both after fix? both
      - Blocked on something: None
+  - Task 2:  Replace Emergent Integrations with Direct SDKs (Priority: P1)
+     - Where to resume: 
+        1.  After email/password auth is working, search the codebase for any remaining uses of  or .
+        2.  Replace the persona image generation in  with a direct call to the OpenAI SDK (using a placeholder key).
+        3.  Replace the Stripe checkout logic in  with the official Stripe Python SDK (using a placeholder key).
+        4.  Update  with placeholders for  and .
+     - What will be achieved with this? The application will be fully decoupled from Emergent's backend services, as requested by the user.
+     - Status:  NOT STARTED
+     - Should Test frontend/backend/both after fix? both
+     - Blocked on something: Task 1: Implement Email/Password Authentication.
 
 **Upcoming and Future Tasks**
     Upcoming Tasks:
-    - **P1: Full E2E Workflow Test:** After standalone stories are implemented, perform a comprehensive end-to-end test of the entire application.
+    - **P1: Verify User Persona Generation Fix:** Although the agent fixed a critical bug ( typo) and tests passed, it should be manually verified once the new auth is in place and a test epic can be completed.
+    - **P2: Full E2E Workflow Test:** After all refactoring is done, perform a comprehensive end-to-end test of all major features.
 
     Future Tasks:
-    - **P2: Implement Stripe Subscription:** Fully implement the Stripe integration for the 0/month plan.
-    - **P2: Implement Deletion Semantics:** Implement hard-delete functionality for Epics with user confirmation.
-    - **P2: Export to Jira/Azure DevOps:** Add functionality to export locked epics and their children.
+    - **P2: Google OAuth:** The user marked this as a nice-to-have for later.
     - **P2: Team Collaboration:** Introduce features for multiple users to collaborate on the same epic.
-    - **P2: Markdown Export:** Create a feature to export a completed epic hierarchy as a Markdown document.
 
 **Completed work in this session**
-- **State-Driven Locking Model (DONE):** Successfully implemented and tested the backend locking policy and integrated it into all relevant API routes.
-- **Logo and Favicon Update (DONE):** Replaced all application logos and favicons with new user-provided assets, with separate versions for light and dark themes.
-- **Bug Fix: No LLM Configured (DONE):** Fixed a frontend bug where the API response for LLM providers was being parsed incorrectly, causing an error message for the test user.
-- **Feature-to-Story UX Redesign (DONE):** Improved the user flow between creating features and user stories by adding status indicators on the Feature page and providing clearer navigation and context on the Story Planning page.
-- **Visual Workflow Stepper (DONE):** Added a visual stepper component to the Epic and Story Planning pages to clearly indicate the user's current stage in the development lifecycle (Epic Definition → Features → User Stories → Complete).
-- **Bug Tracking System (E2E) (DONE):** Implemented a complete bug tracking feature, including backend models, services, and API routes for CRUD, lifecycle management, and optional linking. The frontend includes a dedicated  page with filtering, sorting, and a detail view.
-- **AI-Assisted Bug Creation (DONE):** Implemented a conversational AI flow that guides users through creating a detailed bug report by asking for the problem, steps to reproduce, and expected/actual behavior.
+- **RICE & MoSCoW Scoring (DONE):** Full-stack implementation for scoring Epics, Features, User Stories, and Bugs, with AI assistance. Verified by the testing agent.
+- **User Persona Generation Bug Fix (DONE):** Fixed a critical backend bug caused by a field name typo ( vs. ). Verified by the testing agent.
+- **Stripe Subscription (DONE, but being replaced):** Implemented Stripe checkout and webhook handling using the  library. This is now being replaced with direct SDK calls.
+- **Epic Hard Delete (DONE):** Implemented a cascading hard-delete for Epics, ensuring all child entities (Features, Stories, Personas, etc.) are removed from the database. Verified by the testing agent.
+- **Export to Jira/Azure DevOps (DONE):** Implemented a comprehensive export feature with API integrations for Jira/Azure DevOps and file exports for CSV, JSON, and Markdown. Verified by the testing agent.
+- **Contextual Bug Linking (DONE):** Added UI components to view and link bugs directly from Epic, Feature, and User Story pages. Verified by the testing agent.
+- **Started Authentication Refactor (IN PROGRESS):** Began removing Emergent dependencies and started implementing a new email/password authentication system.
 
 **Earlier issues found/mentioned but not fixed**
    - Issue 1: Authenticated Screenshot Failures
-     - Debug checklist: The screenshot tool fails on authenticated pages due to a domain mismatch for cookies. A potential fix is to configure the tool to use cookies for the correct preview domain.
-     - Why to solve this issue and what will be achieved with this? Solving this will enable visual verification of authenticated frontend pages.
+     - Debug checklist: See All Pending/In progress Issue list.
+     - Why to solve this issue and what will be achieved with this? Enable visual testing of authenticated pages.
      - Should Test frontend/backend/both after fix: frontend
      - Is recurring issue? Y
 
 **Known issue recurrence from previous fork**
-  - N/A
+  - **Authenticated Screenshot Failures:** This issue persists from previous sessions.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Backend:** FastAPI, PostgreSQL (Neon), SQLAlchemy (ORM)
-- **Frontend:** React, Tailwind CSS, Zustand (State Management)
-- **Authentication:** Test User JWT
-- **Architecture:** AI-agnostic, Server-side agent pattern, Monotonic state machine
+- **Backend:** FastAPI, PostgreSQL, SQLAlchemy
+- **Frontend:** React, Tailwind CSS, Zustand
+- **Authentication (New):** JWT-based using , , and .
+- **Integrations (New):** Moving from  to direct SDKs for OpenAI and Stripe.
 
 **key DB schema**
-  - **UserStory:** uid=0(root) gid=0(root) groups=0(root),  (nullable),  (new), , , , 
-  - **Bug:** uid=0(root) gid=0(root) groups=0(root), , , , , , etc.
-  - **BugLink:** uid=0(root) gid=0(root) groups=0(root), ,  (Epic, Feature, Story), 
-  - **BugStatusHistory:** uid=0(root) gid=0(root) groups=0(root), , , , 
-  - ...and other related tables as defined in .
+  - **User:** will be updated with a  column.
+  - **PaymentTransaction:** uid=0(root) gid=0(root) groups=0(root), , , , , , 
 
 **changes in tech stack**
-  - None.
+  - **Added:** , ,  for the new authentication system.
+  - **To be removed:**  library.
+  - **To be added:** Official usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+              [-o ORGANIZATION] [-t {openai,azure}]
+              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
+              [--azure-ad-token AZURE_AD_TOKEN] [-V]
+              {api,tools,migrate,grit} ...
+
+positional arguments:
+  {api,tools,migrate,grit}
+    api                 Direct API calls
+    tools               Client side tools for convenience
+
+options:
+  -h, --help            show this help message and exit
+  -v, --verbose         Set verbosity.
+  -b API_BASE, --api-base API_BASE
+                        What API base url to use.
+  -k API_KEY, --api-key API_KEY
+                        What API key to use.
+  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
+                        What proxy to use.
+  -o ORGANIZATION, --organization ORGANIZATION
+                        Which organization to run as (will use your default
+                        organization if not specified)
+  -t {openai,azure}, --api-type {openai,azure}
+                        The backend API to call, must be `openai` or `azure`
+  --api-version API_VERSION
+                        The Azure API version, e.g.
+                        'https://learn.microsoft.com/en-us/azure/ai-
+                        services/openai/reference#rest-api-versioning'
+  --azure-endpoint AZURE_ENDPOINT
+                        The Azure endpoint, e.g.
+                        'https://endpoint.openai.azure.com'
+  --azure-ad-token AZURE_AD_TOKEN
+                        A token from Azure Active Directory,
+                        https://www.microsoft.com/en-
+                        us/security/business/identity-access/microsoft-entra-
+                        id
+  -V, --version         show program's version number and exit and  Python SDKs.
 
 **All files of reference**
-- : Updated to allow standalone stories.
-- : Updated with Bug, BugLink, and BugStatusHistory models.
-- : New service for bug business logic.
-- : New routes for bug CRUD, lifecycle, linking, and AI assistance.
-- : Updated to include bug routes.
-- : Implemented and integrated.
-- : New page for the Bug Tracking System.
-- : Updated with workflow stepper and improved UX for story creation.
-- : Updated with workflow stepper and improved UX.
-- : Updated with bug-related API calls.
-- : Updated with the  route.
-- : Updated with a link to the bug tracker.
-- : All logo and favicon files were replaced.
-- : Updated to reflect completed work.
+- **Auth (In Progress):**
+    -  (Overwritten)
+    -  (To be modified)
+    -  (Updated with auth packages)
+- **Scoring:**
+    - 
+    - , 
+    - 
+- **Export:**
+    - , 
+    - 
+- **Bug Linking:**
+    - 
+    - , ,  (All updated)
+- **Hard Delete:**
+    - , ,  (Updated with relationships and cascade rules)
 
 **Areas that need refactoring**:
-- An  comment in  could be reviewed for a cleaner solution.
+- The entire authentication and authorization flow is currently being refactored.
+-  and  must be refactored to remove the  library and use direct SDKs for OpenAI and Stripe, respectively.
 
 **key api endpoints**
-- : GET permissions for an epic.
-- : CRUD endpoints for bugs.
-- : Transition bug status.
-- : Add/remove links from a bug.
-- : Conversational endpoint for AI-assisted bug creation.
+- **Auth (New):**
+  -  (POST): For new user signup.
+  -  (POST): For user login, returns JWT.
+- **Scoring:**
+  - : GET scoring labels.
+  - , : GET/PUT scores.
+- **Export:**
+  - : GET a preview of the data to be exported.
+  - : POST to generate and download an export file.
+- **Bug Linking:**
+  - : GET bugs linked to a specific entity.
 
 **Critical Info for New Agent**
-Your top priority is to complete the implementation of **standalone user stories with AI assistance**.
-1.  **Resume Implementation:** The database model is already updated. Your next step is to build out the backend service logic and API endpoints for creating and managing standalone stories.
-2.  **Follow Existing Patterns:** The implementation should closely follow the recently completed bug tracking system, especially the conversational AI creation flow () and the dedicated frontend page ().
-3.  **Create Frontend:** Build a new page for listing all stories (e.g., ) and implement the AI chat dialog for creation.
-4.  **Thorough Testing:** Use the testing agent to perform comprehensive tests on the new feature once the implementation is complete.
+1.  **Immediate Priority:** Your main task is to complete the **Email/Password Authentication** implementation. This involves modifying the  model, finishing the backend routes, and building the frontend login/signup UI. All Emergent-related auth code must be removed.
+2.  **Use Placeholders:** The user has instructed to use placeholders for API keys (, ) and JWT secrets in the  file. Do not ask the user for these keys again.
+3.  **Next Task:** After auth is complete, refactor the  and  to replace all calls to the  library with direct SDK calls to OpenAI and Stripe.
+4.  **Verification:** The AI Persona Generation bug fix seems solid but was never verified by the user due to the parked status. It's a low-risk check to perform after the application is stable with the new auth system.
 
 **documents and test reports created in this job**
 -  (updated multiple times)
-- 
-- 
-- 
-- 
-- 
+-  (Scoring)
+-  (Persona Fix & Stripe)
+-  (Cascade Delete)
+-  (Export Feature)
+-  (Contextual Bug Linking)
 
-**Last 10 User Messages and any pending HUMAN messages**
-1. **User:** Requested the implementation of standalone user stories using conversational AI. (IN PROGRESS)
-2. **Agent:** Finished AI-assisted bug creation and suggested next steps.
-3. **User:** Requested that the AI guide the user through bug creation with a conversation. (COMPLETED)
-4. **Agent:** Finished the initial bug tracking system.
-5. **User:** Provided detailed requirements for the Bug Tracking System. (COMPLETED)
-6. **Agent:** Asked for clarification on bug requirements.
-7. **User:** Requested the implementation of bugs as standalone cases. (COMPLETED)
-8. **Agent:** Finished the visual workflow stepper.
-9. **User:** Approved the implementation of the visual workflow stepper. (COMPLETED)
-10. **Agent:** Suggested adding a visual workflow stepper for clarity.
+**Last 10 User Messages and any pending HUMAN messages** 
+1.  **User:** Remove anything related to Emergent. Let me know about credentials. (Request)
+2.  **Agent:** Identified Emergent credentials (, ) and code references. Asked for user-provided keys and confirmation to remove OAuth.
+3.  **User:** Yes, remove OAuth and replace with email/password auth. Yes, replace  library. (Confirmation)
+4.  **Agent:** Asked for credentials to proceed.
+5.  **User:** Implement email/pass auth now. Do the SDK replacement later. Use placeholders in the  file for credentials. (Clarification & Prioritization)
+6.  **Agent:** Acknowledged plan to implement auth first with placeholders.
+7.  **(Agent completes several features: delete, export, bug linking)**
+8.  **User:** now we need to remove anything that has to do with Emergent... (Reiteration of original request)
+9.  **Agent:** Acknowledged and began work on removing Emergent dependencies.
+10. **User:** 1. yes we need to have a signup and login that uses email/username and password. 2. yes (Confirming details of auth change).
 
 **Project Health Check:**
-- **Broken:** None. The application is in a runnable state.
-- **Mocked:** The Stripe subscription flow is planned but not implemented.
+- **Broken:** The entire authentication system is non-functional as it is in the middle of a major refactor. The application is not usable until this is complete.
+- **Mocked:** OpenAI and Stripe integrations will rely on placeholder API keys in the  file until the user provides real ones.
 
 **3rd Party Integrations**
-- **Google OAuth:** Planned, but current implementation uses a Test User JWT flow.
-- **OpenAI:** Integrated and pre-configured for the test user. The system is AI-agnostic.
-- **Stripe:** Planned for subscriptions, but not yet implemented.
+- **OpenAI GPT/DALL-E:** Currently uses , will be replaced by direct usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+              [-o ORGANIZATION] [-t {openai,azure}]
+              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
+              [--azure-ad-token AZURE_AD_TOKEN] [-V]
+              {api,tools,migrate,grit} ...
+
+positional arguments:
+  {api,tools,migrate,grit}
+    api                 Direct API calls
+    tools               Client side tools for convenience
+
+options:
+  -h, --help            show this help message and exit
+  -v, --verbose         Set verbosity.
+  -b API_BASE, --api-base API_BASE
+                        What API base url to use.
+  -k API_KEY, --api-key API_KEY
+                        What API key to use.
+  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
+                        What proxy to use.
+  -o ORGANIZATION, --organization ORGANIZATION
+                        Which organization to run as (will use your default
+                        organization if not specified)
+  -t {openai,azure}, --api-type {openai,azure}
+                        The backend API to call, must be `openai` or `azure`
+  --api-version API_VERSION
+                        The Azure API version, e.g.
+                        'https://learn.microsoft.com/en-us/azure/ai-
+                        services/openai/reference#rest-api-versioning'
+  --azure-endpoint AZURE_ENDPOINT
+                        The Azure endpoint, e.g.
+                        'https://endpoint.openai.azure.com'
+  --azure-ad-token AZURE_AD_TOKEN
+                        A token from Azure Active Directory,
+                        https://www.microsoft.com/en-
+                        us/security/business/identity-access/microsoft-entra-
+                        id
+  -V, --version         show program's version number and exit SDK. Requires user API Key.
+- **Stripe:** Currently uses , will be replaced by direct  SDK. Requires user API Key.
+- **Jira / Azure DevOps:** Integrated for data export. Requires user credentials provided on the export page.
+- **Authentication:** In the process of implementing a custom JWT-based system using , , .
 
 **Testing status**
-  - Testing agent used after significant changes: YES (5 times this session for locking, UX, stepper, and bug features).
+  - Testing agent used after significant changes: YES (Used for every major feature completed in the session).
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: The testing agent generated and updated comprehensive backend and frontend tests in the  directory and within its own test suites.
-  - Known regressions: None.
+  - Test files created: Testing agent created temporary test files during its runs, which are not persisted. Test reports are in .
+  - Known regressions: None, but the entire app is currently in a broken state due to the auth refactor.
 
 **Credentials to test flow:**
-Use the Test Login button on the landing page. This logs in a test user with a valid session, active subscription, and pre-configured settings.
+The Test Login is being deprecated. Once the new auth system is complete, the flow will be:
+1.  Sign up with a new email/password.
+2.  Log in to receive a JWT.
+3.  Use the JWT in the  header for all subsequent API requests.
 
 **What agent forgot to execute**
-The agent has diligently followed all user requests in a systematic order. No tasks have been forgotten.</analysis>
+The agent correctly followed the user's latest instructions. The implementation of the new authentication system was started but not finished. The immediate next step, adding  to the  model, was identified but not executed.</analysis>
