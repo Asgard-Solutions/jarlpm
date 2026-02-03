@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db import get_db
 from db.models import User, UserSession, Subscription, SubscriptionStatus, ProductDeliveryContext, LLMProviderConfig, VerificationToken
 from services.encryption import get_encryption_service
+from services.email_service import get_email_service
 
 logger = logging.getLogger(__name__)
 
