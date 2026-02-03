@@ -142,7 +142,8 @@ When an Epic is locked, users enter Feature Planning Mode:
 ## API Endpoints
 
 ### Authentication
-- POST /api/auth/session - Exchange Emergent session_id for session_token
+- POST /api/auth/signup - Register new user with email/password
+- POST /api/auth/login - Login with email/password
 - GET /api/auth/me - Get current user
 - POST /api/auth/logout - Logout
 - POST /api/auth/test-login - One-click test user login (development)
