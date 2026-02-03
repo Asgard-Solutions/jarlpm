@@ -33,7 +33,7 @@ const STATUS_CONFIG = {
 
 // Compact bug card for display in entity pages
 const BugCard = ({ bug, onUnlink, onView, showUnlink = true }) => {
-  const severityConfig = SEVERITY_CONFIG[bug.severity] || SEVERITY_CONFIG.minor;
+  const severityConfig = SEVERITY_CONFIG[bug.severity] || SEVERITY_CONFIG.medium;
   const statusConfig = STATUS_CONFIG[bug.status] || STATUS_CONFIG.draft;
 
   return (
