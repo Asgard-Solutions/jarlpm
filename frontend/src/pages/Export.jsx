@@ -63,7 +63,7 @@ const Export = () => {
     setPreviewLoading(true);
     try {
       const response = await fetch(
-        `${API}/export/preview/${selectedEpic}?include_bugs=${includeBugs}`,
+        `${API}/api/export/preview/${selectedEpic}?include_bugs=${includeBugs}`,
         { credentials: 'include' }
       );
       if (!response.ok) throw new Error('Failed to load preview');
