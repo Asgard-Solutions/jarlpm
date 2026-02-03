@@ -651,6 +651,16 @@ const StoryPlanning = () => {
                   </div>
                 )}
               </div>
+              
+              {/* Linked Bugs for this Feature */}
+              <div className="pt-2">
+                <LinkedBugs
+                  entityType="feature"
+                  entityId={featureId}
+                  entityTitle={feature?.title || 'Feature'}
+                  collapsed={true}
+                />
+              </div>
             </div>
           </div>
           
