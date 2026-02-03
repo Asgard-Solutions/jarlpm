@@ -662,6 +662,7 @@ async def resend_verification_email(
 @router.post("/forgot-password")
 async def forgot_password(
     body: ForgotPasswordRequest,
+    request: Request,
     session: AsyncSession = Depends(get_db)
 ):
     """Request a password reset email"""
@@ -685,16 +686,23 @@ async def forgot_password(
     
     await session.commit()
     
-    # In production, send email here
-    # For now, log the token (REMOVE IN PRODUCTION)
-    logger.info(f"Password reset token for {user.email}: {token}")
+    # Send password reset email
+    email_service = get_email_service()
+    base_url = str(request.headers.get("origin", "https://pm-nordic.preview.emergentagent.com"))
     
-    # Return the token in development (REMOVE IN PRODUCTION)
-    return {
-        "message": "If the email exists, a password reset link has been sent",
-        "token": token,  # REMOVE IN PRODUCTION - only for testing
-        "note": "In production, this token would be sent via email"
-    }
+    email_sent = await email_service.send_password_reset_email(
+        to_email=user.email,
+        user_name=user.name,
+        reset_token=token,
+        base_url=base_url
+    )
+    
+    if email_sent:
+        logger.info(f"Password reset email sent to {user.email}")
+    else:
+        logger.warning(f"Failed to send password reset email to {user.email}")
+    
+    return {"message": "If the email exists, a password reset link has been sent"}
 
 
 @router.post("/reset-password")
