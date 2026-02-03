@@ -308,7 +308,7 @@ class ExportService:
             bug_row = [
                 "Bug",
                 bug["title"],
-                f"{bug.get('description', '')}\n\nSteps to Reproduce:\n{bug.get('steps_to_reproduce', '')}\n\nExpected: {bug.get('expected_behavior', '')}\n\nActual: {bug.get('actual_behavior', '')}",
+                f"{bug.get('description') or ''}\n\nSteps to Reproduce:\n{bug.get('steps_to_reproduce') or ''}\n\nExpected: {bug.get('expected_behavior') or ''}\n\nActual: {bug.get('actual_behavior') or ''}",
                 MOSCOW_TO_JIRA_PRIORITY.get(bug.get("severity", "minor").lower(), "Medium"),
                 "",
                 "",
