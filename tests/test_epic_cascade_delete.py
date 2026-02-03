@@ -14,7 +14,6 @@ Modules tested:
 - Cascade delete to Features
 - Cascade delete to User Stories
 - Cascade delete to Transcript Events
-- Cascade delete to Snapshots
 - Database integrity after delete
 """
 
@@ -25,6 +24,7 @@ import sys
 import asyncio
 from datetime import datetime, timezone
 import uuid
+import time
 
 # Add backend to path
 sys.path.insert(0, '/app/backend')
@@ -34,7 +34,6 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://priorityforge.previe
 
 # Test user credentials (created by Test Login button)
 TEST_SESSION_TOKEN = "test_session_jarlpm_full_access_2025"
-TEST_USER_ID = "user_test_8575b765"
 
 
 @pytest.fixture(scope="module")
@@ -44,6 +43,18 @@ def auth_headers():
         'Content-Type': 'application/json',
         'Authorization': f'Bearer {TEST_SESSION_TOKEN}'
     }
+
+
+@pytest.fixture(scope="module")
+def test_user_id(auth_headers):
+    """Get the actual test user ID from the API"""
+    response = requests.get(
+        f"{BASE_URL}/api/auth/me",
+        headers=auth_headers,
+        timeout=10
+    )
+    assert response.status_code == 200, f"Failed to get user: {response.text}"
+    return response.json()["user_id"]
 
 
 class TestEpicCreation:
@@ -66,432 +77,28 @@ class TestEpicCreation:
         
         # Cleanup
         requests.delete(f"{BASE_URL}/api/epics/{data['epic_id']}", headers=auth_headers, timeout=10)
-
-
-class TestEpicCascadeDelete:
-    """Test Epic DELETE endpoint cascades to all related entities"""
-    
-    @pytest.fixture(scope="class")
-    def test_epic_with_children(self, auth_headers):
-        """Create an epic with features, user stories, and transcript events for cascade delete testing"""
-        from dotenv import load_dotenv
-        load_dotenv('/app/backend/.env')
-        
-        from db.database import AsyncSessionLocal
-        from db.models import Epic, EpicSnapshot, EpicStage, EpicTranscriptEvent, EpicDecision, EpicArtifact
-        from db.feature_models import Feature, FeatureStage, FeatureConversationEvent
-        from db.user_story_models import UserStory, UserStoryStage, UserStoryConversationEvent
-        from sqlalchemy import select
-        
-        async def _create_epic_with_children():
-            async with AsyncSessionLocal() as session:
-                # Create a locked epic
-                epic_id = f"epic_cascade_{uuid.uuid4().hex[:8]}"
-                
-                epic = Epic(
-                    epic_id=epic_id,
-                    user_id=TEST_USER_ID,
-                    title="TEST_Cascade Delete Full Epic",
-                    current_stage=EpicStage.EPIC_LOCKED.value
-                )
-                session.add(epic)
-                await session.flush()
-                
-                # Create snapshot
-                snapshot = EpicSnapshot(
-                    epic_id=epic_id,
-                    problem_statement="Test problem for cascade delete",
-                    desired_outcome="Test outcome for cascade delete",
-                    epic_summary="Test summary for cascade delete",
-                    acceptance_criteria=["Criterion 1", "Criterion 2"]
-                )
-                session.add(snapshot)
-                
-                # Create transcript events
-                transcript_event = EpicTranscriptEvent(
-                    epic_id=epic_id,
-                    role="system",
-                    content="Epic created for cascade delete test",
-                    stage=EpicStage.EPIC_LOCKED.value
-                )
-                session.add(transcript_event)
-                
-                # Create decision
-                decision = EpicDecision(
-                    epic_id=epic_id,
-                    user_id=TEST_USER_ID,
-                    decision_type="confirm_proposal",
-                    from_stage=EpicStage.PROBLEM_CAPTURE.value,
-                    to_stage=EpicStage.PROBLEM_CONFIRMED.value,
-                    content_snapshot="Test decision"
-                )
-                session.add(decision)
-                
-                # Create artifact
-                artifact = EpicArtifact(
-                    epic_id=epic_id,
-                    artifact_type="feature",
-                    title="Test Artifact",
-                    description="Test artifact for cascade delete"
-                )
-                session.add(artifact)
-                
-                # Create feature
-                feature_id = f"feat_cascade_{uuid.uuid4().hex[:8]}"
-                feature = Feature(
-                    feature_id=feature_id,
-                    epic_id=epic_id,
-                    title="TEST_Cascade Feature",
-                    description="Feature for cascade delete test",
-                    acceptance_criteria=["Feature criterion 1"],
-                    current_stage=FeatureStage.APPROVED.value,
-                    source="manual",
-                    approved_at=datetime.now(timezone.utc)
-                )
-                session.add(feature)
-                await session.flush()
-                
-                # Create feature conversation event
-                feature_conv = FeatureConversationEvent(
-                    feature_id=feature_id,
-                    role="system",
-                    content="Feature created for cascade test"
-                )
-                session.add(feature_conv)
-                
-                # Create user story
-                story_id = f"story_cascade_{uuid.uuid4().hex[:8]}"
-                story = UserStory(
-                    story_id=story_id,
-                    feature_id=feature_id,
-                    persona="test user",
-                    action="test cascade delete",
-                    benefit="verify cascade works",
-                    story_text="As a test user, I want to test cascade delete so that verify cascade works.",
-                    acceptance_criteria=["Story criterion 1"],
-                    current_stage=UserStoryStage.DRAFT.value,
-                    source="manual"
-                )
-                session.add(story)
-                await session.flush()
-                
-                # Create user story conversation event
-                story_conv = UserStoryConversationEvent(
-                    story_id=story_id,
-                    role="system",
-                    content="Story created for cascade test"
-                )
-                session.add(story_conv)
-                
-                await session.commit()
-                
-                return {
-                    "epic_id": epic_id,
-                    "feature_id": feature_id,
-                    "story_id": story_id
-                }
-        
-        data = asyncio.run(_create_epic_with_children())
-        yield data
-        
-        # Cleanup is handled by the delete test itself
-    
-    def test_epic_exists_before_delete(self, auth_headers, test_epic_with_children):
-        """Verify epic and all children exist before delete"""
-        epic_id = test_epic_with_children["epic_id"]
-        feature_id = test_epic_with_children["feature_id"]
-        story_id = test_epic_with_children["story_id"]
-        
-        # Verify epic exists
-        response = requests.get(
-            f"{BASE_URL}/api/epics/{epic_id}",
-            headers=auth_headers,
-            timeout=10
-        )
-        assert response.status_code == 200, f"Epic should exist before delete: {response.text}"
-        
-        # Verify feature exists
-        response = requests.get(
-            f"{BASE_URL}/api/features/{feature_id}",
-            headers=auth_headers,
-            timeout=10
-        )
-        assert response.status_code == 200, f"Feature should exist before delete: {response.text}"
-        
-        # Verify story exists
-        response = requests.get(
-            f"{BASE_URL}/api/stories/{story_id}",
-            headers=auth_headers,
-            timeout=10
-        )
-        assert response.status_code == 200, f"Story should exist before delete: {response.text}"
-        
-        # Verify transcript exists
-        response = requests.get(
-            f"{BASE_URL}/api/epics/{epic_id}/transcript",
-            headers=auth_headers,
-            timeout=10
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data.get("events", [])) > 0, "Transcript events should exist before delete"
-        
-        print(f"✓ Epic {epic_id} exists with feature {feature_id} and story {story_id}")
-    
-    def test_delete_epic_cascades(self, auth_headers, test_epic_with_children):
-        """Test that deleting an epic cascades to all related entities"""
-        epic_id = test_epic_with_children["epic_id"]
-        feature_id = test_epic_with_children["feature_id"]
-        story_id = test_epic_with_children["story_id"]
-        
-        # Delete the epic
-        response = requests.delete(
-            f"{BASE_URL}/api/epics/{epic_id}",
-            headers=auth_headers,
-            timeout=10
-        )
-        assert response.status_code == 200, f"Epic delete should succeed: {response.text}"
-        
-        data = response.json()
-        assert data.get("message") == "Epic deleted"
-        
-        print(f"✓ Epic {epic_id} deleted successfully")
-    
-    def test_epic_not_found_after_delete(self, auth_headers, test_epic_with_children):
-        """Verify epic returns 404 after delete"""
-        epic_id = test_epic_with_children["epic_id"]
-        
-        response = requests.get(
-            f"{BASE_URL}/api/epics/{epic_id}",
-            headers=auth_headers,
-            timeout=10
-        )
-        assert response.status_code == 404, f"Epic should return 404 after delete: {response.text}"
-        
-        print(f"✓ Epic {epic_id} returns 404 after delete")
-    
-    def test_feature_not_found_after_epic_delete(self, auth_headers, test_epic_with_children):
-        """Verify feature returns 404 after epic delete (cascade)"""
-        feature_id = test_epic_with_children["feature_id"]
-        
-        response = requests.get(
-            f"{BASE_URL}/api/features/{feature_id}",
-            headers=auth_headers,
-            timeout=10
-        )
-        assert response.status_code == 404, f"Feature should return 404 after epic delete: {response.text}"
-        
-        print(f"✓ Feature {feature_id} returns 404 after epic delete (cascade)")
-    
-    def test_story_not_found_after_epic_delete(self, auth_headers, test_epic_with_children):
-        """Verify user story returns 404 after epic delete (cascade via feature)"""
-        story_id = test_epic_with_children["story_id"]
-        
-        response = requests.get(
-            f"{BASE_URL}/api/stories/{story_id}",
-            headers=auth_headers,
-            timeout=10
-        )
-        assert response.status_code == 404, f"Story should return 404 after epic delete: {response.text}"
-        
-        print(f"✓ Story {story_id} returns 404 after epic delete (cascade via feature)")
-
-
-class TestDatabaseIntegrityAfterDelete:
-    """Verify database has no orphaned records after Epic delete"""
-    
-    @pytest.fixture(scope="class")
-    def deleted_epic_data(self, auth_headers):
-        """Create and delete an epic, returning IDs for verification"""
-        from dotenv import load_dotenv
-        load_dotenv('/app/backend/.env')
-        
-        from db.database import AsyncSessionLocal
-        from db.models import Epic, EpicSnapshot, EpicStage, EpicTranscriptEvent
-        from db.feature_models import Feature, FeatureStage
-        from db.user_story_models import UserStory, UserStoryStage
-        
-        async def _create_and_delete():
-            async with AsyncSessionLocal() as session:
-                # Create epic
-                epic_id = f"epic_orphan_{uuid.uuid4().hex[:8]}"
-                
-                epic = Epic(
-                    epic_id=epic_id,
-                    user_id=TEST_USER_ID,
-                    title="TEST_Orphan Check Epic",
-                    current_stage=EpicStage.EPIC_LOCKED.value
-                )
-                session.add(epic)
-                await session.flush()
-                
-                # Create snapshot
-                snapshot = EpicSnapshot(
-                    epic_id=epic_id,
-                    problem_statement="Orphan check problem"
-                )
-                session.add(snapshot)
-                
-                # Create transcript event
-                transcript = EpicTranscriptEvent(
-                    epic_id=epic_id,
-                    role="system",
-                    content="Orphan check transcript",
-                    stage=EpicStage.EPIC_LOCKED.value
-                )
-                session.add(transcript)
-                
-                # Create feature
-                feature_id = f"feat_orphan_{uuid.uuid4().hex[:8]}"
-                feature = Feature(
-                    feature_id=feature_id,
-                    epic_id=epic_id,
-                    title="TEST_Orphan Feature",
-                    description="Orphan check feature",
-                    current_stage=FeatureStage.DRAFT.value,
-                    source="manual"
-                )
-                session.add(feature)
-                await session.flush()
-                
-                # Create user story
-                story_id = f"story_orphan_{uuid.uuid4().hex[:8]}"
-                story = UserStory(
-                    story_id=story_id,
-                    feature_id=feature_id,
-                    persona="orphan user",
-                    action="check orphans",
-                    benefit="verify no orphans",
-                    story_text="As a orphan user, I want to check orphans so that verify no orphans.",
-                    current_stage=UserStoryStage.DRAFT.value,
-                    source="manual"
-                )
-                session.add(story)
-                
-                await session.commit()
-                
-                return {
-                    "epic_id": epic_id,
-                    "feature_id": feature_id,
-                    "story_id": story_id
-                }
-        
-        data = asyncio.run(_create_and_delete())
-        
-        # Delete via API
-        response = requests.delete(
-            f"{BASE_URL}/api/epics/{data['epic_id']}",
-            headers=auth_headers,
-            timeout=10
-        )
-        assert response.status_code == 200, f"Epic delete failed: {response.text}"
-        
-        yield data
-    
-    def test_no_orphaned_snapshots(self, deleted_epic_data):
-        """Verify no orphaned snapshots in database"""
-        from dotenv import load_dotenv
-        load_dotenv('/app/backend/.env')
-        
-        from db.database import AsyncSessionLocal
-        from db.models import EpicSnapshot
-        from sqlalchemy import select
-        
-        async def _check_orphans():
-            async with AsyncSessionLocal() as session:
-                result = await session.execute(
-                    select(EpicSnapshot).where(EpicSnapshot.epic_id == deleted_epic_data["epic_id"])
-                )
-                return result.scalar_one_or_none()
-        
-        snapshot = asyncio.run(_check_orphans())
-        assert snapshot is None, f"Orphaned snapshot found for epic {deleted_epic_data['epic_id']}"
-        
-        print(f"✓ No orphaned snapshots for epic {deleted_epic_data['epic_id']}")
-    
-    def test_no_orphaned_transcript_events(self, deleted_epic_data):
-        """Verify no orphaned transcript events in database"""
-        from dotenv import load_dotenv
-        load_dotenv('/app/backend/.env')
-        
-        from db.database import AsyncSessionLocal
-        from db.models import EpicTranscriptEvent
-        from sqlalchemy import select
-        
-        async def _check_orphans():
-            async with AsyncSessionLocal() as session:
-                result = await session.execute(
-                    select(EpicTranscriptEvent).where(EpicTranscriptEvent.epic_id == deleted_epic_data["epic_id"])
-                )
-                return list(result.scalars().all())
-        
-        events = asyncio.run(_check_orphans())
-        assert len(events) == 0, f"Orphaned transcript events found: {len(events)}"
-        
-        print(f"✓ No orphaned transcript events for epic {deleted_epic_data['epic_id']}")
-    
-    def test_no_orphaned_features(self, deleted_epic_data):
-        """Verify no orphaned features in database"""
-        from dotenv import load_dotenv
-        load_dotenv('/app/backend/.env')
-        
-        from db.database import AsyncSessionLocal
-        from db.feature_models import Feature
-        from sqlalchemy import select
-        
-        async def _check_orphans():
-            async with AsyncSessionLocal() as session:
-                result = await session.execute(
-                    select(Feature).where(Feature.epic_id == deleted_epic_data["epic_id"])
-                )
-                return list(result.scalars().all())
-        
-        features = asyncio.run(_check_orphans())
-        assert len(features) == 0, f"Orphaned features found: {len(features)}"
-        
-        print(f"✓ No orphaned features for epic {deleted_epic_data['epic_id']}")
-    
-    def test_no_orphaned_user_stories(self, deleted_epic_data):
-        """Verify no orphaned user stories in database"""
-        from dotenv import load_dotenv
-        load_dotenv('/app/backend/.env')
-        
-        from db.database import AsyncSessionLocal
-        from db.user_story_models import UserStory
-        from sqlalchemy import select
-        
-        async def _check_orphans():
-            async with AsyncSessionLocal() as session:
-                result = await session.execute(
-                    select(UserStory).where(UserStory.feature_id == deleted_epic_data["feature_id"])
-                )
-                return list(result.scalars().all())
-        
-        stories = asyncio.run(_check_orphans())
-        assert len(stories) == 0, f"Orphaned user stories found: {len(stories)}"
-        
-        print(f"✓ No orphaned user stories for feature {deleted_epic_data['feature_id']}")
+        print(f"✓ Epic creation test passed")
 
 
 class TestFeatureCreationForEpic:
     """Test Feature creation for an Epic"""
     
-    @pytest.fixture(scope="class")
-    def locked_epic(self, auth_headers):
-        """Create a locked epic for feature testing"""
+    def test_create_feature_for_locked_epic(self, auth_headers, test_user_id):
+        """Test creating a feature for a locked epic"""
         from dotenv import load_dotenv
         load_dotenv('/app/backend/.env')
         
         from db.database import AsyncSessionLocal
         from db.models import Epic, EpicSnapshot, EpicStage
         
+        # Create a locked epic directly in DB
         async def _create_locked_epic():
             async with AsyncSessionLocal() as session:
                 epic_id = f"epic_feat_{uuid.uuid4().hex[:8]}"
                 
                 epic = Epic(
                     epic_id=epic_id,
-                    user_id=TEST_USER_ID,
+                    user_id=test_user_id,
                     title="TEST_Feature Creation Epic",
                     current_stage=EpicStage.EPIC_LOCKED.value
                 )
@@ -510,47 +117,38 @@ class TestFeatureCreationForEpic:
                 return epic_id
         
         epic_id = asyncio.run(_create_locked_epic())
-        yield epic_id
         
-        # Cleanup
         try:
-            requests.delete(
-                f"{BASE_URL}/api/epics/{epic_id}",
+            # Create feature via API
+            response = requests.post(
+                f"{BASE_URL}/api/features/epic/{epic_id}",
                 headers=auth_headers,
+                json={
+                    "title": "TEST_Feature for Cascade",
+                    "description": "Feature to test cascade delete",
+                    "acceptance_criteria": ["Criterion 1", "Criterion 2"],
+                    "source": "manual"
+                },
                 timeout=10
             )
-        except Exception as e:
-            print(f"Cleanup warning: {e}")
-    
-    def test_create_feature_for_epic(self, auth_headers, locked_epic):
-        """Test creating a feature for a locked epic"""
-        response = requests.post(
-            f"{BASE_URL}/api/features/epic/{locked_epic}",
-            headers=auth_headers,
-            json={
-                "title": "TEST_Feature for Cascade",
-                "description": "Feature to test cascade delete",
-                "acceptance_criteria": ["Criterion 1", "Criterion 2"],
-                "source": "manual"
-            },
-            timeout=10
-        )
-        assert response.status_code == 201, f"Feature creation failed: {response.text}"
-        
-        data = response.json()
-        assert "feature_id" in data
-        assert data["title"] == "TEST_Feature for Cascade"
-        assert data["epic_id"] == locked_epic
-        
-        print(f"✓ Feature {data['feature_id']} created for epic {locked_epic}")
+            assert response.status_code == 201, f"Feature creation failed: {response.text}"
+            
+            data = response.json()
+            assert "feature_id" in data
+            assert data["title"] == "TEST_Feature for Cascade"
+            assert data["epic_id"] == epic_id
+            
+            print(f"✓ Feature {data['feature_id']} created for epic {epic_id}")
+        finally:
+            # Cleanup
+            requests.delete(f"{BASE_URL}/api/epics/{epic_id}", headers=auth_headers, timeout=10)
 
 
 class TestUserStoryCreationForFeature:
     """Test User Story creation for a Feature"""
     
-    @pytest.fixture(scope="class")
-    def approved_feature(self, auth_headers):
-        """Create a locked epic with an approved feature"""
+    def test_create_story_for_approved_feature(self, auth_headers, test_user_id):
+        """Test creating a user story for an approved feature"""
         from dotenv import load_dotenv
         load_dotenv('/app/backend/.env')
         
@@ -558,13 +156,14 @@ class TestUserStoryCreationForFeature:
         from db.models import Epic, EpicSnapshot, EpicStage
         from db.feature_models import Feature, FeatureStage
         
+        # Create a locked epic with approved feature
         async def _create_approved_feature():
             async with AsyncSessionLocal() as session:
                 epic_id = f"epic_story_{uuid.uuid4().hex[:8]}"
                 
                 epic = Epic(
                     epic_id=epic_id,
-                    user_id=TEST_USER_ID,
+                    user_id=test_user_id,
                     title="TEST_Story Creation Epic",
                     current_stage=EpicStage.EPIC_LOCKED.value
                 )
@@ -593,84 +192,235 @@ class TestUserStoryCreationForFeature:
                 return {"epic_id": epic_id, "feature_id": feature_id}
         
         data = asyncio.run(_create_approved_feature())
-        yield data
+        epic_id = data["epic_id"]
+        feature_id = data["feature_id"]
         
-        # Cleanup
         try:
-            requests.delete(
-                f"{BASE_URL}/api/epics/{data['epic_id']}",
+            # Create story via API
+            response = requests.post(
+                f"{BASE_URL}/api/stories/feature/{feature_id}",
                 headers=auth_headers,
+                json={
+                    "persona": "test user",
+                    "action": "test cascade delete",
+                    "benefit": "verify cascade works",
+                    "acceptance_criteria": ["Given cascade, When delete, Then all removed"],
+                    "story_points": 3,
+                    "source": "manual"
+                },
                 timeout=10
             )
-        except Exception as e:
-            print(f"Cleanup warning: {e}")
-    
-    def test_create_story_for_feature(self, auth_headers, approved_feature):
-        """Test creating a user story for an approved feature"""
-        feature_id = approved_feature["feature_id"]
-        
-        response = requests.post(
-            f"{BASE_URL}/api/stories/feature/{feature_id}",
-            headers=auth_headers,
-            json={
-                "persona": "test user",
-                "action": "test cascade delete",
-                "benefit": "verify cascade works",
-                "acceptance_criteria": ["Given cascade, When delete, Then all removed"],
-                "story_points": 3,
-                "source": "manual"
-            },
-            timeout=10
-        )
-        assert response.status_code == 201, f"Story creation failed: {response.text}"
-        
-        data = response.json()
-        assert "story_id" in data
-        assert data["persona"] == "test user"
-        assert data["feature_id"] == feature_id
-        
-        print(f"✓ Story {data['story_id']} created for feature {feature_id}")
+            assert response.status_code == 201, f"Story creation failed: {response.text}"
+            
+            story_data = response.json()
+            assert "story_id" in story_data
+            assert story_data["persona"] == "test user"
+            assert story_data["feature_id"] == feature_id
+            
+            print(f"✓ Story {story_data['story_id']} created for feature {feature_id}")
+        finally:
+            # Cleanup
+            requests.delete(f"{BASE_URL}/api/epics/{epic_id}", headers=auth_headers, timeout=10)
 
 
-class TestFullCascadeDeleteWorkflow:
-    """Test complete workflow: Create Epic -> Add Features -> Add Stories -> Delete Epic -> Verify all removed"""
+class TestEpicCascadeDelete:
+    """Test Epic DELETE endpoint cascades to all related entities"""
     
-    def test_full_cascade_workflow(self, auth_headers):
-        """Test the complete cascade delete workflow"""
+    def test_cascade_delete_features(self, auth_headers, test_user_id):
+        """Test that deleting an epic cascades to delete features"""
         from dotenv import load_dotenv
         load_dotenv('/app/backend/.env')
         
         from db.database import AsyncSessionLocal
-        from db.models import Epic, EpicSnapshot, EpicStage, EpicTranscriptEvent
+        from db.models import Epic, EpicSnapshot, EpicStage
         from db.feature_models import Feature, FeatureStage
-        from db.user_story_models import UserStory, UserStoryStage
-        from sqlalchemy import select
         
-        # Step 1: Create epic with all children via direct DB access
-        async def _create_full_hierarchy():
+        # Create epic with feature
+        async def _create_epic_with_feature():
             async with AsyncSessionLocal() as session:
-                epic_id = f"epic_full_{uuid.uuid4().hex[:8]}"
+                epic_id = f"epic_cascade_{uuid.uuid4().hex[:8]}"
                 
-                # Create epic
                 epic = Epic(
                     epic_id=epic_id,
-                    user_id=TEST_USER_ID,
-                    title="TEST_Full Cascade Workflow Epic",
+                    user_id=test_user_id,
+                    title="TEST_Cascade Feature Epic",
                     current_stage=EpicStage.EPIC_LOCKED.value
                 )
                 session.add(epic)
                 await session.flush()
                 
-                # Create snapshot
                 snapshot = EpicSnapshot(
                     epic_id=epic_id,
-                    problem_statement="Full workflow problem",
-                    desired_outcome="Full workflow outcome",
-                    epic_summary="Full workflow summary"
+                    problem_statement="Cascade test problem"
                 )
                 session.add(snapshot)
                 
-                # Create transcript events
+                feature_id = f"feat_cascade_{uuid.uuid4().hex[:8]}"
+                feature = Feature(
+                    feature_id=feature_id,
+                    epic_id=epic_id,
+                    title="TEST_Cascade Feature",
+                    description="Feature for cascade test",
+                    current_stage=FeatureStage.DRAFT.value,
+                    source="manual"
+                )
+                session.add(feature)
+                await session.commit()
+                
+                return {"epic_id": epic_id, "feature_id": feature_id}
+        
+        data = asyncio.run(_create_epic_with_feature())
+        epic_id = data["epic_id"]
+        feature_id = data["feature_id"]
+        
+        # Verify feature exists
+        response = requests.get(
+            f"{BASE_URL}/api/features/{feature_id}",
+            headers=auth_headers,
+            timeout=10
+        )
+        assert response.status_code == 200, f"Feature should exist before delete: {response.text}"
+        print(f"✓ Feature {feature_id} exists before epic delete")
+        
+        # Delete epic
+        response = requests.delete(
+            f"{BASE_URL}/api/epics/{epic_id}",
+            headers=auth_headers,
+            timeout=10
+        )
+        assert response.status_code == 200, f"Epic delete should succeed: {response.text}"
+        print(f"✓ Epic {epic_id} deleted")
+        
+        # Verify feature is gone
+        response = requests.get(
+            f"{BASE_URL}/api/features/{feature_id}",
+            headers=auth_headers,
+            timeout=10
+        )
+        assert response.status_code == 404, f"Feature should return 404 after epic delete: {response.text}"
+        print(f"✓ Feature {feature_id} returns 404 after epic delete (cascade)")
+    
+    def test_cascade_delete_user_stories(self, auth_headers, test_user_id):
+        """Test that deleting an epic cascades to delete user stories via feature"""
+        from dotenv import load_dotenv
+        load_dotenv('/app/backend/.env')
+        
+        from db.database import AsyncSessionLocal
+        from db.models import Epic, EpicSnapshot, EpicStage
+        from db.feature_models import Feature, FeatureStage
+        from db.user_story_models import UserStory, UserStoryStage
+        
+        # Create epic with feature and story
+        async def _create_epic_with_story():
+            async with AsyncSessionLocal() as session:
+                epic_id = f"epic_story_cascade_{uuid.uuid4().hex[:8]}"
+                
+                epic = Epic(
+                    epic_id=epic_id,
+                    user_id=test_user_id,
+                    title="TEST_Cascade Story Epic",
+                    current_stage=EpicStage.EPIC_LOCKED.value
+                )
+                session.add(epic)
+                await session.flush()
+                
+                snapshot = EpicSnapshot(
+                    epic_id=epic_id,
+                    problem_statement="Story cascade test problem"
+                )
+                session.add(snapshot)
+                
+                feature_id = f"feat_story_cascade_{uuid.uuid4().hex[:8]}"
+                feature = Feature(
+                    feature_id=feature_id,
+                    epic_id=epic_id,
+                    title="TEST_Cascade Story Feature",
+                    description="Feature for story cascade test",
+                    current_stage=FeatureStage.APPROVED.value,
+                    source="manual",
+                    approved_at=datetime.now(timezone.utc)
+                )
+                session.add(feature)
+                await session.flush()
+                
+                story_id = f"story_cascade_{uuid.uuid4().hex[:8]}"
+                story = UserStory(
+                    story_id=story_id,
+                    feature_id=feature_id,
+                    persona="cascade user",
+                    action="test cascade",
+                    benefit="verify cascade",
+                    story_text="As a cascade user, I want to test cascade so that verify cascade.",
+                    current_stage=UserStoryStage.DRAFT.value,
+                    source="manual"
+                )
+                session.add(story)
+                await session.commit()
+                
+                return {"epic_id": epic_id, "feature_id": feature_id, "story_id": story_id}
+        
+        data = asyncio.run(_create_epic_with_story())
+        epic_id = data["epic_id"]
+        feature_id = data["feature_id"]
+        story_id = data["story_id"]
+        
+        # Verify story exists
+        response = requests.get(
+            f"{BASE_URL}/api/stories/{story_id}",
+            headers=auth_headers,
+            timeout=10
+        )
+        assert response.status_code == 200, f"Story should exist before delete: {response.text}"
+        print(f"✓ Story {story_id} exists before epic delete")
+        
+        # Delete epic
+        response = requests.delete(
+            f"{BASE_URL}/api/epics/{epic_id}",
+            headers=auth_headers,
+            timeout=10
+        )
+        assert response.status_code == 200, f"Epic delete should succeed: {response.text}"
+        print(f"✓ Epic {epic_id} deleted")
+        
+        # Verify story is gone
+        response = requests.get(
+            f"{BASE_URL}/api/stories/{story_id}",
+            headers=auth_headers,
+            timeout=10
+        )
+        assert response.status_code == 404, f"Story should return 404 after epic delete: {response.text}"
+        print(f"✓ Story {story_id} returns 404 after epic delete (cascade via feature)")
+    
+    def test_cascade_delete_transcript_events(self, auth_headers, test_user_id):
+        """Test that deleting an epic cascades to delete transcript events"""
+        from dotenv import load_dotenv
+        load_dotenv('/app/backend/.env')
+        
+        from db.database import AsyncSessionLocal
+        from db.models import Epic, EpicSnapshot, EpicStage, EpicTranscriptEvent
+        from sqlalchemy import select
+        
+        # Create epic with transcript events
+        async def _create_epic_with_transcript():
+            async with AsyncSessionLocal() as session:
+                epic_id = f"epic_transcript_{uuid.uuid4().hex[:8]}"
+                
+                epic = Epic(
+                    epic_id=epic_id,
+                    user_id=test_user_id,
+                    title="TEST_Cascade Transcript Epic",
+                    current_stage=EpicStage.EPIC_LOCKED.value
+                )
+                session.add(epic)
+                await session.flush()
+                
+                snapshot = EpicSnapshot(
+                    epic_id=epic_id,
+                    problem_statement="Transcript cascade test problem"
+                )
+                session.add(snapshot)
+                
+                # Add multiple transcript events
                 for i in range(3):
                     event = EpicTranscriptEvent(
                         epic_id=epic_id,
@@ -680,7 +430,181 @@ class TestFullCascadeDeleteWorkflow:
                     )
                     session.add(event)
                 
-                # Create multiple features
+                await session.commit()
+                return epic_id
+        
+        epic_id = asyncio.run(_create_epic_with_transcript())
+        
+        # Verify transcript events exist
+        response = requests.get(
+            f"{BASE_URL}/api/epics/{epic_id}/transcript",
+            headers=auth_headers,
+            timeout=10
+        )
+        assert response.status_code == 200
+        transcript_data = response.json()
+        assert len(transcript_data.get("events", [])) >= 3, "Should have at least 3 transcript events"
+        print(f"✓ Transcript events exist before epic delete: {len(transcript_data.get('events', []))} events")
+        
+        # Delete epic
+        response = requests.delete(
+            f"{BASE_URL}/api/epics/{epic_id}",
+            headers=auth_headers,
+            timeout=10
+        )
+        assert response.status_code == 200, f"Epic delete should succeed: {response.text}"
+        print(f"✓ Epic {epic_id} deleted")
+        
+        # Verify transcript events are gone (epic returns 404)
+        response = requests.get(
+            f"{BASE_URL}/api/epics/{epic_id}/transcript",
+            headers=auth_headers,
+            timeout=10
+        )
+        assert response.status_code == 404, f"Transcript should return 404 after epic delete: {response.text}"
+        print(f"✓ Transcript returns 404 after epic delete (cascade)")
+        
+        # Verify no orphaned transcript events in DB
+        async def _check_orphans():
+            async with AsyncSessionLocal() as session:
+                result = await session.execute(
+                    select(EpicTranscriptEvent).where(EpicTranscriptEvent.epic_id == epic_id)
+                )
+                return list(result.scalars().all())
+        
+        events = asyncio.run(_check_orphans())
+        assert len(events) == 0, f"Orphaned transcript events found: {len(events)}"
+        print(f"✓ No orphaned transcript events in database")
+    
+    def test_cascade_delete_snapshots(self, auth_headers, test_user_id):
+        """Test that deleting an epic cascades to delete snapshots"""
+        from dotenv import load_dotenv
+        load_dotenv('/app/backend/.env')
+        
+        from db.database import AsyncSessionLocal
+        from db.models import Epic, EpicSnapshot, EpicStage
+        from sqlalchemy import select
+        
+        # Create epic with snapshot
+        async def _create_epic_with_snapshot():
+            async with AsyncSessionLocal() as session:
+                epic_id = f"epic_snapshot_{uuid.uuid4().hex[:8]}"
+                
+                epic = Epic(
+                    epic_id=epic_id,
+                    user_id=test_user_id,
+                    title="TEST_Cascade Snapshot Epic",
+                    current_stage=EpicStage.EPIC_LOCKED.value
+                )
+                session.add(epic)
+                await session.flush()
+                
+                snapshot = EpicSnapshot(
+                    epic_id=epic_id,
+                    problem_statement="Snapshot cascade test problem",
+                    desired_outcome="Snapshot cascade test outcome",
+                    epic_summary="Snapshot cascade test summary",
+                    acceptance_criteria=["Criterion 1", "Criterion 2"]
+                )
+                session.add(snapshot)
+                await session.commit()
+                
+                return epic_id
+        
+        epic_id = asyncio.run(_create_epic_with_snapshot())
+        
+        # Verify epic with snapshot exists
+        response = requests.get(
+            f"{BASE_URL}/api/epics/{epic_id}",
+            headers=auth_headers,
+            timeout=10
+        )
+        assert response.status_code == 200
+        epic_data = response.json()
+        assert epic_data["snapshot"]["problem_statement"] == "Snapshot cascade test problem"
+        print(f"✓ Epic with snapshot exists before delete")
+        
+        # Delete epic
+        response = requests.delete(
+            f"{BASE_URL}/api/epics/{epic_id}",
+            headers=auth_headers,
+            timeout=10
+        )
+        assert response.status_code == 200, f"Epic delete should succeed: {response.text}"
+        print(f"✓ Epic {epic_id} deleted")
+        
+        # Verify no orphaned snapshot in DB
+        async def _check_orphans():
+            async with AsyncSessionLocal() as session:
+                result = await session.execute(
+                    select(EpicSnapshot).where(EpicSnapshot.epic_id == epic_id)
+                )
+                return result.scalar_one_or_none()
+        
+        snapshot = asyncio.run(_check_orphans())
+        assert snapshot is None, f"Orphaned snapshot found for epic {epic_id}"
+        print(f"✓ No orphaned snapshot in database")
+
+
+class TestDatabaseIntegrityAfterDelete:
+    """Verify database has no orphaned records after Epic delete"""
+    
+    def test_no_orphaned_records_after_full_delete(self, auth_headers, test_user_id):
+        """Verify no orphaned records in database after deleting epic with all children"""
+        from dotenv import load_dotenv
+        load_dotenv('/app/backend/.env')
+        
+        from db.database import AsyncSessionLocal
+        from db.models import Epic, EpicSnapshot, EpicStage, EpicTranscriptEvent, EpicDecision
+        from db.feature_models import Feature, FeatureStage, FeatureConversationEvent
+        from db.user_story_models import UserStory, UserStoryStage, UserStoryConversationEvent
+        from sqlalchemy import select
+        
+        # Create full hierarchy
+        async def _create_full_hierarchy():
+            async with AsyncSessionLocal() as session:
+                epic_id = f"epic_full_{uuid.uuid4().hex[:8]}"
+                
+                # Create epic
+                epic = Epic(
+                    epic_id=epic_id,
+                    user_id=test_user_id,
+                    title="TEST_Full Cascade Epic",
+                    current_stage=EpicStage.EPIC_LOCKED.value
+                )
+                session.add(epic)
+                await session.flush()
+                
+                # Create snapshot
+                snapshot = EpicSnapshot(
+                    epic_id=epic_id,
+                    problem_statement="Full cascade problem",
+                    desired_outcome="Full cascade outcome",
+                    epic_summary="Full cascade summary"
+                )
+                session.add(snapshot)
+                
+                # Create transcript events
+                for i in range(2):
+                    event = EpicTranscriptEvent(
+                        epic_id=epic_id,
+                        role="system",
+                        content=f"Event {i+1}",
+                        stage=EpicStage.EPIC_LOCKED.value
+                    )
+                    session.add(event)
+                
+                # Create decision
+                decision = EpicDecision(
+                    epic_id=epic_id,
+                    user_id=test_user_id,
+                    decision_type="confirm_proposal",
+                    from_stage=EpicStage.PROBLEM_CAPTURE.value,
+                    to_stage=EpicStage.PROBLEM_CONFIRMED.value
+                )
+                session.add(decision)
+                
+                # Create features with stories
                 feature_ids = []
                 story_ids = []
                 for i in range(2):
@@ -689,7 +613,7 @@ class TestFullCascadeDeleteWorkflow:
                         feature_id=feature_id,
                         epic_id=epic_id,
                         title=f"TEST_Full Feature {i+1}",
-                        description=f"Full workflow feature {i+1}",
+                        description=f"Full feature {i+1}",
                         current_stage=FeatureStage.APPROVED.value,
                         source="manual",
                         approved_at=datetime.now(timezone.utc)
@@ -698,7 +622,15 @@ class TestFullCascadeDeleteWorkflow:
                     await session.flush()
                     feature_ids.append(feature_id)
                     
-                    # Create stories for each feature
+                    # Create feature conversation
+                    feat_conv = FeatureConversationEvent(
+                        feature_id=feature_id,
+                        role="system",
+                        content=f"Feature {i+1} conversation"
+                    )
+                    session.add(feat_conv)
+                    
+                    # Create stories
                     for j in range(2):
                         story_id = f"story_full_{uuid.uuid4().hex[:8]}"
                         story = UserStory(
@@ -712,7 +644,16 @@ class TestFullCascadeDeleteWorkflow:
                             source="manual"
                         )
                         session.add(story)
+                        await session.flush()
                         story_ids.append(story_id)
+                        
+                        # Create story conversation
+                        story_conv = UserStoryConversationEvent(
+                            story_id=story_id,
+                            role="system",
+                            content=f"Story {j+1} conversation"
+                        )
+                        session.add(story_conv)
                 
                 await session.commit()
                 
@@ -729,58 +670,43 @@ class TestFullCascadeDeleteWorkflow:
         
         print(f"Created epic {epic_id} with {len(feature_ids)} features and {len(story_ids)} stories")
         
-        # Step 2: Verify all entities exist
-        # Verify epic
+        # Verify all exist
         response = requests.get(f"{BASE_URL}/api/epics/{epic_id}", headers=auth_headers, timeout=10)
         assert response.status_code == 200, f"Epic should exist: {response.text}"
         
-        # Verify features
         for feature_id in feature_ids:
             response = requests.get(f"{BASE_URL}/api/features/{feature_id}", headers=auth_headers, timeout=10)
             assert response.status_code == 200, f"Feature {feature_id} should exist: {response.text}"
         
-        # Verify stories
         for story_id in story_ids:
             response = requests.get(f"{BASE_URL}/api/stories/{story_id}", headers=auth_headers, timeout=10)
             assert response.status_code == 200, f"Story {story_id} should exist: {response.text}"
         
-        # Verify transcript
-        response = requests.get(f"{BASE_URL}/api/epics/{epic_id}/transcript", headers=auth_headers, timeout=10)
-        assert response.status_code == 200
-        transcript_data = response.json()
-        assert len(transcript_data.get("events", [])) >= 3, "Should have at least 3 transcript events"
-        
         print(f"✓ All entities verified to exist before delete")
         
-        # Step 3: Delete the epic
+        # Delete epic
         response = requests.delete(f"{BASE_URL}/api/epics/{epic_id}", headers=auth_headers, timeout=10)
         assert response.status_code == 200, f"Epic delete should succeed: {response.text}"
-        
         print(f"✓ Epic {epic_id} deleted")
         
-        # Step 4: Verify all entities are gone
-        # Verify epic is gone
+        # Verify all are gone via API
         response = requests.get(f"{BASE_URL}/api/epics/{epic_id}", headers=auth_headers, timeout=10)
         assert response.status_code == 404, f"Epic should return 404: {response.text}"
         
-        # Verify features are gone
         for feature_id in feature_ids:
             response = requests.get(f"{BASE_URL}/api/features/{feature_id}", headers=auth_headers, timeout=10)
             assert response.status_code == 404, f"Feature {feature_id} should return 404: {response.text}"
         
-        # Verify stories are gone
         for story_id in story_ids:
             response = requests.get(f"{BASE_URL}/api/stories/{story_id}", headers=auth_headers, timeout=10)
             assert response.status_code == 404, f"Story {story_id} should return 404: {response.text}"
         
-        print(f"✓ All entities verified to be deleted (cascade)")
+        print(f"✓ All entities verified to be deleted via API")
         
-        # Step 5: Verify no orphans in database
+        # Verify no orphans in database
         async def _verify_no_orphans():
             async with AsyncSessionLocal() as session:
                 # Check snapshots
-                from db.models import EpicSnapshot, EpicTranscriptEvent, EpicDecision
-                
                 result = await session.execute(
                     select(EpicSnapshot).where(EpicSnapshot.epic_id == epic_id)
                 )
@@ -793,6 +719,13 @@ class TestFullCascadeDeleteWorkflow:
                 events = list(result.scalars().all())
                 assert len(events) == 0, f"Orphaned transcript events found: {len(events)}"
                 
+                # Check decisions
+                result = await session.execute(
+                    select(EpicDecision).where(EpicDecision.epic_id == epic_id)
+                )
+                decisions = list(result.scalars().all())
+                assert len(decisions) == 0, f"Orphaned decisions found: {len(decisions)}"
+                
                 # Check features
                 result = await session.execute(
                     select(Feature).where(Feature.epic_id == epic_id)
@@ -800,18 +733,34 @@ class TestFullCascadeDeleteWorkflow:
                 features = list(result.scalars().all())
                 assert len(features) == 0, f"Orphaned features found: {len(features)}"
                 
+                # Check feature conversations
+                for feature_id in feature_ids:
+                    result = await session.execute(
+                        select(FeatureConversationEvent).where(FeatureConversationEvent.feature_id == feature_id)
+                    )
+                    convs = list(result.scalars().all())
+                    assert len(convs) == 0, f"Orphaned feature conversations found: {len(convs)}"
+                
                 # Check stories
                 for feature_id in feature_ids:
                     result = await session.execute(
                         select(UserStory).where(UserStory.feature_id == feature_id)
                     )
                     stories = list(result.scalars().all())
-                    assert len(stories) == 0, f"Orphaned stories found for feature {feature_id}: {len(stories)}"
+                    assert len(stories) == 0, f"Orphaned stories found: {len(stories)}"
+                
+                # Check story conversations
+                for story_id in story_ids:
+                    result = await session.execute(
+                        select(UserStoryConversationEvent).where(UserStoryConversationEvent.story_id == story_id)
+                    )
+                    convs = list(result.scalars().all())
+                    assert len(convs) == 0, f"Orphaned story conversations found: {len(convs)}"
         
         asyncio.run(_verify_no_orphans())
         
         print(f"✓ No orphaned records in database")
-        print(f"✓ Full cascade delete workflow completed successfully!")
+        print(f"✓ Full cascade delete test completed successfully!")
 
 
 # Run tests if executed directly
