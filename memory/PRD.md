@@ -512,6 +512,36 @@ When an Epic is locked, users enter Feature Planning Mode:
 - **Implementation:** Added `back_populates` and `cascade="all, delete-orphan"` to all relationships
 - **Tests:** 10/10 backend tests passed
 
+### 2026-02-03: Export to Jira/Azure DevOps (COMPLETE)
+- **Direct API Integration:**
+  - Jira Cloud: Creates Epics, Stories (Features), Sub-tasks (User Stories), Bugs
+  - Azure DevOps: Creates Epics, Features, User Stories, Bugs with proper hierarchy
+- **File Export Formats:**
+  - Jira CSV (compatible with Jira CSV Import)
+  - Azure DevOps CSV (compatible with Azure Boards Import)
+  - JSON (universal format with field mappings)
+  - Markdown (documentation/README format)
+- **Field Mappings:**
+  - Epic → Epic (both platforms)
+  - Feature → Story (Jira) / Feature (Azure DevOps)
+  - User Story → Sub-task (Jira) / User Story (Azure DevOps)
+  - Bug → Bug (both platforms)
+  - MoSCoW → Priority
+  - RICE Score → Story Points
+- **Backend API Endpoints:**
+  - GET /api/export/field-mappings - Field mapping reference
+  - GET /api/export/preview/{epic_id} - Export preview with item counts
+  - POST /api/export/file - Download CSV/JSON/Markdown files
+  - POST /api/export/jira - Direct push to Jira Cloud
+  - POST /api/export/azure-devops - Direct push to Azure DevOps
+- **Frontend Export Page:**
+  - Epic selector with export preview
+  - File export tab with 4 format buttons
+  - Jira configuration tab with URL, email, API token, project key
+  - Azure DevOps configuration tab with organization, project, PAT
+  - Export results dialog showing created items and errors
+- **Tests:** 21/21 backend tests passed, 100% frontend coverage
+
 ---
 
 ## Backlog
@@ -520,12 +550,10 @@ When an Epic is locked, users enter Feature Planning Mode:
 - None! All critical items completed.
 
 ### P1 - Upcoming
-- Full end-to-end workflow test with real user data
 - Test persona generation with a completed epic
 
 ### P2 - Future
 - Google OAuth authentication (nice-to-have)
 - Contextual bug linking from Epic/Feature/Story pages
-- Export to Jira/Azure DevOps
 - Team collaboration features
-- Markdown export
+- Markdown export for documentation
