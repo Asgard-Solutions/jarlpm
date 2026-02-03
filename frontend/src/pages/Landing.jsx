@@ -1,25 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import ThemeToggle from '@/components/ThemeToggle';
-import { useAuthStore, useThemeStore } from '@/store';
+import { useThemeStore } from '@/store';
 import { 
   ArrowRight, 
-  CheckCircle2, Brain, Lock, MessageSquare, Loader2, FlaskConical, Layers
+  CheckCircle2, Brain, Lock, MessageSquare, Layers
 } from 'lucide-react';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-
-// Internal test login only visible in development or with specific env flag
-const SHOW_TEST_LOGIN = process.env.NODE_ENV === 'development' || process.env.REACT_APP_SHOW_TEST_LOGIN === 'true';
 
 const Landing = () => {
   const navigate = useNavigate();
-  const { setUser } = useAuthStore();
   const { theme } = useThemeStore();
-  const [testLoading, setTestLoading] = useState(false);
 
   // Select logo based on theme
   const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
@@ -30,34 +23,6 @@ const Landing = () => {
 
   const handleSignIn = () => {
     navigate('/login');
-  };
-
-  const handleTestLogin = async () => {
-    setTestLoading(true);
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/auth/test-login`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setUser({
-          user_id: data.user_id,
-          email: data.email,
-          name: data.name,
-          picture: null
-        });
-        navigate('/dashboard');
-      } else {
-        console.error('Test login failed');
-      }
-    } catch (error) {
-      console.error('Test login error:', error);
-    } finally {
-      setTestLoading(false);
-    }
   };
 
   const features = [
