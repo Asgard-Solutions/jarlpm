@@ -67,7 +67,7 @@ const Export = () => {
     }
   };
 
-  const loadPreview = async () => {
+  const loadPreview = React.useCallback(async () => {
     if (!selectedEpic) return;
     
     setPreviewLoading(true);
