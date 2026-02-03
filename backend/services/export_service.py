@@ -219,7 +219,7 @@ class ExportService:
     
     async def get_bugs_for_export(self, user_id: str, epic_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get bugs for export, optionally filtered by epic"""
-        query = select(Bug).where(Bug.user_id == user_id, Bug.is_deleted == False)
+        query = select(Bug).where(Bug.user_id == user_id, Bug.is_deleted.is_(False))
         
         result = await self.session.execute(query)
         bugs = result.scalars().all()
