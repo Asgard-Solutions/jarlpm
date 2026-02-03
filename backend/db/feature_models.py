@@ -75,7 +75,9 @@ class Feature(Base):
     approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     
     # Relationships
+    epic: Mapped["Epic"] = relationship(back_populates="features")
     conversation_events: Mapped[List["FeatureConversationEvent"]] = relationship(back_populates="feature", cascade="all, delete-orphan")
+    user_stories: Mapped[List["UserStory"]] = relationship(back_populates="feature", cascade="all, delete-orphan")
     
     __table_args__ = (
         Index('idx_features_epic_id', 'epic_id'),
