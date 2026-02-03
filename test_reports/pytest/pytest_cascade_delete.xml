@@ -1,1076 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="11" failures="1" skipped="0" tests="13" time="7.036" timestamp="2026-02-03T00:24:40.834443+00:00" hostname="agent-env-6e87a46c-68ab-4b09-acc7-f5dba342e328"><testcase classname="tests.test_epic_cascade_delete.TestEpicCreation" name="test_create_epic" time="1.329" /><testcase classname="tests.test_epic_cascade_delete.TestEpicCascadeDelete" name="test_epic_exists_before_delete" time="0.837"><error message="failed on setup with &quot;sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table &quot;epics&quot; violates foreign key constraint &quot;epics_user_id_fkey&quot;&#10;DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table &quot;users&quot;.&#10;[SQL: INSERT INTO epics (epic_id, user_id, title, current_stage, lock_confirmed_at, lock_confirmed_by, lock_confirmation_hash, locked_at, locked_by, moscow_score, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::TIMESTAMP WITH TIME ZONE, $6::VARCHAR, $7::VARCHAR, $8::TIMESTAMP WITH TIME ZONE, $9::VARCHAR, $10::VARCHAR, $11::TIMESTAMP WITH TIME ZONE, $12::TIMESTAMP WITH TIME ZONE) RETURNING epics.id]&#10;[parameters: ('epic_cascade_070f3c0c', 'user_test_8575b765', 'TEST_Cascade Delete Full Epic', 'epic_locked', None, None, None, None, None, None, datetime.datetime(2026, 2, 3, 0, 24, 42, 956860, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 2, 3, 0, 24, 42, 956864, tzinfo=datetime.timezone.utc))]&#10;(Background on this error at: https://sqlalche.me/e/20/gkpj)&quot;">/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: in _prepare_and_execute
-    self._rows = deque(await prepared_stmt.fetch(*parameters))
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
-    data = await self.__bind_execute(args, 0, timeout)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
-    data, status, _ = await self.__do_execute(
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
-    return await executor(protocol)
-           ^^^^^^^^^^^^^^^^^^^^^^^^
-asyncpg/protocol/protocol.pyx:205: in bind_execute
-    ???
-E   asyncpg.exceptions.ForeignKeyViolationError: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-
-The above exception was the direct cause of the following exception:
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
-    self.dialect.do_execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
-    cursor.execute(statement, parameters)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
-    self._adapt_connection.await_(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
-    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
-    value = await result
-            ^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
-    self._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
-    self._adapt_connection._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
-    raise translated_error from error
-E   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-
-The above exception was the direct cause of the following exception:
-tests/test_epic_cascade_delete.py:194: in test_epic_with_children
-    data = asyncio.run(_create_epic_with_children())
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:190: in run
-    return runner.run(main)
-           ^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:118: in run
-    return self._loop.run_until_complete(task)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
-    return future.result()
-           ^^^^^^^^^^^^^^^
-tests/test_epic_cascade_delete.py:98: in _create_epic_with_children
-    await session.flush()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:787: in flush
-    await greenlet_spawn(self.sync_session.flush, objects=objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
-    result = context.switch(value)
-             ^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4331: in flush
-    self._flush(objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4466: in _flush
-    with util.safe_reraise():
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
-    raise exc_value.with_traceback(exc_tb)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4427: in _flush
-    flush_context.execute()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
-    rec.execute(self)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
-    util.preloaded.orm_persistence.save_obj(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:93: in save_obj
-    _emit_insert_statements(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1233: in _emit_insert_statements
-    result = connection.execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1419: in execute
-    return meth(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:527: in _execute_on_connection
-    return connection._execute_clauseelement(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1641: in _execute_clauseelement
-    ret = self._execute_context(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1846: in _execute_context
-    return self._exec_single_context(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1986: in _exec_single_context
-    self._handle_dbapi_exception(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2363: in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
-    self.dialect.do_execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
-    cursor.execute(statement, parameters)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
-    self._adapt_connection.await_(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
-    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
-    value = await result
-            ^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
-    self._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
-    self._adapt_connection._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
-    raise translated_error from error
-E   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-E   [SQL: INSERT INTO epics (epic_id, user_id, title, current_stage, lock_confirmed_at, lock_confirmed_by, lock_confirmation_hash, locked_at, locked_by, moscow_score, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::TIMESTAMP WITH TIME ZONE, $6::VARCHAR, $7::VARCHAR, $8::TIMESTAMP WITH TIME ZONE, $9::VARCHAR, $10::VARCHAR, $11::TIMESTAMP WITH TIME ZONE, $12::TIMESTAMP WITH TIME ZONE) RETURNING epics.id]
-E   [parameters: ('epic_cascade_070f3c0c', 'user_test_8575b765', 'TEST_Cascade Delete Full Epic', 'epic_locked', None, None, None, None, None, None, datetime.datetime(2026, 2, 3, 0, 24, 42, 956860, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 2, 3, 0, 24, 42, 956864, tzinfo=datetime.timezone.utc))]
-E   (Background on this error at: https://sqlalche.me/e/20/gkpj)</error></testcase><testcase classname="tests.test_epic_cascade_delete.TestEpicCascadeDelete" name="test_delete_epic_cascades" time="0.000"><error message="failed on setup with &quot;sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table &quot;epics&quot; violates foreign key constraint &quot;epics_user_id_fkey&quot;&#10;DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table &quot;users&quot;.&#10;[SQL: INSERT INTO epics (epic_id, user_id, title, current_stage, lock_confirmed_at, lock_confirmed_by, lock_confirmation_hash, locked_at, locked_by, moscow_score, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::TIMESTAMP WITH TIME ZONE, $6::VARCHAR, $7::VARCHAR, $8::TIMESTAMP WITH TIME ZONE, $9::VARCHAR, $10::VARCHAR, $11::TIMESTAMP WITH TIME ZONE, $12::TIMESTAMP WITH TIME ZONE) RETURNING epics.id]&#10;[parameters: ('epic_cascade_070f3c0c', 'user_test_8575b765', 'TEST_Cascade Delete Full Epic', 'epic_locked', None, None, None, None, None, None, datetime.datetime(2026, 2, 3, 0, 24, 42, 956860, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 2, 3, 0, 24, 42, 956864, tzinfo=datetime.timezone.utc))]&#10;(Background on this error at: https://sqlalche.me/e/20/gkpj)&quot;">/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: in _prepare_and_execute
-    self._rows = deque(await prepared_stmt.fetch(*parameters))
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
-    data = await self.__bind_execute(args, 0, timeout)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
-    data, status, _ = await self.__do_execute(
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
-    return await executor(protocol)
-           ^^^^^^^^^^^^^^^^^^^^^^^^
-asyncpg/protocol/protocol.pyx:205: in bind_execute
-    ???
-E   asyncpg.exceptions.ForeignKeyViolationError: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-
-The above exception was the direct cause of the following exception:
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
-    self.dialect.do_execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
-    cursor.execute(statement, parameters)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
-    self._adapt_connection.await_(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
-    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
-    value = await result
-            ^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
-    self._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
-    self._adapt_connection._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
-    raise translated_error from error
-E   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-
-The above exception was the direct cause of the following exception:
-tests/test_epic_cascade_delete.py:194: in test_epic_with_children
-    data = asyncio.run(_create_epic_with_children())
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:190: in run
-    return runner.run(main)
-           ^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:118: in run
-    return self._loop.run_until_complete(task)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
-    return future.result()
-           ^^^^^^^^^^^^^^^
-tests/test_epic_cascade_delete.py:98: in _create_epic_with_children
-    await session.flush()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:787: in flush
-    await greenlet_spawn(self.sync_session.flush, objects=objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
-    result = context.switch(value)
-             ^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4331: in flush
-    self._flush(objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4466: in _flush
-    with util.safe_reraise():
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
-    raise exc_value.with_traceback(exc_tb)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4427: in _flush
-    flush_context.execute()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
-    rec.execute(self)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
-    util.preloaded.orm_persistence.save_obj(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:93: in save_obj
-    _emit_insert_statements(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1233: in _emit_insert_statements
-    result = connection.execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1419: in execute
-    return meth(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:527: in _execute_on_connection
-    return connection._execute_clauseelement(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1641: in _execute_clauseelement
-    ret = self._execute_context(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1846: in _execute_context
-    return self._exec_single_context(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1986: in _exec_single_context
-    self._handle_dbapi_exception(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2363: in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
-    self.dialect.do_execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
-    cursor.execute(statement, parameters)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
-    self._adapt_connection.await_(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
-    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
-    value = await result
-            ^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
-    self._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
-    self._adapt_connection._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
-    raise translated_error from error
-E   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-E   [SQL: INSERT INTO epics (epic_id, user_id, title, current_stage, lock_confirmed_at, lock_confirmed_by, lock_confirmation_hash, locked_at, locked_by, moscow_score, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::TIMESTAMP WITH TIME ZONE, $6::VARCHAR, $7::VARCHAR, $8::TIMESTAMP WITH TIME ZONE, $9::VARCHAR, $10::VARCHAR, $11::TIMESTAMP WITH TIME ZONE, $12::TIMESTAMP WITH TIME ZONE) RETURNING epics.id]
-E   [parameters: ('epic_cascade_070f3c0c', 'user_test_8575b765', 'TEST_Cascade Delete Full Epic', 'epic_locked', None, None, None, None, None, None, datetime.datetime(2026, 2, 3, 0, 24, 42, 956860, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 2, 3, 0, 24, 42, 956864, tzinfo=datetime.timezone.utc))]
-E   (Background on this error at: https://sqlalche.me/e/20/gkpj)</error></testcase><testcase classname="tests.test_epic_cascade_delete.TestEpicCascadeDelete" name="test_epic_not_found_after_delete" time="0.000"><error message="failed on setup with &quot;sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table &quot;epics&quot; violates foreign key constraint &quot;epics_user_id_fkey&quot;&#10;DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table &quot;users&quot;.&#10;[SQL: INSERT INTO epics (epic_id, user_id, title, current_stage, lock_confirmed_at, lock_confirmed_by, lock_confirmation_hash, locked_at, locked_by, moscow_score, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::TIMESTAMP WITH TIME ZONE, $6::VARCHAR, $7::VARCHAR, $8::TIMESTAMP WITH TIME ZONE, $9::VARCHAR, $10::VARCHAR, $11::TIMESTAMP WITH TIME ZONE, $12::TIMESTAMP WITH TIME ZONE) RETURNING epics.id]&#10;[parameters: ('epic_cascade_070f3c0c', 'user_test_8575b765', 'TEST_Cascade Delete Full Epic', 'epic_locked', None, None, None, None, None, None, datetime.datetime(2026, 2, 3, 0, 24, 42, 956860, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 2, 3, 0, 24, 42, 956864, tzinfo=datetime.timezone.utc))]&#10;(Background on this error at: https://sqlalche.me/e/20/gkpj)&quot;">/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: in _prepare_and_execute
-    self._rows = deque(await prepared_stmt.fetch(*parameters))
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
-    data = await self.__bind_execute(args, 0, timeout)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
-    data, status, _ = await self.__do_execute(
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
-    return await executor(protocol)
-           ^^^^^^^^^^^^^^^^^^^^^^^^
-asyncpg/protocol/protocol.pyx:205: in bind_execute
-    ???
-E   asyncpg.exceptions.ForeignKeyViolationError: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-
-The above exception was the direct cause of the following exception:
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
-    self.dialect.do_execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
-    cursor.execute(statement, parameters)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
-    self._adapt_connection.await_(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
-    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
-    value = await result
-            ^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
-    self._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
-    self._adapt_connection._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
-    raise translated_error from error
-E   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-
-The above exception was the direct cause of the following exception:
-tests/test_epic_cascade_delete.py:194: in test_epic_with_children
-    data = asyncio.run(_create_epic_with_children())
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:190: in run
-    return runner.run(main)
-           ^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:118: in run
-    return self._loop.run_until_complete(task)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
-    return future.result()
-           ^^^^^^^^^^^^^^^
-tests/test_epic_cascade_delete.py:98: in _create_epic_with_children
-    await session.flush()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:787: in flush
-    await greenlet_spawn(self.sync_session.flush, objects=objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
-    result = context.switch(value)
-             ^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4331: in flush
-    self._flush(objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4466: in _flush
-    with util.safe_reraise():
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
-    raise exc_value.with_traceback(exc_tb)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4427: in _flush
-    flush_context.execute()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
-    rec.execute(self)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
-    util.preloaded.orm_persistence.save_obj(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:93: in save_obj
-    _emit_insert_statements(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1233: in _emit_insert_statements
-    result = connection.execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1419: in execute
-    return meth(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:527: in _execute_on_connection
-    return connection._execute_clauseelement(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1641: in _execute_clauseelement
-    ret = self._execute_context(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1846: in _execute_context
-    return self._exec_single_context(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1986: in _exec_single_context
-    self._handle_dbapi_exception(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2363: in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
-    self.dialect.do_execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
-    cursor.execute(statement, parameters)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
-    self._adapt_connection.await_(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
-    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
-    value = await result
-            ^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
-    self._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
-    self._adapt_connection._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
-    raise translated_error from error
-E   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-E   [SQL: INSERT INTO epics (epic_id, user_id, title, current_stage, lock_confirmed_at, lock_confirmed_by, lock_confirmation_hash, locked_at, locked_by, moscow_score, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::TIMESTAMP WITH TIME ZONE, $6::VARCHAR, $7::VARCHAR, $8::TIMESTAMP WITH TIME ZONE, $9::VARCHAR, $10::VARCHAR, $11::TIMESTAMP WITH TIME ZONE, $12::TIMESTAMP WITH TIME ZONE) RETURNING epics.id]
-E   [parameters: ('epic_cascade_070f3c0c', 'user_test_8575b765', 'TEST_Cascade Delete Full Epic', 'epic_locked', None, None, None, None, None, None, datetime.datetime(2026, 2, 3, 0, 24, 42, 956860, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 2, 3, 0, 24, 42, 956864, tzinfo=datetime.timezone.utc))]
-E   (Background on this error at: https://sqlalche.me/e/20/gkpj)</error></testcase><testcase classname="tests.test_epic_cascade_delete.TestEpicCascadeDelete" name="test_feature_not_found_after_epic_delete" time="0.000"><error message="failed on setup with &quot;sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table &quot;epics&quot; violates foreign key constraint &quot;epics_user_id_fkey&quot;&#10;DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table &quot;users&quot;.&#10;[SQL: INSERT INTO epics (epic_id, user_id, title, current_stage, lock_confirmed_at, lock_confirmed_by, lock_confirmation_hash, locked_at, locked_by, moscow_score, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::TIMESTAMP WITH TIME ZONE, $6::VARCHAR, $7::VARCHAR, $8::TIMESTAMP WITH TIME ZONE, $9::VARCHAR, $10::VARCHAR, $11::TIMESTAMP WITH TIME ZONE, $12::TIMESTAMP WITH TIME ZONE) RETURNING epics.id]&#10;[parameters: ('epic_cascade_070f3c0c', 'user_test_8575b765', 'TEST_Cascade Delete Full Epic', 'epic_locked', None, None, None, None, None, None, datetime.datetime(2026, 2, 3, 0, 24, 42, 956860, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 2, 3, 0, 24, 42, 956864, tzinfo=datetime.timezone.utc))]&#10;(Background on this error at: https://sqlalche.me/e/20/gkpj)&quot;">/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: in _prepare_and_execute
-    self._rows = deque(await prepared_stmt.fetch(*parameters))
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
-    data = await self.__bind_execute(args, 0, timeout)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
-    data, status, _ = await self.__do_execute(
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
-    return await executor(protocol)
-           ^^^^^^^^^^^^^^^^^^^^^^^^
-asyncpg/protocol/protocol.pyx:205: in bind_execute
-    ???
-E   asyncpg.exceptions.ForeignKeyViolationError: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-
-The above exception was the direct cause of the following exception:
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
-    self.dialect.do_execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
-    cursor.execute(statement, parameters)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
-    self._adapt_connection.await_(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
-    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
-    value = await result
-            ^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
-    self._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
-    self._adapt_connection._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
-    raise translated_error from error
-E   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-
-The above exception was the direct cause of the following exception:
-tests/test_epic_cascade_delete.py:194: in test_epic_with_children
-    data = asyncio.run(_create_epic_with_children())
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:190: in run
-    return runner.run(main)
-           ^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:118: in run
-    return self._loop.run_until_complete(task)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
-    return future.result()
-           ^^^^^^^^^^^^^^^
-tests/test_epic_cascade_delete.py:98: in _create_epic_with_children
-    await session.flush()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:787: in flush
-    await greenlet_spawn(self.sync_session.flush, objects=objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
-    result = context.switch(value)
-             ^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4331: in flush
-    self._flush(objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4466: in _flush
-    with util.safe_reraise():
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
-    raise exc_value.with_traceback(exc_tb)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4427: in _flush
-    flush_context.execute()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
-    rec.execute(self)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
-    util.preloaded.orm_persistence.save_obj(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:93: in save_obj
-    _emit_insert_statements(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1233: in _emit_insert_statements
-    result = connection.execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1419: in execute
-    return meth(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:527: in _execute_on_connection
-    return connection._execute_clauseelement(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1641: in _execute_clauseelement
-    ret = self._execute_context(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1846: in _execute_context
-    return self._exec_single_context(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1986: in _exec_single_context
-    self._handle_dbapi_exception(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2363: in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
-    self.dialect.do_execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
-    cursor.execute(statement, parameters)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
-    self._adapt_connection.await_(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
-    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
-    value = await result
-            ^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
-    self._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
-    self._adapt_connection._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
-    raise translated_error from error
-E   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-E   [SQL: INSERT INTO epics (epic_id, user_id, title, current_stage, lock_confirmed_at, lock_confirmed_by, lock_confirmation_hash, locked_at, locked_by, moscow_score, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::TIMESTAMP WITH TIME ZONE, $6::VARCHAR, $7::VARCHAR, $8::TIMESTAMP WITH TIME ZONE, $9::VARCHAR, $10::VARCHAR, $11::TIMESTAMP WITH TIME ZONE, $12::TIMESTAMP WITH TIME ZONE) RETURNING epics.id]
-E   [parameters: ('epic_cascade_070f3c0c', 'user_test_8575b765', 'TEST_Cascade Delete Full Epic', 'epic_locked', None, None, None, None, None, None, datetime.datetime(2026, 2, 3, 0, 24, 42, 956860, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 2, 3, 0, 24, 42, 956864, tzinfo=datetime.timezone.utc))]
-E   (Background on this error at: https://sqlalche.me/e/20/gkpj)</error></testcase><testcase classname="tests.test_epic_cascade_delete.TestEpicCascadeDelete" name="test_story_not_found_after_epic_delete" time="0.000"><error message="failed on setup with &quot;sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table &quot;epics&quot; violates foreign key constraint &quot;epics_user_id_fkey&quot;&#10;DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table &quot;users&quot;.&#10;[SQL: INSERT INTO epics (epic_id, user_id, title, current_stage, lock_confirmed_at, lock_confirmed_by, lock_confirmation_hash, locked_at, locked_by, moscow_score, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::TIMESTAMP WITH TIME ZONE, $6::VARCHAR, $7::VARCHAR, $8::TIMESTAMP WITH TIME ZONE, $9::VARCHAR, $10::VARCHAR, $11::TIMESTAMP WITH TIME ZONE, $12::TIMESTAMP WITH TIME ZONE) RETURNING epics.id]&#10;[parameters: ('epic_cascade_070f3c0c', 'user_test_8575b765', 'TEST_Cascade Delete Full Epic', 'epic_locked', None, None, None, None, None, None, datetime.datetime(2026, 2, 3, 0, 24, 42, 956860, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 2, 3, 0, 24, 42, 956864, tzinfo=datetime.timezone.utc))]&#10;(Background on this error at: https://sqlalche.me/e/20/gkpj)&quot;">/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: in _prepare_and_execute
-    self._rows = deque(await prepared_stmt.fetch(*parameters))
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
-    data = await self.__bind_execute(args, 0, timeout)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
-    data, status, _ = await self.__do_execute(
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
-    return await executor(protocol)
-           ^^^^^^^^^^^^^^^^^^^^^^^^
-asyncpg/protocol/protocol.pyx:205: in bind_execute
-    ???
-E   asyncpg.exceptions.ForeignKeyViolationError: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-
-The above exception was the direct cause of the following exception:
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
-    self.dialect.do_execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
-    cursor.execute(statement, parameters)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
-    self._adapt_connection.await_(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
-    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
-    value = await result
-            ^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
-    self._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
-    self._adapt_connection._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
-    raise translated_error from error
-E   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-
-The above exception was the direct cause of the following exception:
-tests/test_epic_cascade_delete.py:194: in test_epic_with_children
-    data = asyncio.run(_create_epic_with_children())
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:190: in run
-    return runner.run(main)
-           ^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:118: in run
-    return self._loop.run_until_complete(task)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
-    return future.result()
-           ^^^^^^^^^^^^^^^
-tests/test_epic_cascade_delete.py:98: in _create_epic_with_children
-    await session.flush()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:787: in flush
-    await greenlet_spawn(self.sync_session.flush, objects=objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
-    result = context.switch(value)
-             ^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4331: in flush
-    self._flush(objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4466: in _flush
-    with util.safe_reraise():
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
-    raise exc_value.with_traceback(exc_tb)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4427: in _flush
-    flush_context.execute()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
-    rec.execute(self)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
-    util.preloaded.orm_persistence.save_obj(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:93: in save_obj
-    _emit_insert_statements(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1233: in _emit_insert_statements
-    result = connection.execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1419: in execute
-    return meth(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:527: in _execute_on_connection
-    return connection._execute_clauseelement(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1641: in _execute_clauseelement
-    ret = self._execute_context(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1846: in _execute_context
-    return self._exec_single_context(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1986: in _exec_single_context
-    self._handle_dbapi_exception(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2363: in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
-    self.dialect.do_execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
-    cursor.execute(statement, parameters)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
-    self._adapt_connection.await_(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
-    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
-    value = await result
-            ^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
-    self._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
-    self._adapt_connection._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
-    raise translated_error from error
-E   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-E   [SQL: INSERT INTO epics (epic_id, user_id, title, current_stage, lock_confirmed_at, lock_confirmed_by, lock_confirmation_hash, locked_at, locked_by, moscow_score, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::TIMESTAMP WITH TIME ZONE, $6::VARCHAR, $7::VARCHAR, $8::TIMESTAMP WITH TIME ZONE, $9::VARCHAR, $10::VARCHAR, $11::TIMESTAMP WITH TIME ZONE, $12::TIMESTAMP WITH TIME ZONE) RETURNING epics.id]
-E   [parameters: ('epic_cascade_070f3c0c', 'user_test_8575b765', 'TEST_Cascade Delete Full Epic', 'epic_locked', None, None, None, None, None, None, datetime.datetime(2026, 2, 3, 0, 24, 42, 956860, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 2, 3, 0, 24, 42, 956864, tzinfo=datetime.timezone.utc))]
-E   (Background on this error at: https://sqlalche.me/e/20/gkpj)</error></testcase><testcase classname="tests.test_epic_cascade_delete.TestDatabaseIntegrityAfterDelete" name="test_no_orphaned_snapshots" time="0.012"><error message="failed on setup with &quot;RuntimeError: Task &lt;Task pending name='Task-6' coro=&lt;TestDatabaseIntegrityAfterDelete.deleted_epic_data.&lt;locals&gt;._create_and_delete() running at /app/tests/test_epic_cascade_delete.py:326&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop&quot;">tests/test_epic_cascade_delete.py:379: in deleted_epic_data
-    data = asyncio.run(_create_and_delete())
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:190: in run
-    return runner.run(main)
-           ^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:118: in run
-    return self._loop.run_until_complete(task)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
-    return future.result()
-           ^^^^^^^^^^^^^^^
-tests/test_epic_cascade_delete.py:326: in _create_and_delete
-    await session.flush()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:787: in flush
-    await greenlet_spawn(self.sync_session.flush, objects=objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
-    result = context.throw(*sys.exc_info())
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4331: in flush
-    self._flush(objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4466: in _flush
-    with util.safe_reraise():
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
-    raise exc_value.with_traceback(exc_tb)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4427: in _flush
-    flush_context.execute()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
-    rec.execute(self)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
-    util.preloaded.orm_persistence.save_obj(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:60: in save_obj
-    for (
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:223: in _organize_states_for_save
-    for state, dict_, mapper, connection in _connections_for_states(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1759: in _connections_for_states
-    connection = uowtransaction.transaction.connection(base_mapper)
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-&lt;string&gt;:2: in connection
-    ???
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1037: in connection
-    return self._connection_for_bind(bind, execution_options)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-&lt;string&gt;:2: in _connection_for_bind
-    ???
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1173: in _connection_for_bind
-    conn = self._parent._connection_for_bind(
-&lt;string&gt;:2: in _connection_for_bind
-    ???
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1187: in _connection_for_bind
-    conn = bind.connect()
-           ^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3285: in connect
-    return self._connection_cls(self)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:143: in __init__
-    self._dbapi_connection = engine.raw_connection()
-                             ^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3309: in raw_connection
-    return self.pool.connect()
-           ^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:447: in connect
-    return _ConnectionFairy._checkout(self)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1363: in _checkout
-    with util.safe_reraise():
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
-    raise exc_value.with_traceback(exc_tb)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1301: in _checkout
-    result = pool._dialect._do_ping_w_event(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:729: in _do_ping_w_event
-    return self.do_ping(dbapi_connection)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:1160: in do_ping
-    dbapi_connection.ping()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:818: in ping
-    self._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:799: in _handle_exception
-    raise error
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:816: in ping
-    _ = self.await_(self._async_ping())
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
-    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
-    value = await result
-            ^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:825: in _async_ping
-    await tr.start()
-/root/.venv/lib/python3.11/site-packages/asyncpg/transaction.py:146: in start
-    await self._connection.execute(query)
-/root/.venv/lib/python3.11/site-packages/asyncpg/connection.py:354: in execute
-    result = await self._protocol.query(query, timeout)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-asyncpg/protocol/protocol.pyx:369: in query
-    ???
-E   RuntimeError: Task &lt;Task pending name='Task-6' coro=&lt;TestDatabaseIntegrityAfterDelete.deleted_epic_data.&lt;locals&gt;._create_and_delete() running at /app/tests/test_epic_cascade_delete.py:326&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop</error></testcase><testcase classname="tests.test_epic_cascade_delete.TestDatabaseIntegrityAfterDelete" name="test_no_orphaned_transcript_events" time="0.000"><error message="failed on setup with &quot;RuntimeError: Task &lt;Task pending name='Task-6' coro=&lt;TestDatabaseIntegrityAfterDelete.deleted_epic_data.&lt;locals&gt;._create_and_delete() running at /app/tests/test_epic_cascade_delete.py:326&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop&quot;">tests/test_epic_cascade_delete.py:379: in deleted_epic_data
-    data = asyncio.run(_create_and_delete())
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:190: in run
-    return runner.run(main)
-           ^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:118: in run
-    return self._loop.run_until_complete(task)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
-    return future.result()
-           ^^^^^^^^^^^^^^^
-tests/test_epic_cascade_delete.py:326: in _create_and_delete
-    await session.flush()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:787: in flush
-    await greenlet_spawn(self.sync_session.flush, objects=objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
-    result = context.throw(*sys.exc_info())
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4331: in flush
-    self._flush(objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4466: in _flush
-    with util.safe_reraise():
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
-    raise exc_value.with_traceback(exc_tb)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4427: in _flush
-    flush_context.execute()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
-    rec.execute(self)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
-    util.preloaded.orm_persistence.save_obj(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:60: in save_obj
-    for (
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:223: in _organize_states_for_save
-    for state, dict_, mapper, connection in _connections_for_states(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1759: in _connections_for_states
-    connection = uowtransaction.transaction.connection(base_mapper)
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-&lt;string&gt;:2: in connection
-    ???
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1037: in connection
-    return self._connection_for_bind(bind, execution_options)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-&lt;string&gt;:2: in _connection_for_bind
-    ???
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1173: in _connection_for_bind
-    conn = self._parent._connection_for_bind(
-&lt;string&gt;:2: in _connection_for_bind
-    ???
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1187: in _connection_for_bind
-    conn = bind.connect()
-           ^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3285: in connect
-    return self._connection_cls(self)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:143: in __init__
-    self._dbapi_connection = engine.raw_connection()
-                             ^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3309: in raw_connection
-    return self.pool.connect()
-           ^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:447: in connect
-    return _ConnectionFairy._checkout(self)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1363: in _checkout
-    with util.safe_reraise():
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
-    raise exc_value.with_traceback(exc_tb)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1301: in _checkout
-    result = pool._dialect._do_ping_w_event(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:729: in _do_ping_w_event
-    return self.do_ping(dbapi_connection)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:1160: in do_ping
-    dbapi_connection.ping()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:818: in ping
-    self._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:799: in _handle_exception
-    raise error
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:816: in ping
-    _ = self.await_(self._async_ping())
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
-    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
-    value = await result
-            ^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:825: in _async_ping
-    await tr.start()
-/root/.venv/lib/python3.11/site-packages/asyncpg/transaction.py:146: in start
-    await self._connection.execute(query)
-/root/.venv/lib/python3.11/site-packages/asyncpg/connection.py:354: in execute
-    result = await self._protocol.query(query, timeout)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-asyncpg/protocol/protocol.pyx:369: in query
-    ???
-E   RuntimeError: Task &lt;Task pending name='Task-6' coro=&lt;TestDatabaseIntegrityAfterDelete.deleted_epic_data.&lt;locals&gt;._create_and_delete() running at /app/tests/test_epic_cascade_delete.py:326&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop</error></testcase><testcase classname="tests.test_epic_cascade_delete.TestDatabaseIntegrityAfterDelete" name="test_no_orphaned_features" time="0.001"><error message="failed on setup with &quot;RuntimeError: Task &lt;Task pending name='Task-6' coro=&lt;TestDatabaseIntegrityAfterDelete.deleted_epic_data.&lt;locals&gt;._create_and_delete() running at /app/tests/test_epic_cascade_delete.py:326&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop&quot;">tests/test_epic_cascade_delete.py:379: in deleted_epic_data
-    data = asyncio.run(_create_and_delete())
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:190: in run
-    return runner.run(main)
-           ^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:118: in run
-    return self._loop.run_until_complete(task)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
-    return future.result()
-           ^^^^^^^^^^^^^^^
-tests/test_epic_cascade_delete.py:326: in _create_and_delete
-    await session.flush()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:787: in flush
-    await greenlet_spawn(self.sync_session.flush, objects=objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
-    result = context.throw(*sys.exc_info())
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4331: in flush
-    self._flush(objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4466: in _flush
-    with util.safe_reraise():
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
-    raise exc_value.with_traceback(exc_tb)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4427: in _flush
-    flush_context.execute()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
-    rec.execute(self)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
-    util.preloaded.orm_persistence.save_obj(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:60: in save_obj
-    for (
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:223: in _organize_states_for_save
-    for state, dict_, mapper, connection in _connections_for_states(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1759: in _connections_for_states
-    connection = uowtransaction.transaction.connection(base_mapper)
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-&lt;string&gt;:2: in connection
-    ???
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1037: in connection
-    return self._connection_for_bind(bind, execution_options)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-&lt;string&gt;:2: in _connection_for_bind
-    ???
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1173: in _connection_for_bind
-    conn = self._parent._connection_for_bind(
-&lt;string&gt;:2: in _connection_for_bind
-    ???
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1187: in _connection_for_bind
-    conn = bind.connect()
-           ^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3285: in connect
-    return self._connection_cls(self)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:143: in __init__
-    self._dbapi_connection = engine.raw_connection()
-                             ^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3309: in raw_connection
-    return self.pool.connect()
-           ^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:447: in connect
-    return _ConnectionFairy._checkout(self)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1363: in _checkout
-    with util.safe_reraise():
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
-    raise exc_value.with_traceback(exc_tb)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1301: in _checkout
-    result = pool._dialect._do_ping_w_event(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:729: in _do_ping_w_event
-    return self.do_ping(dbapi_connection)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:1160: in do_ping
-    dbapi_connection.ping()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:818: in ping
-    self._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:799: in _handle_exception
-    raise error
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:816: in ping
-    _ = self.await_(self._async_ping())
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
-    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
-    value = await result
-            ^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:825: in _async_ping
-    await tr.start()
-/root/.venv/lib/python3.11/site-packages/asyncpg/transaction.py:146: in start
-    await self._connection.execute(query)
-/root/.venv/lib/python3.11/site-packages/asyncpg/connection.py:354: in execute
-    result = await self._protocol.query(query, timeout)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-asyncpg/protocol/protocol.pyx:369: in query
-    ???
-E   RuntimeError: Task &lt;Task pending name='Task-6' coro=&lt;TestDatabaseIntegrityAfterDelete.deleted_epic_data.&lt;locals&gt;._create_and_delete() running at /app/tests/test_epic_cascade_delete.py:326&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop</error></testcase><testcase classname="tests.test_epic_cascade_delete.TestDatabaseIntegrityAfterDelete" name="test_no_orphaned_user_stories" time="0.000"><error message="failed on setup with &quot;RuntimeError: Task &lt;Task pending name='Task-6' coro=&lt;TestDatabaseIntegrityAfterDelete.deleted_epic_data.&lt;locals&gt;._create_and_delete() running at /app/tests/test_epic_cascade_delete.py:326&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop&quot;">tests/test_epic_cascade_delete.py:379: in deleted_epic_data
-    data = asyncio.run(_create_and_delete())
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:190: in run
-    return runner.run(main)
-           ^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:118: in run
-    return self._loop.run_until_complete(task)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
-    return future.result()
-           ^^^^^^^^^^^^^^^
-tests/test_epic_cascade_delete.py:326: in _create_and_delete
-    await session.flush()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:787: in flush
-    await greenlet_spawn(self.sync_session.flush, objects=objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
-    result = context.throw(*sys.exc_info())
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4331: in flush
-    self._flush(objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4466: in _flush
-    with util.safe_reraise():
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
-    raise exc_value.with_traceback(exc_tb)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4427: in _flush
-    flush_context.execute()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
-    rec.execute(self)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
-    util.preloaded.orm_persistence.save_obj(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:60: in save_obj
-    for (
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:223: in _organize_states_for_save
-    for state, dict_, mapper, connection in _connections_for_states(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1759: in _connections_for_states
-    connection = uowtransaction.transaction.connection(base_mapper)
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-&lt;string&gt;:2: in connection
-    ???
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1037: in connection
-    return self._connection_for_bind(bind, execution_options)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-&lt;string&gt;:2: in _connection_for_bind
-    ???
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1173: in _connection_for_bind
-    conn = self._parent._connection_for_bind(
-&lt;string&gt;:2: in _connection_for_bind
-    ???
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1187: in _connection_for_bind
-    conn = bind.connect()
-           ^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3285: in connect
-    return self._connection_cls(self)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:143: in __init__
-    self._dbapi_connection = engine.raw_connection()
-                             ^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3309: in raw_connection
-    return self.pool.connect()
-           ^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:447: in connect
-    return _ConnectionFairy._checkout(self)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1363: in _checkout
-    with util.safe_reraise():
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
-    raise exc_value.with_traceback(exc_tb)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1301: in _checkout
-    result = pool._dialect._do_ping_w_event(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:729: in _do_ping_w_event
-    return self.do_ping(dbapi_connection)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:1160: in do_ping
-    dbapi_connection.ping()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:818: in ping
-    self._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:799: in _handle_exception
-    raise error
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:816: in ping
-    _ = self.await_(self._async_ping())
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
-    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
-    value = await result
-            ^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:825: in _async_ping
-    await tr.start()
-/root/.venv/lib/python3.11/site-packages/asyncpg/transaction.py:146: in start
-    await self._connection.execute(query)
-/root/.venv/lib/python3.11/site-packages/asyncpg/connection.py:354: in execute
-    result = await self._protocol.query(query, timeout)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-asyncpg/protocol/protocol.pyx:369: in query
-    ???
-E   RuntimeError: Task &lt;Task pending name='Task-6' coro=&lt;TestDatabaseIntegrityAfterDelete.deleted_epic_data.&lt;locals&gt;._create_and_delete() running at /app/tests/test_epic_cascade_delete.py:326&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop</error></testcase><testcase classname="tests.test_epic_cascade_delete.TestFeatureCreationForEpic" name="test_create_feature_for_epic" time="0.317"><error message="failed on setup with &quot;sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table &quot;epics&quot; violates foreign key constraint &quot;epics_user_id_fkey&quot;&#10;DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table &quot;users&quot;.&#10;[SQL: INSERT INTO epics (epic_id, user_id, title, current_stage, lock_confirmed_at, lock_confirmed_by, lock_confirmation_hash, locked_at, locked_by, moscow_score, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::TIMESTAMP WITH TIME ZONE, $6::VARCHAR, $7::VARCHAR, $8::TIMESTAMP WITH TIME ZONE, $9::VARCHAR, $10::VARCHAR, $11::TIMESTAMP WITH TIME ZONE, $12::TIMESTAMP WITH TIME ZONE) RETURNING epics.id]&#10;[parameters: ('epic_feat_bdfd665d', 'user_test_8575b765', 'TEST_Feature Creation Epic', 'epic_locked', None, None, None, None, None, None, datetime.datetime(2026, 2, 3, 0, 24, 46, 380159, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 2, 3, 0, 24, 46, 380163, tzinfo=datetime.timezone.utc))]&#10;(Background on this error at: https://sqlalche.me/e/20/gkpj)&quot;">/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: in _prepare_and_execute
-    self._rows = deque(await prepared_stmt.fetch(*parameters))
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
-    data = await self.__bind_execute(args, 0, timeout)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
-    data, status, _ = await self.__do_execute(
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
-    return await executor(protocol)
-           ^^^^^^^^^^^^^^^^^^^^^^^^
-asyncpg/protocol/protocol.pyx:205: in bind_execute
-    ???
-E   asyncpg.exceptions.ForeignKeyViolationError: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-
-The above exception was the direct cause of the following exception:
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
-    self.dialect.do_execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
-    cursor.execute(statement, parameters)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
-    self._adapt_connection.await_(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
-    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
-    value = await result
-            ^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
-    self._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
-    self._adapt_connection._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
-    raise translated_error from error
-E   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-
-The above exception was the direct cause of the following exception:
-tests/test_epic_cascade_delete.py:512: in locked_epic
-    epic_id = asyncio.run(_create_locked_epic())
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:190: in run
-    return runner.run(main)
-           ^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/runners.py:118: in run
-    return self._loop.run_until_complete(task)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
-    return future.result()
-           ^^^^^^^^^^^^^^^
-tests/test_epic_cascade_delete.py:499: in _create_locked_epic
-    await session.flush()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:787: in flush
-    await greenlet_spawn(self.sync_session.flush, objects=objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
-    result = context.switch(value)
-             ^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4331: in flush
-    self._flush(objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4466: in _flush
-    with util.safe_reraise():
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
-    raise exc_value.with_traceback(exc_tb)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4427: in _flush
-    flush_context.execute()
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:466: in execute
-    rec.execute(self)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
-    util.preloaded.orm_persistence.save_obj(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:93: in save_obj
-    _emit_insert_statements(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1233: in _emit_insert_statements
-    result = connection.execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1419: in execute
-    return meth(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:527: in _execute_on_connection
-    return connection._execute_clauseelement(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1641: in _execute_clauseelement
-    ret = self._execute_context(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1846: in _execute_context
-    return self._exec_single_context(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1986: in _exec_single_context
-    self._handle_dbapi_exception(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2363: in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
-    self.dialect.do_execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
-    cursor.execute(statement, parameters)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
-    self._adapt_connection.await_(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
-    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
-    value = await result
-            ^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
-    self._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
-    self._adapt_connection._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
-    raise translated_error from error
-E   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-E   [SQL: INSERT INTO epics (epic_id, user_id, title, current_stage, lock_confirmed_at, lock_confirmed_by, lock_confirmation_hash, locked_at, locked_by, moscow_score, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::TIMESTAMP WITH TIME ZONE, $6::VARCHAR, $7::VARCHAR, $8::TIMESTAMP WITH TIME ZONE, $9::VARCHAR, $10::VARCHAR, $11::TIMESTAMP WITH TIME ZONE, $12::TIMESTAMP WITH TIME ZONE) RETURNING epics.id]
-E   [parameters: ('epic_feat_bdfd665d', 'user_test_8575b765', 'TEST_Feature Creation Epic', 'epic_locked', None, None, None, None, None, None, datetime.datetime(2026, 2, 3, 0, 24, 46, 380159, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 2, 3, 0, 24, 46, 380163, tzinfo=datetime.timezone.utc))]
-E   (Background on this error at: https://sqlalche.me/e/20/gkpj)</error></testcase><testcase classname="tests.test_epic_cascade_delete.TestUserStoryCreationForFeature" name="test_create_story_for_feature" time="0.003"><error message="failed on setup with &quot;RuntimeError: Task &lt;Task pending name='Task-16' coro=&lt;TestUserStoryCreationForFeature.approved_feature.&lt;locals&gt;._create_approved_feature() running at /app/tests/test_epic_cascade_delete.py:572&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop&quot;">tests/test_epic_cascade_delete.py:595: in approved_feature
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="8" time="15.886" timestamp="2026-02-03T00:26:22.640589+00:00" hostname="agent-env-6e87a46c-68ab-4b09-acc7-f5dba342e328"><testcase classname="tests.test_epic_cascade_delete.TestEpicCreation" name="test_create_epic" time="1.336" /><testcase classname="tests.test_epic_cascade_delete.TestFeatureCreationForEpic" name="test_create_feature_for_locked_epic" time="2.361" /><testcase classname="tests.test_epic_cascade_delete.TestUserStoryCreationForFeature" name="test_create_story_for_approved_feature" time="0.004"><failure message="RuntimeError: Task &lt;Task pending name='Task-6' coro=&lt;TestUserStoryCreationForFeature.test_create_story_for_approved_feature.&lt;locals&gt;._create_approved_feature() running at /app/tests/test_epic_cascade_delete.py:171&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop">tests/test_epic_cascade_delete.py:194: in test_create_story_for_approved_feature
     data = asyncio.run(_create_approved_feature())
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 /usr/local/lib/python3.11/asyncio/runners.py:190: in run
@@ -1082,7 +10,7 @@ E   (Background on this error at: https://sqlalche.me/e/20/gkpj)</error></testca
 /usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
     return future.result()
            ^^^^^^^^^^^^^^^
-tests/test_epic_cascade_delete.py:572: in _create_approved_feature
+tests/test_epic_cascade_delete.py:171: in _create_approved_feature
     await session.flush()
 /root/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:787: in flush
     await greenlet_spawn(self.sync_session.flush, objects=objects)
@@ -1176,48 +104,9 @@ tests/test_epic_cascade_delete.py:572: in _create_approved_feature
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 asyncpg/protocol/protocol.pyx:369: in query
     ???
-E   RuntimeError: Task &lt;Task pending name='Task-16' coro=&lt;TestUserStoryCreationForFeature.approved_feature.&lt;locals&gt;._create_approved_feature() running at /app/tests/test_epic_cascade_delete.py:572&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop</error></testcase><testcase classname="tests.test_epic_cascade_delete.TestFullCascadeDeleteWorkflow" name="test_full_cascade_workflow" time="0.315"><failure message="sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table &quot;epics&quot; violates foreign key constraint &quot;epics_user_id_fkey&quot;&#10;DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table &quot;users&quot;.&#10;[SQL: INSERT INTO epics (epic_id, user_id, title, current_stage, lock_confirmed_at, lock_confirmed_by, lock_confirmation_hash, locked_at, locked_by, moscow_score, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::TIMESTAMP WITH TIME ZONE, $6::VARCHAR, $7::VARCHAR, $8::TIMESTAMP WITH TIME ZONE, $9::VARCHAR, $10::VARCHAR, $11::TIMESTAMP WITH TIME ZONE, $12::TIMESTAMP WITH TIME ZONE) RETURNING epics.id]&#10;[parameters: ('epic_full_6f658ee8', 'user_test_8575b765', 'TEST_Full Cascade Workflow Epic', 'epic_locked', None, None, None, None, None, None, datetime.datetime(2026, 2, 3, 0, 24, 47, 382030, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 2, 3, 0, 24, 47, 382034, tzinfo=datetime.timezone.utc))]&#10;(Background on this error at: https://sqlalche.me/e/20/gkpj)">/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: in _prepare_and_execute
-    self._rows = deque(await prepared_stmt.fetch(*parameters))
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:177: in fetch
-    data = await self.__bind_execute(args, 0, timeout)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
-    data, status, _ = await self.__do_execute(
-/root/.venv/lib/python3.11/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
-    return await executor(protocol)
-           ^^^^^^^^^^^^^^^^^^^^^^^^
-asyncpg/protocol/protocol.pyx:205: in bind_execute
-    ???
-E   asyncpg.exceptions.ForeignKeyViolationError: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-
-The above exception was the direct cause of the following exception:
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
-    self.dialect.do_execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
-    cursor.execute(statement, parameters)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
-    self._adapt_connection.await_(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
-    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
-    value = await result
-            ^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
-    self._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
-    self._adapt_connection._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
-    raise translated_error from error
-E   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-
-The above exception was the direct cause of the following exception:
-tests/test_epic_cascade_delete.py:725: in test_full_cascade_workflow
-    data = asyncio.run(_create_full_hierarchy())
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   RuntimeError: Task &lt;Task pending name='Task-6' coro=&lt;TestUserStoryCreationForFeature.test_create_story_for_approved_feature.&lt;locals&gt;._create_approved_feature() running at /app/tests/test_epic_cascade_delete.py:171&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop</failure></testcase><testcase classname="tests.test_epic_cascade_delete.TestEpicCascadeDelete" name="test_cascade_delete_features" time="1.708" /><testcase classname="tests.test_epic_cascade_delete.TestEpicCascadeDelete" name="test_cascade_delete_user_stories" time="0.003"><failure message="RuntimeError: Task &lt;Task pending name='Task-16' coro=&lt;TestEpicCascadeDelete.test_cascade_delete_user_stories.&lt;locals&gt;._create_epic_with_story() running at /app/tests/test_epic_cascade_delete.py:325&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop">tests/test_epic_cascade_delete.py:362: in test_cascade_delete_user_stories
+    data = asyncio.run(_create_epic_with_story())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 /usr/local/lib/python3.11/asyncio/runners.py:190: in run
     return runner.run(main)
            ^^^^^^^^^^^^^^^^
@@ -1227,13 +116,13 @@ tests/test_epic_cascade_delete.py:725: in test_full_cascade_workflow
 /usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
     return future.result()
            ^^^^^^^^^^^^^^^
-tests/test_epic_cascade_delete.py:662: in _create_full_hierarchy
+tests/test_epic_cascade_delete.py:325: in _create_epic_with_story
     await session.flush()
 /root/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:787: in flush
     await greenlet_spawn(self.sync_session.flush, objects=objects)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:203: in greenlet_spawn
-    result = context.switch(value)
-             ^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 /root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4331: in flush
     self._flush(objects)
 /root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:4466: in _flush
@@ -1246,42 +135,318 @@ tests/test_epic_cascade_delete.py:662: in _create_full_hierarchy
     rec.execute(self)
 /root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py:642: in execute
     util.preloaded.orm_persistence.save_obj(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:93: in save_obj
-    _emit_insert_statements(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1233: in _emit_insert_statements
-    result = connection.execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1419: in execute
-    return meth(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/sql/elements.py:527: in _execute_on_connection
-    return connection._execute_clauseelement(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1641: in _execute_clauseelement
-    ret = self._execute_context(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1846: in _execute_context
-    return self._exec_single_context(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1986: in _exec_single_context
-    self._handle_dbapi_exception(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:2363: in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context
-    self.dialect.do_execute(
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:952: in do_execute
-    cursor.execute(statement, parameters)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
-    self._adapt_connection.await_(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:60: in save_obj
+    for (
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:223: in _organize_states_for_save
+    for state, dict_, mapper, connection in _connections_for_states(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py:1759: in _connections_for_states
+    connection = uowtransaction.transaction.connection(base_mapper)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;string&gt;:2: in connection
+    ???
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1037: in connection
+    return self._connection_for_bind(bind, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;string&gt;:2: in _connection_for_bind
+    ???
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1173: in _connection_for_bind
+    conn = self._parent._connection_for_bind(
+&lt;string&gt;:2: in _connection_for_bind
+    ???
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1187: in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3285: in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:143: in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3309: in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:447: in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1363: in _checkout
+    with util.safe_reraise():
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1301: in _checkout
+    result = pool._dialect._do_ping_w_event(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:729: in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:1160: in do_ping
+    dbapi_connection.ping()
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:818: in ping
+    self._handle_exception(error)
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:799: in _handle_exception
+    raise error
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:816: in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 /root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
     return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 /root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
     value = await result
             ^^^^^^^^^^^^
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:825: in _async_ping
+    await tr.start()
+/root/.venv/lib/python3.11/site-packages/asyncpg/transaction.py:146: in start
+    await self._connection.execute(query)
+/root/.venv/lib/python3.11/site-packages/asyncpg/connection.py:354: in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+asyncpg/protocol/protocol.pyx:369: in query
+    ???
+E   RuntimeError: Task &lt;Task pending name='Task-16' coro=&lt;TestEpicCascadeDelete.test_cascade_delete_user_stories.&lt;locals&gt;._create_epic_with_story() running at /app/tests/test_epic_cascade_delete.py:325&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop</failure></testcase><testcase classname="tests.test_epic_cascade_delete.TestEpicCascadeDelete" name="test_cascade_delete_transcript_events" time="1.638"><failure message="RuntimeError: Task &lt;Task pending name='Task-26' coro=&lt;TestEpicCascadeDelete.test_cascade_delete_transcript_events.&lt;locals&gt;._check_orphans() running at /app/tests/test_epic_cascade_delete.py:470&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop">tests/test_epic_cascade_delete.py:475: in test_cascade_delete_transcript_events
+    events = asyncio.run(_check_orphans())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_epic_cascade_delete.py:470: in _check_orphans
+    result = await session.execute(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:449: in execute
+    result = await greenlet_spawn(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2351: in execute
+    return self._execute_internal(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2239: in _execute_internal
+    conn = self._connection_for_bind(bind)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2108: in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;string&gt;:2: in _connection_for_bind
+    ???
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1187: in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3285: in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:143: in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3309: in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:447: in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1363: in _checkout
+    with util.safe_reraise():
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1301: in _checkout
+    result = pool._dialect._do_ping_w_event(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:729: in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:1160: in do_ping
+    dbapi_connection.ping()
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:818: in ping
     self._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
-    self._adapt_connection._handle_exception(error)
-/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: in _handle_exception
-    raise translated_error from error
-E   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) &lt;class 'asyncpg.exceptions.ForeignKeyViolationError'&gt;: insert or update on table "epics" violates foreign key constraint "epics_user_id_fkey"
-E   DETAIL:  Key (user_id)=(user_test_8575b765) is not present in table "users".
-E   [SQL: INSERT INTO epics (epic_id, user_id, title, current_stage, lock_confirmed_at, lock_confirmed_by, lock_confirmation_hash, locked_at, locked_by, moscow_score, created_at, updated_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::TIMESTAMP WITH TIME ZONE, $6::VARCHAR, $7::VARCHAR, $8::TIMESTAMP WITH TIME ZONE, $9::VARCHAR, $10::VARCHAR, $11::TIMESTAMP WITH TIME ZONE, $12::TIMESTAMP WITH TIME ZONE) RETURNING epics.id]
-E   [parameters: ('epic_full_6f658ee8', 'user_test_8575b765', 'TEST_Full Cascade Workflow Epic', 'epic_locked', None, None, None, None, None, None, datetime.datetime(2026, 2, 3, 0, 24, 47, 382030, tzinfo=datetime.timezone.utc), datetime.datetime(2026, 2, 3, 0, 24, 47, 382034, tzinfo=datetime.timezone.utc))]
-E   (Background on this error at: https://sqlalche.me/e/20/gkpj)</failure></testcase></testsuite></testsuites>
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:799: in _handle_exception
+    raise error
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:816: in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:825: in _async_ping
+    await tr.start()
+/root/.venv/lib/python3.11/site-packages/asyncpg/transaction.py:146: in start
+    await self._connection.execute(query)
+/root/.venv/lib/python3.11/site-packages/asyncpg/connection.py:354: in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+asyncpg/protocol/protocol.pyx:369: in query
+    ???
+E   RuntimeError: Task &lt;Task pending name='Task-26' coro=&lt;TestEpicCascadeDelete.test_cascade_delete_transcript_events.&lt;locals&gt;._check_orphans() running at /app/tests/test_epic_cascade_delete.py:470&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop</failure></testcase><testcase classname="tests.test_epic_cascade_delete.TestEpicCascadeDelete" name="test_cascade_delete_snapshots" time="1.173"><failure message="RuntimeError: Task &lt;Task pending name='Task-36' coro=&lt;TestEpicCascadeDelete.test_cascade_delete_snapshots.&lt;locals&gt;._check_orphans() running at /app/tests/test_epic_cascade_delete.py:539&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop">tests/test_epic_cascade_delete.py:544: in test_cascade_delete_snapshots
+    snapshot = asyncio.run(_check_orphans())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_epic_cascade_delete.py:539: in _check_orphans
+    result = await session.execute(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:449: in execute
+    result = await greenlet_spawn(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2351: in execute
+    return self._execute_internal(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2239: in _execute_internal
+    conn = self._connection_for_bind(bind)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2108: in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;string&gt;:2: in _connection_for_bind
+    ???
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1187: in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3285: in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:143: in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3309: in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:447: in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1363: in _checkout
+    with util.safe_reraise():
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1301: in _checkout
+    result = pool._dialect._do_ping_w_event(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:729: in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:1160: in do_ping
+    dbapi_connection.ping()
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:818: in ping
+    self._handle_exception(error)
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:799: in _handle_exception
+    raise error
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:816: in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:825: in _async_ping
+    await tr.start()
+/root/.venv/lib/python3.11/site-packages/asyncpg/transaction.py:146: in start
+    await self._connection.execute(query)
+/root/.venv/lib/python3.11/site-packages/asyncpg/connection.py:354: in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+asyncpg/protocol/protocol.pyx:369: in query
+    ???
+E   RuntimeError: Task &lt;Task pending name='Task-36' coro=&lt;TestEpicCascadeDelete.test_cascade_delete_snapshots.&lt;locals&gt;._check_orphans() running at /app/tests/test_epic_cascade_delete.py:539&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop</failure></testcase><testcase classname="tests.test_epic_cascade_delete.TestDatabaseIntegrityAfterDelete" name="test_no_orphaned_records_after_full_delete" time="6.147"><failure message="RuntimeError: Task &lt;Task pending name='Task-46' coro=&lt;TestDatabaseIntegrityAfterDelete.test_no_orphaned_records_after_full_delete.&lt;locals&gt;._verify_no_orphans() running at /app/tests/test_epic_cascade_delete.py:710&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop">tests/test_epic_cascade_delete.py:760: in test_no_orphaned_records_after_full_delete
+    asyncio.run(_verify_no_orphans())
+/usr/local/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_epic_cascade_delete.py:710: in _verify_no_orphans
+    result = await session.execute(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/ext/asyncio/session.py:449: in execute
+    result = await greenlet_spawn(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2351: in execute
+    return self._execute_internal(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2239: in _execute_internal
+    conn = self._connection_for_bind(bind)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:2108: in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;string&gt;:2: in _connection_for_bind
+    ???
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/orm/session.py:1187: in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3285: in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:143: in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/base.py:3309: in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:447: in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1363: in _checkout
+    with util.safe_reraise():
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/pool/base.py:1301: in _checkout
+    result = pool._dialect._do_ping_w_event(
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/engine/default.py:729: in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:1160: in do_ping
+    dbapi_connection.ping()
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:818: in ping
+    self._handle_exception(error)
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:799: in _handle_exception
+    raise error
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:816: in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:825: in _async_ping
+    await tr.start()
+/root/.venv/lib/python3.11/site-packages/asyncpg/transaction.py:146: in start
+    await self._connection.execute(query)
+/root/.venv/lib/python3.11/site-packages/asyncpg/connection.py:354: in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+asyncpg/protocol/protocol.pyx:369: in query
+    ???
+E   RuntimeError: Task &lt;Task pending name='Task-46' coro=&lt;TestDatabaseIntegrityAfterDelete.test_no_orphaned_records_after_full_delete.&lt;locals&gt;._verify_no_orphans() running at /app/tests/test_epic_cascade_delete.py:710&gt; cb=[_run_until_complete_cb() at /usr/local/lib/python3.11/asyncio/base_events.py:181]&gt; got Future &lt;Future pending cb=[BaseProtocol._on_waiter_completed()]&gt; attached to a different loop</failure></testcase></testsuite></testsuites>
