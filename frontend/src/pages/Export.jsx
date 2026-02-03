@@ -56,7 +56,7 @@ const Export = () => {
     if (selectedEpic) {
       loadPreview();
     }
-  }, [selectedEpic, includeBugs]);
+  }, [selectedEpic, includeBugs, loadPreview]);
 
   const loadEpics = async () => {
     try {
