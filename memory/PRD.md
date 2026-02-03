@@ -562,6 +562,30 @@ When an Epic is locked, users enter Feature Planning Mode:
   - DELETE /api/bugs/{bug_id}/links/{link_id}
 - **Tests:** 16/16 backend tests passed, 100% frontend coverage
 
+### 2026-02-03: Email/Password Authentication (COMPLETE)
+- **Removed:** Emergent Google OAuth integration
+- **Added:** Email/password authentication with bcrypt password hashing
+- **User Model Updated:** Added `password_hash` and `email_verified` fields
+- **Backend Endpoints:**
+  - POST /api/auth/signup - Register new user (validates email format, min 8 char password, duplicate prevention)
+  - POST /api/auth/login - Login with email/password (returns JWT session token)
+  - POST /api/auth/logout - Logout and invalidate session
+  - GET /api/auth/me - Get current authenticated user
+- **Frontend Pages:**
+  - `/signup` - Registration with password requirements display
+  - `/login` - Login form with error handling
+  - Landing page updated with "Sign in" and "Get Started" buttons
+- **Security:**
+  - Passwords hashed with bcrypt
+  - Sessions stored as JWT tokens in httpOnly cookies
+  - Session tokens stored in database for validation
+- **Environment Updates:**
+  - Removed EMERGENT_LLM_KEY from .env
+  - Added JWT_SECRET placeholder
+  - Updated CORS_ORIGINS for specific domains
+  - Added OPENAI_API_KEY and STRIPE_API_KEY placeholders
+- **Tests:** 14/14 backend tests passed, 100% frontend coverage
+
 ---
 
 ## Backlog
@@ -570,8 +594,12 @@ When an Epic is locked, users enter Feature Planning Mode:
 - None! All critical items completed.
 
 ### P1 - Upcoming
+- Replace emergentintegrations with direct OpenAI SDK in persona_service.py
+- Replace emergentintegrations with direct Stripe SDK in subscription.py
 - Test persona generation with a completed epic
 
 ### P2 - Future
 - Google OAuth authentication (nice-to-have)
+- Email verification flow
+- Password reset functionality
 - Team collaboration features
