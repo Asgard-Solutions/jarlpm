@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import ThemeToggle from '@/components/ThemeToggle';
 import { MoSCoWBadge, RICEBadge, FeatureScoringDialog } from '@/components/ScoringComponents';
+import { LinkedBugs } from '@/components/LinkedBugs';
 import { 
   ArrowLeft, Send, Loader2, Lock, CheckCircle2, 
   XCircle, FileText, History, AlertCircle, Layers,
