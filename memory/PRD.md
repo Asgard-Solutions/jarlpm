@@ -9,7 +9,7 @@ JarlPM is an AI-agnostic, conversation-driven Product Management system for Prod
 - **Frontend**: React 19 with Tailwind CSS, shadcn/ui components
 - **Backend**: FastAPI (Python) 
 - **Database**: PostgreSQL (Neon) with SQLAlchemy ORM
-- **Authentication**: Emergent Google OAuth
+- **Authentication**: Email/Password with bcrypt hashing and JWT tokens
 - **Payments**: Stripe ($20/month subscription)
 
 ### Key Architectural Decisions
@@ -30,6 +30,8 @@ JarlPM is an AI-agnostic, conversation-driven Product Management system for Prod
 - user_id (UUID)
 - email
 - name
+- password_hash (bcrypt hashed password)
+- email_verified (boolean)
 - picture
 - created_at, updated_at
 
