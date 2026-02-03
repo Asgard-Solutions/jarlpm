@@ -144,6 +144,7 @@ def generate_verification_token() -> str:
 @router.post("/signup", response_model=AuthResponse)
 async def signup(
     body: SignupRequest,
+    request: Request,
     response: Response,
     session: AsyncSession = Depends(get_db)
 ):
