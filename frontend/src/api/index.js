@@ -14,9 +14,12 @@ const api = axios.create({
 
 // Auth API
 export const authAPI = {
-  exchangeSession: (sessionId) => api.post('/auth/session', { session_id: sessionId }),
+  signup: (data) => api.post('/auth/signup', data),
+  login: (data) => api.post('/auth/login', data),
   getCurrentUser: () => api.get('/auth/me'),
   logout: () => api.post('/auth/logout'),
+  // Legacy - kept for migration
+  exchangeSession: (sessionId) => api.post('/auth/session', { session_id: sessionId }),
 };
 
 // Subscription API
