@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/subscription", tags=["subscription"])
 
-# Subscription price: $20/month
-SUBSCRIPTION_PRICE = 20.00
+# Subscription price: $45/month
+SUBSCRIPTION_PRICE = 45.00
 SUBSCRIPTION_CURRENCY = "usd"
 
 

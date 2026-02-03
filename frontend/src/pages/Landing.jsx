@@ -251,7 +251,7 @@ const Landing = () => {
           </p>
           <Card className="bg-card border-primary/30">
             <CardHeader className="text-center">
-              <CardTitle className="text-3xl text-foreground">$20<span className="text-lg font-normal text-muted-foreground">/month</span></CardTitle>
+              <CardTitle className="text-3xl text-foreground">$45<span className="text-lg font-normal text-muted-foreground">/month</span></CardTitle>
               <CardDescription className="text-muted-foreground">Everything you need to build great products</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

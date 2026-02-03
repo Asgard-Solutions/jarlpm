@@ -10,7 +10,7 @@ JarlPM is an AI-agnostic, conversation-driven Product Management system for Prod
 - **Backend**: FastAPI (Python) 
 - **Database**: PostgreSQL (Neon) with SQLAlchemy ORM
 - **Authentication**: Email/Password with bcrypt hashing and JWT tokens
-- **Payments**: Stripe ($20/month subscription)
+- **Payments**: Stripe ($45/month subscription)
 - **Email**: Microsoft Graph API (sender: support@asgardsolution.io)
 
 ### Key Architectural Decisions

@@ -484,7 +484,7 @@ const Settings = () => {
                           {checkingPayment ? 'Verifying...' : 'Processing...'}
                         </>
                       ) : (
-                        <>Subscribe - $20/month</>
+                        <>Subscribe - $45/month</>
                       )}
                     </Button>
                   )}
