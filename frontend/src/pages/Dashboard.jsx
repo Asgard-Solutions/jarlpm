@@ -182,6 +182,16 @@ const Dashboard = () => {
                 <Bug className="w-4 h-4 mr-2" />
                 Bugs
               </Button>
+              <Button 
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/export')}
+                className="text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10"
+                data-testid="export-nav-btn"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Export
+              </Button>
               <span className="text-sm text-muted-foreground">{user?.name || user?.email}</span>
               <ThemeToggle />
               <Button 
