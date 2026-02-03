@@ -18,6 +18,13 @@ export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   getCurrentUser: () => api.get('/auth/me'),
   logout: () => api.post('/auth/logout'),
+  // Email verification
+  verifyEmail: (token) => api.post('/auth/verify-email', { token }),
+  resendVerification: (email) => api.post('/auth/resend-verification', { email }),
+  // Password reset
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  resetPassword: (token, newPassword) => api.post('/auth/reset-password', { token, new_password: newPassword }),
+  checkToken: (token) => api.get(`/auth/check-token/${token}`),
   // Legacy - kept for migration
   exchangeSession: (sessionId) => api.post('/auth/session', { session_id: sessionId }),
 };
