@@ -16,6 +16,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import ThemeToggle from '@/components/ThemeToggle';
+import { LinkedBugs } from '@/components/LinkedBugs';
 import { 
   ArrowLeft, Send, Loader2, Lock, CheckCircle2, 
   XCircle, FileText, AlertCircle, User, Bot, Settings, 
