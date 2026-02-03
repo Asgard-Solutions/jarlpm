@@ -299,7 +299,8 @@ async def get_current_user(
         user_id=user.user_id,
         email=user.email,
         name=user.name,
-        picture=user.picture
+        picture=user.picture,
+        email_verified=user.email_verified
     )
 
 
