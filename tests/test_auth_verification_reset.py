@@ -549,12 +549,12 @@ class TestCheckoutGracefulFailure:
             json={"origin_url": "https://example.com"}
         )
         
-        # Should fail with 500 and helpful message
-        assert response.status_code == 500
+        # Should fail with 500 (or 520 via Cloudflare) and helpful message
+        assert response.status_code in [500, 520], f"Expected 500 or 520, got {response.status_code}"
         data = response.json()
         assert "detail" in data
         assert "not configured" in data["detail"].lower() or "stripe" in data["detail"].lower()
-        print("✓ Checkout fails gracefully with helpful error message when Stripe not configured")
+        print(f"✓ Checkout fails gracefully (status {response.status_code}) with helpful error message when Stripe not configured")
 
 
 class TestSignupCreatesVerificationToken:
