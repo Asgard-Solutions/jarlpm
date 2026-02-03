@@ -266,9 +266,9 @@ class ExportService:
         epic_row = [
             "Epic",
             epic_data["title"],
-            epic_data.get("problem_statement", ""),
+            epic_data.get("problem_statement") or "",
             MOSCOW_TO_JIRA_PRIORITY.get(epic_data.get("moscow_score"), "Medium"),
-            "\n".join(epic_data.get("acceptance_criteria", [])),
+            "\n".join(epic_data.get("acceptance_criteria") or []),
             "",
             "",
             "jarlpm-export"
@@ -276,13 +276,13 @@ class ExportService:
         writer.writerow(epic_row)
         
         # Export Features as Stories
-        for feature in epic_data.get("features", []):
+        for feature in epic_data.get("features") or []:
             feature_row = [
                 "Story",
                 feature["title"],
-                feature.get("description", ""),
+                feature.get("description") or "",
                 MOSCOW_TO_JIRA_PRIORITY.get(feature.get("moscow_score"), "Medium"),
-                "\n".join(feature.get("acceptance_criteria", [])),
+                "\n".join(feature.get("acceptance_criteria") or []),
                 str(feature.get("rice_total", "")) if feature.get("rice_total") else "",
                 epic_data["title"],  # Parent epic
                 "jarlpm-export,feature"
@@ -290,13 +290,13 @@ class ExportService:
             writer.writerow(feature_row)
             
             # Export User Stories as Sub-tasks
-            for story in feature.get("user_stories", []):
+            for story in feature.get("user_stories") or []:
                 story_row = [
                     "Sub-task",
                     story["story_text"],
-                    f"Persona: {story.get('persona', '')}\nAction: {story.get('action', '')}\nBenefit: {story.get('benefit', '')}",
+                    f"Persona: {story.get('persona') or ''}\nAction: {story.get('action') or ''}\nBenefit: {story.get('benefit') or ''}",
                     "Medium",
-                    "\n".join(story.get("acceptance_criteria", [])),
+                    "\n".join(story.get("acceptance_criteria") or []),
                     str(story.get("story_points", "")) if story.get("story_points") else "",
                     feature["title"],  # Parent story/feature
                     "jarlpm-export,user-story"
