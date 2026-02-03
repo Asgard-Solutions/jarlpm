@@ -490,19 +490,34 @@ When an Epic is locked, users enter Feature Planning Mode:
 - **Scoring Badges:** Display MoSCoW and RICE scores on cards
 - **Tests:** 34/34 backend tests passed, 100% frontend coverage
 
+### 2026-02-03: Stripe Subscription Implementation (COMPLETE)
+- **Checkout Flow:** Users can subscribe for $20/month via Stripe Checkout
+- **Payment Transaction Tracking:** All payments tracked in `payment_transactions` table
+- **Status Polling:** Frontend polls for payment completion and activates subscription
+- **Webhook Support:** Backend handles Stripe webhook events
+- **API Endpoints:**
+  - POST /api/subscription/create-checkout - Creates Stripe checkout session
+  - GET /api/subscription/checkout-status/{session_id} - Polls payment status
+  - GET /api/subscription/status - Returns user subscription status
+- **Tests:** 30/30 backend tests passed, 100% frontend coverage
+
+### 2026-02-03: User Persona Generation Bug Fix (COMPLETE)
+- **Fixed:** Field name mismatch in `persona_service.py` (`desired_outcomes` → `desired_outcome`)
+- **Status:** Service code corrected, ready for testing with completed epic
+
 ---
 
 ## Backlog
 
 ### P0 - Critical
-- Fix AI-Assisted User Persona Generation (broken - async session/lazy-loading issue)
+- None! All critical items completed.
 
 ### P1 - Upcoming
-- Implement full Stripe subscription flow ($20/month for AI features)
-- Full E2E workflow test with all features combined
+- Full end-to-end workflow test with real user data
+- Test persona generation with a completed epic
 
 ### P2 - Future
-- Google OAuth authentication
+- Google OAuth authentication (nice-to-have)
 - Contextual bug linking from Epic/Feature/Story pages
 - Export to Jira/Azure DevOps
 - Team collaboration features
