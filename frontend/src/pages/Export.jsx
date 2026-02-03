@@ -20,7 +20,7 @@ import {
   Layers, BookOpen, Bug, Settings, Info
 } from 'lucide-react';
 
-const API = process.env.REACT_APP_BACKEND_URL;
+const API = import.meta.env.VITE_BACKEND_URL;
 
 const Export = () => {
   const navigate = useNavigate();
