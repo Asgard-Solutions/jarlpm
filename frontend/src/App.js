@@ -5,6 +5,8 @@ import { useThemeStore } from '@/store';
 
 // Pages
 import Landing from '@/pages/Landing';
+import Login from '@/pages/Login';
+import Signup from '@/pages/Signup';
 import AuthCallback from '@/pages/AuthCallback';
 import ProtectedRoute from '@/pages/ProtectedRoute';
 import Dashboard from '@/pages/Dashboard';
@@ -33,8 +35,7 @@ const ThemeInitializer = ({ children }) => {
 const AppRouter = () => {
   const location = useLocation();
 
-  // Check URL fragment for session_id (handles auth callback)
-  // This must be done synchronously during render, NOT in useEffect
+  // Check URL fragment for session_id (handles legacy auth callback)
   if (location.hash?.includes('session_id=')) {
     return <AuthCallback />;
   }
@@ -43,6 +44,8 @@ const AppRouter = () => {
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
       
       {/* Protected routes */}
       <Route path="/dashboard" element={
