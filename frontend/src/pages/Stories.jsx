@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ThemeToggle from '@/components/ThemeToggle';
+import { LinkedBugs } from '@/components/LinkedBugs';
 import { useAuthStore } from '@/store';
 import { userStoryAPI } from '@/api';
 import { 
