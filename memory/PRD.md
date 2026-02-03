@@ -586,6 +586,37 @@ When an Epic is locked, users enter Feature Planning Mode:
   - Added OPENAI_API_KEY and STRIPE_API_KEY placeholders
 - **Tests:** 14/14 backend tests passed, 100% frontend coverage
 
+### 2026-02-03: Email Verification & Password Reset (COMPLETE)
+- **Database Model:** Added `VerificationToken` table for email verification and password reset tokens
+- **Backend Endpoints:**
+  - POST /api/auth/forgot-password - Request password reset (doesn't reveal if email exists)
+  - POST /api/auth/reset-password - Reset password with token (invalidates all sessions)
+  - POST /api/auth/verify-email - Verify email with token
+  - POST /api/auth/resend-verification - Resend verification email
+  - GET /api/auth/check-token/{token} - Check token validity
+- **Frontend Pages:**
+  - `/forgot-password` - Request password reset form
+  - `/reset-password?token=xxx` - Reset password form with token validation
+  - `/verify-email?token=xxx` - Email verification page
+- **Security:**
+  - Password reset tokens expire after 1 hour
+  - Email verification tokens expire after 24 hours
+  - Password reset invalidates all existing sessions
+  - API doesn't reveal whether email exists (prevents enumeration attacks)
+- **Password Requirements:** Min 8 chars, uppercase, lowercase, number
+- **Tests:** 21/21 backend tests passed, all frontend pages working
+
+### 2026-02-03: SDK Refactoring - Remove emergentintegrations (COMPLETE)
+- **Stripe Integration:** Refactored `/app/backend/routes/subscription.py` to use official `stripe` Python SDK
+  - Create checkout sessions with `stripe.checkout.Session.create()`
+  - Check session status with `stripe.checkout.Session.retrieve()`
+  - Handle webhooks with `stripe.Webhook.construct_event()`
+  - Graceful error handling when API key is placeholder
+- **OpenAI Integration:** Refactored `/app/backend/services/persona_service.py` to use official `openai` SDK
+  - Use `AsyncOpenAI` client for async operations
+  - Generate images with `client.images.generate()` using gpt-image-1 model
+  - Returns base64 encoded images directly
+
 ---
 
 ## Backlog
@@ -594,12 +625,10 @@ When an Epic is locked, users enter Feature Planning Mode:
 - None! All critical items completed.
 
 ### P1 - Upcoming
-- Replace emergentintegrations with direct OpenAI SDK in persona_service.py
-- Replace emergentintegrations with direct Stripe SDK in subscription.py
-- Test persona generation with a completed epic
+- Test persona generation end-to-end with a completed epic (requires OpenAI API key)
+- Test Stripe checkout flow (requires Stripe API key)
 
 ### P2 - Future
 - Google OAuth authentication (nice-to-have)
-- Email verification flow
-- Password reset functionality
 - Team collaboration features
+- Real email sending (currently tokens are returned in API responses for testing)
