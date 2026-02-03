@@ -315,6 +315,7 @@ class Epic(Base):
     transcript_events: Mapped[List["EpicTranscriptEvent"]] = relationship(back_populates="epic", cascade="all, delete-orphan")
     decisions: Mapped[List["EpicDecision"]] = relationship(back_populates="epic", cascade="all, delete-orphan")
     artifacts: Mapped[List["EpicArtifact"]] = relationship(back_populates="epic", cascade="all, delete-orphan")
+    features: Mapped[List["Feature"]] = relationship(back_populates="epic", cascade="all, delete-orphan")
     
     __table_args__ = (
         Index('idx_epics_user_id', 'user_id'),
