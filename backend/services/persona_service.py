@@ -283,38 +283,34 @@ Generate {count} personas that represent the key user types for this product. Re
         portrait_prompt: str,
         settings: PersonaGenerationSettings
     ) -> Optional[str]:
-        """Generate a portrait image for a persona using the configured provider"""
+        """Generate a portrait image for a persona using OpenAI gpt-image-1"""
         try:
-            from dotenv import load_dotenv
-            load_dotenv()
+            from openai import AsyncOpenAI
             
-            api_key = os.environ.get("EMERGENT_LLM_KEY")
-            if not api_key:
-                logger.warning("No EMERGENT_LLM_KEY found for image generation")
+            api_key = os.environ.get("OPENAI_API_KEY")
+            if not api_key or api_key == "your-openai-api-key-here":
+                logger.warning("No valid OPENAI_API_KEY found for image generation")
                 return None
             
-            if settings.image_provider == "openai":
-                from emergentintegrations.llm.openai.image_generation import OpenAIImageGeneration
-                
-                image_gen = OpenAIImageGeneration(api_key=api_key)
-                
-                # Enhance prompt for professional portrait
-                enhanced_prompt = f"Professional headshot portrait photograph. {portrait_prompt}. Clean background, soft lighting, friendly expression, high quality, realistic."
-                
-                images = await image_gen.generate_images(
-                    prompt=enhanced_prompt,
-                    model=settings.image_model or "gpt-image-1",
-                    number_of_images=1
-                )
-                
-                if images and len(images) > 0:
-                    image_base64 = base64.b64encode(images[0]).decode('utf-8')
-                    return image_base64
+            # Initialize async OpenAI client
+            client = AsyncOpenAI(api_key=api_key)
             
-            elif settings.image_provider == "gemini":
-                # Gemini Nano Banana support can be added here
-                logger.warning("Gemini image generation not yet implemented")
-                return None
+            # Enhance prompt for professional portrait
+            enhanced_prompt = f"Professional headshot portrait photograph. {portrait_prompt}. Clean background, soft lighting, friendly expression, high quality, realistic."
+            
+            # Generate image using gpt-image-1
+            response = await client.images.generate(
+                model="gpt-image-1",
+                prompt=enhanced_prompt,
+                size="1024x1024",
+                quality="standard",
+                n=1,
+                response_format="b64_json"  # Get base64 directly
+            )
+            
+            if response.data and len(response.data) > 0:
+                # Return base64 encoded image
+                return response.data[0].b64_json
             
             return None
             
