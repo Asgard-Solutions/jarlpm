@@ -67,6 +67,7 @@ class UserResponse(BaseModel):
     email: str
     name: str
     picture: str | None = None
+    email_verified: bool = False
 
 
 class AuthResponse(BaseModel):
@@ -74,6 +75,23 @@ class AuthResponse(BaseModel):
     user_id: str
     email: str
     name: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
 
 
 # ============================================
@@ -110,6 +128,12 @@ def verify_session_token(token: str) -> str | None:
         return None
     except jwt.InvalidTokenError:
         return None
+
+
+def generate_verification_token() -> str:
+    """Generate a random verification token"""
+    import secrets
+    return secrets.token_urlsafe(32)
 
 
 # ============================================
