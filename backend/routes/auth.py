@@ -178,6 +178,16 @@ async def signup(
     )
     session.add(subscription)
     
+    # Create email verification token
+    verification_token = generate_verification_token()
+    email_token = VerificationToken(
+        user_id=user_id,
+        token=verification_token,
+        token_type="email_verification",
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=24)
+    )
+    session.add(email_token)
+    
     # Generate session token
     session_token = generate_session_token(user_id)
     
