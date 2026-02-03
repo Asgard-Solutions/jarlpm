@@ -231,10 +231,10 @@ def create_locked_epic_with_children(user_id: str):
                 VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
             """, (feature_id, epic_id, 'TEST_Cascade Feature', 'Feature for cascade test', 'approved', 'manual'))
             
-            # Create user story
+            # Create user story (version defaults to 1, is_frozen defaults to false, is_standalone defaults to false)
             cur.execute("""
-                INSERT INTO user_stories (story_id, feature_id, persona, action, benefit, story_text, current_stage, source, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                INSERT INTO user_stories (story_id, feature_id, persona, action, benefit, story_text, current_stage, source, version, is_frozen, is_standalone, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 1, false, false, NOW(), NOW())
             """, (story_id, feature_id, 'cascade user', 'test cascade', 'verify cascade', 
                   'As a cascade user, I want to test cascade so that verify cascade.', 'draft', 'manual'))
             
