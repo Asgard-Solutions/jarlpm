@@ -144,7 +144,7 @@ const Export = () => {
     
     setLoading(true);
     try {
-      const response = await fetch(`${API}/export/jira`, {
+      const response = await fetch(`${API}/api/export/jira`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
