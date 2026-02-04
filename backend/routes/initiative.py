@@ -1107,7 +1107,18 @@ async def generate_initiative(
                 target_points=target_points
             )
             
-            critic_result = await run_llm_pass(llm_service, user_id, critic_system, critic_prompt, max_retries=1, pass_metrics=metrics.pass_4)
+            # Use strict output with schema validation (very low temp for analytical critic)
+            critic_result = await run_llm_pass_with_validation(
+                llm_service=llm_service,
+                strict_service=strict_service,
+                user_id=user_id,
+                system=critic_system,
+                user=critic_prompt,
+                schema=Pass4CriticOutput,
+                task_type=TaskType.CRITIC,
+                pass_metrics=metrics.pass_4,
+                quality_mode="standard"  # No quality pass for critic
+            )
             
             # Apply critic fixes
             warnings = []
