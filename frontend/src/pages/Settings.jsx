@@ -57,6 +57,17 @@ const Settings = () => {
   const [contextError, setContextError] = useState('');
   const [contextSuccess, setContextSuccess] = useState(false);
 
+  // Tab state - controlled by query param
+  const [activeTab, setActiveTab] = useState('delivery');
+
+  // Handle tab from URL query params
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['delivery', 'subscription', 'llm', 'appearance'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
   // Select logo based on theme
   const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
 
