@@ -838,11 +838,11 @@ async def generate_initiative(
     if not llm_config:
         raise HTTPException(status_code=400, detail="Please configure an LLM provider in Settings first")
     
-    # Initialize strict output service
-    strict_service = get_strict_output_service()
+    # Initialize strict output service with DB session for persistent metrics
+    strict_service = get_strict_output_service(session)
     
-    # Check for weak model warning
-    model_warning = strict_service.get_model_warning(user_id, llm_config.provider)
+    # Check for weak model warning (async, from DB)
+    model_warning = await strict_service.get_model_warning(user_id, llm_config.provider)
     
     # Fetch delivery context for personalization
     ctx_result = await session.execute(
