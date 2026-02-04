@@ -505,7 +505,7 @@ Assign Fibonacci points (1,2,3,5,8,13) to each story. Organize into 2 sprints re
 CRITIC_SYSTEM = """You are a Senior PM reviewing an initiative for quality and completeness.
 {context}
 
-Review the initiative and identify issues. Then provide fixes.
+Review the initiative and identify issues. Then provide fixes AND a confidence assessment.
 
 OUTPUT: Valid JSON only.
 
@@ -525,7 +525,7 @@ OUTPUT: Valid JSON only.
       {{
         "original_story_id": "story_xxx",
         "new_stories": [
-          {
+          {{
             "title": "New smaller story 1",
             "persona": "...",
             "action": "...",
@@ -561,6 +561,28 @@ OUTPUT: Valid JSON only.
     "auto_fixed": 3,
     "scope_assessment": "on_track | at_risk | overloaded",
     "recommendation": "Brief recommendation for the PM"
+  }},
+  "confidence_assessment": {{
+    "confidence_score": 75,
+    "top_risks": [
+      "Risk 1: Brief description of biggest risk",
+      "Risk 2: Second biggest risk",
+      "Risk 3: Third risk"
+    ],
+    "key_assumptions": [
+      "Assumption 1: What we're assuming to be true",
+      "Assumption 2: Another critical assumption",
+      "Assumption 3: Third assumption"
+    ],
+    "validate_first": [
+      "What to validate first before heavy development",
+      "Second priority to validate",
+      "Third priority to validate"
+    ],
+    "success_factors": [
+      "Critical success factor 1",
+      "Critical success factor 2"
+    ]
   }}
 }}
 
