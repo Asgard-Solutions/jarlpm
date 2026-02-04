@@ -104,7 +104,6 @@ async def get_delivery_context(
 
 @router.put("", response_model=DeliveryContextResponse)
 async def update_delivery_context(
-async def update_delivery_context(
     request: Request,
     body: DeliveryContextCreate,
     session: AsyncSession = Depends(get_db)
