@@ -443,12 +443,12 @@ OUTPUT: Valid JSON only.
             "benefit": "...",
             "acceptance_criteria": ["..."],
             "points": 3
-          }
+          }}
         ]
-      }
+      }}
     ],
     "added_nfr_stories": [
-      {
+      {{
         "title": "NFR story title",
         "persona": "a developer",
         "action": "...",
@@ -456,31 +456,31 @@ OUTPUT: Valid JSON only.
         "acceptance_criteria": ["..."],
         "points": 2,
         "nfr_type": "security | performance | accessibility | reliability"
-      }
+      }}
     ],
     "improved_acceptance_criteria": [
-      {
+      {{
         "story_id": "story_xxx",
         "improved_criteria": ["Given X, When Y, Then Z (measurable)"]
-      }
+      }}
     ]
-  },
-  "summary": {
+  }},
+  "summary": {{
     "total_issues": 5,
     "errors": 1,
     "warnings": 4,
     "auto_fixed": 3,
     "scope_assessment": "on_track | at_risk | overloaded",
     "recommendation": "Brief recommendation for the PM"
-  }
-}
+  }}
+}}
 
 CHECKS TO PERFORM:
-1. METRICS: Are they specific and measurable? (bad: "user satisfaction", good: "NPS score > 40")
+1. METRICS: Are they industry-appropriate and measurable? (bad: "user satisfaction", good: "NPS score > 40")
 2. ACCEPTANCE CRITERIA: Are they testable? Must be Given/When/Then with observable outcomes
 3. STORY SIZE: Flag stories > 8 points - suggest splits into smaller stories
 4. NFRs: Check for missing security, performance, accessibility, error handling stories
-5. SCOPE: Is total points realistic for 2 sprints (26-42 points ideal)?
+5. SCOPE: Is total points realistic for team velocity of {velocity} points/sprint?
 
 Be constructive. Auto-fix what you can, warn about the rest."""
 
@@ -488,6 +488,7 @@ Be constructive. Auto-fix what you can, warn about the rest."""
 CRITIC_USER = """Review this initiative for PM quality issues:
 
 PRODUCT: {product_name}
+INDUSTRY: {industry}
 PROBLEM: {problem_statement}
 TARGET USERS: {target_users}
 
@@ -497,12 +498,17 @@ METRICS:
 FEATURES & STORIES:
 {stories_detail}
 
+TEAM CONTEXT:
+- Methodology: {methodology}
+- Sprint Length: {sprint_length} days
+- Team Velocity: ~{velocity} points/sprint
+
 SPRINT PLAN:
 - Sprint 1: {sprint1_points} points
 - Sprint 2: {sprint2_points} points
-- Total: {total_points} points
+- Total: {total_points} points (target: ~{target_points} for 2 sprints)
 
-Review for: measurable metrics, testable ACs, story sizing (split if >8), missing NFRs, scope sanity.
+Review for: industry-appropriate metrics, testable ACs, story sizing (split if >8), missing NFRs, scope vs capacity.
 Return only valid JSON with issues and fixes."""
 
 
