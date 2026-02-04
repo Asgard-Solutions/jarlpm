@@ -990,7 +990,8 @@ async def generate_initiative(
                 schema=Pass2DecompOutput,
                 task_type=TaskType.DECOMPOSITION,
                 pass_metrics=metrics.pass_2,
-                quality_mode=quality_mode
+                quality_mode=quality_mode,
+                pass_name="Pass2-Decomp"
             )
             
             if not decomp_result:
