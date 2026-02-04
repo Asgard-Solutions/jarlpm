@@ -663,6 +663,32 @@ When an Epic is locked, users enter Feature Planning Mode:
   - Sidebar already had correct links
 - **Tests:** 21/21 tests passed (iteration_21.json)
 
+### 2026-02-04: Real Stripe Subscription Billing (COMPLETE)
+- **Migrated from one-time payments to real Stripe subscriptions**
+  - Changed `mode="payment"` to `mode="subscription"` in Stripe Checkout
+  - Auto-creates Stripe Product + recurring Price if not configured
+  - Supports `STRIPE_PRICE_ID` env var for pre-configured price
+- **Full subscription lifecycle management via webhooks:**
+  - `customer.subscription.created` - New subscription activated
+  - `customer.subscription.updated` - Status changes, renewals
+  - `customer.subscription.deleted` - Cancellation
+  - `invoice.paid` - Successful payment/renewal
+  - `invoice.payment_failed` - Failed payment → past_due status
+- **New endpoints:**
+  - `POST /api/subscription/cancel` - Cancel at period end or immediately
+  - `POST /api/subscription/reactivate` - Reactivate canceled subscription
+  - Enhanced `GET /api/subscription/status` - Syncs with Stripe, returns `cancel_at_period_end`
+- **Frontend updates (Settings.jsx):**
+  - Cancel subscription button (appears when active)
+  - Reactivate button (appears when scheduled for cancellation)
+  - "Cancels at period end" badge
+  - Different messaging for renewal vs. cancellation date
+- **Benefits:**
+  - Automatic renewals handled by Stripe
+  - Proper handling of failed payments
+  - Proration handled automatically
+  - No manual period tracking needed
+
 ---
 
 ## Backlog
