@@ -32,6 +32,8 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState(false);
   const [checkingPayment, setCheckingPayment] = useState(false);
+  const [canceling, setCanceling] = useState(false);
+  const [reactivating, setReactivating] = useState(false);
   
   // LLM Provider state
   const [provider, setProvider] = useState('openai');
