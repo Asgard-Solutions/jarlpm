@@ -671,7 +671,8 @@ async def run_llm_pass_with_validation(
     schema: Type[T],
     task_type: TaskType,
     pass_metrics: Optional[PassMetrics] = None,
-    quality_mode: str = "standard"
+    quality_mode: str = "standard",
+    pass_name: str = "unknown"
 ) -> Optional[dict]:
     """
     Run a single LLM pass with strict output validation and auto-repair.
@@ -682,9 +683,12 @@ async def run_llm_pass_with_validation(
     - Auto-repairs invalid JSON (up to 2 retries)
     - Optionally runs quality pass for 2-pass mode
     - Tracks all metrics for analytics
+    - Logs retries consistently for debugging
     """
     start_time = time.time()
     temperature = strict_service.get_temperature(task_type)
+    
+    logger.info(f"[{pass_name}] Starting with temp={temperature}, schema={schema.__name__}")
     
     # Collect full response
     full_response = ""
@@ -697,8 +701,11 @@ async def run_llm_pass_with_validation(
     ):
         full_response += chunk
     
-    # Define repair callback
+    logger.debug(f"[{pass_name}] Got {len(full_response)} chars response")
+    
+    # Define repair callback with logging
     async def repair_callback(repair_prompt: str) -> str:
+        logger.info(f"[{pass_name}] Attempting repair...")
         repair_response = ""
         async for chunk in llm_service.generate_stream(
             user_id=user_id,
@@ -708,6 +715,7 @@ async def run_llm_pass_with_validation(
             temperature=0.1  # Very low temp for repairs
         ):
             repair_response += chunk
+        logger.debug(f"[{pass_name}] Repair got {len(repair_response)} chars")
         return repair_response
     
     # Validate and repair
@@ -719,8 +727,18 @@ async def run_llm_pass_with_validation(
         original_prompt=user
     )
     
+    # Log validation result
+    if result.valid:
+        if result.repair_attempts > 0:
+            logger.info(f"[{pass_name}] ✓ Valid after {result.repair_attempts} repair(s)")
+        else:
+            logger.info(f"[{pass_name}] ✓ Valid on first attempt")
+    else:
+        logger.warning(f"[{pass_name}] ✗ Failed validation after {result.repair_attempts} repairs: {result.errors[:2]}")
+    
     # Quality mode: 2-pass with critique
     if result.valid and quality_mode == "quality" and result.data:
+        logger.info(f"[{pass_name}] Running quality pass (2-pass mode)")
         quality_prompt = strict_service.build_quality_prompt(result.data)
         quality_response = ""
         async for chunk in llm_service.generate_stream(
@@ -735,6 +753,7 @@ async def run_llm_pass_with_validation(
         improved_data = strict_service.extract_json(quality_response)
         if improved_data:
             result.data = improved_data
+            logger.info(f"[{pass_name}] Quality pass improved output")
     
     # Update metrics
     if pass_metrics:
