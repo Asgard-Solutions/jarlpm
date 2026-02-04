@@ -82,6 +82,9 @@ const AppRouter = () => {
       <Route path="/export" element={<ProtectedPage><Export /></ProtectedPage>} />
       <Route path="/scoring" element={<ProtectedPage><Scoring /></ProtectedPage>} />
       <Route path="/sprints" element={<ProtectedPage><Sprints /></ProtectedPage>} />
+      <Route path="/prd" element={<ProtectedPage><PRDGenerator /></ProtectedPage>} />
+      <Route path="/lean-canvas" element={<ProtectedPage><LeanCanvas /></ProtectedPage>} />
+      <Route path="/poker" element={<ProtectedPage><PokerPlanning /></ProtectedPage>} />
       
       {/* Catch-all redirect to landing */}
       <Route path="*" element={<Landing />} />
