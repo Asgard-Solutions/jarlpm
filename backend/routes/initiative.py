@@ -1207,5 +1207,46 @@ async def get_initiative_schema():
             "NFRs included (security, performance, accessibility)",
             "Scope is realistic for 2 sprints (26-42 points)"
         ],
+        "prompt_version": CURRENT_PROMPT_VERSION,
         "schema": InitiativeSchema.model_json_schema()
     }
+
+
+# ============================================
+# Analytics Endpoints (Private - Admin only in future)
+# ============================================
+
+@router.get("/analytics/stats")
+async def get_generation_stats(
+    request: Request,
+    days: int = 30,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Get aggregated generation statistics.
+    Returns: success rates, token usage, costs, provider breakdown.
+    """
+    user_id = await get_current_user_id(request, session)
+    
+    analytics = AnalyticsService(session)
+    stats = await analytics.get_generation_stats(days=days, user_id=user_id)
+    
+    return stats
+
+
+@router.get("/analytics/edit-patterns")
+async def get_edit_patterns(
+    request: Request,
+    days: int = 30,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Get patterns of what users edit most after generation.
+    Helps identify areas for prompt improvement.
+    """
+    user_id = await get_current_user_id(request, session)
+    
+    analytics = AnalyticsService(session)
+    patterns = await analytics.get_edit_patterns(days=days, user_id=user_id)
+    
+    return patterns
