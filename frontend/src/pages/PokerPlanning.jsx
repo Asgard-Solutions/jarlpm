@@ -3,32 +3,32 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
-  Loader2, Users, Play, SkipForward, Check, RotateCcw,
-  Eye, EyeOff, ChevronRight, Sparkles, Clock
+  Loader2, Users, Play, Check, RotateCcw, Sparkles, 
+  ChevronRight, ChevronLeft, AlertCircle, Trophy, Target
 } from 'lucide-react';
-import { epicAPI, featureAPI, userStoryAPI } from '@/api';
+import { epicAPI, featureAPI, userStoryAPI, pokerAPI } from '@/api';
 
-const FIBONACCI = [0, 1, 2, 3, 5, 8, 13, 21, '?', '☕'];
+const FIBONACCI = [1, 2, 3, 5, 8, 13];
 
 const PokerPlanning = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [estimating, setEstimating] = useState(false);
   const [epics, setEpics] = useState([]);
   const [selectedEpic, setSelectedEpic] = useState('');
   const [stories, setStories] = useState([]);
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
-  const [votes, setVotes] = useState({});
-  const [revealed, setRevealed] = useState(false);
-  const [selectedVote, setSelectedVote] = useState(null);
-  const [participants, setParticipants] = useState(['You']);
-  const [newParticipant, setNewParticipant] = useState('');
+  
+  // AI estimation state
+  const [aiEstimates, setAiEstimates] = useState([]);
+  const [estimateSummary, setEstimateSummary] = useState(null);
+  const [currentPersona, setCurrentPersona] = useState(null);
   const [estimatedStories, setEstimatedStories] = useState({});
 
   useEffect(() => {
@@ -44,7 +44,7 @@ const PokerPlanning = () => {
 
   const loadEpics = async () => {
     try {
-      const response = await epicAPI.getEpics();
+      const response = await epicAPI.list();
       setEpics(response.data || []);
     } catch (error) {
       console.error('Failed to load epics:', error);
@@ -58,14 +58,14 @@ const PokerPlanning = () => {
     
     setLoading(true);
     try {
-      const featuresRes = await featureAPI.getFeatures(selectedEpic);
+      const featuresRes = await featureAPI.listForEpic(selectedEpic);
       const features = featuresRes.data || [];
       
       // Collect all stories from all features
       const allStories = [];
       for (const feature of features) {
         try {
-          const storiesRes = await userStoryAPI.getStoriesForFeature(feature.feature_id);
+          const storiesRes = await userStoryAPI.listForFeature(feature.feature_id);
           allStories.push(...(storiesRes.data || []));
         } catch (e) {
           console.error(`Failed to load stories for feature ${feature.feature_id}`);
@@ -74,7 +74,7 @@ const PokerPlanning = () => {
       
       setStories(allStories);
       setCurrentStoryIndex(0);
-      resetVoting();
+      resetEstimation();
     } catch (error) {
       console.error('Failed to load stories:', error);
     } finally {
@@ -84,7 +84,7 @@ const PokerPlanning = () => {
 
   const loadSavedEstimates = () => {
     try {
-      const saved = localStorage.getItem('jarlpm_poker_estimates');
+      const saved = localStorage.getItem('jarlpm_ai_poker_estimates');
       if (saved) {
         setEstimatedStories(JSON.parse(saved));
       }
@@ -94,40 +94,74 @@ const PokerPlanning = () => {
   };
 
   const saveEstimates = (estimates) => {
-    localStorage.setItem('jarlpm_poker_estimates', JSON.stringify(estimates));
+    localStorage.setItem('jarlpm_ai_poker_estimates', JSON.stringify(estimates));
   };
 
-  const resetVoting = () => {
-    setVotes({});
-    setRevealed(false);
-    setSelectedVote(null);
+  const resetEstimation = () => {
+    setAiEstimates([]);
+    setEstimateSummary(null);
+    setCurrentPersona(null);
   };
 
-  const handleVote = (value) => {
-    setSelectedVote(value);
-    setVotes(prev => ({
-      ...prev,
-      'You': value
-    }));
+  const runAIEstimation = async () => {
+    const currentStory = stories[currentStoryIndex];
+    if (!currentStory) return;
     
-    // Simulate other participants voting (for demo)
-    participants.forEach(p => {
-      if (p !== 'You') {
-        setTimeout(() => {
-          setVotes(prev => ({
-            ...prev,
-            [p]: FIBONACCI[Math.floor(Math.random() * 8)]
-          }));
-        }, Math.random() * 2000);
+    setEstimating(true);
+    resetEstimation();
+    
+    try {
+      const response = await pokerAPI.estimateStory(currentStory.story_id);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              switch (data.type) {
+                case 'start':
+                  // Estimation started
+                  break;
+                case 'persona_start':
+                  setCurrentPersona(data.persona);
+                  break;
+                case 'persona_estimate':
+                  setAiEstimates(prev => [...prev, data.estimate]);
+                  setCurrentPersona(null);
+                  break;
+                case 'persona_error':
+                  console.error(`Error from ${data.persona_id}:`, data.error);
+                  setCurrentPersona(null);
+                  break;
+                case 'summary':
+                  setEstimateSummary(data.summary);
+                  break;
+                case 'done':
+                  setEstimating(false);
+                  break;
+              }
+            } catch (e) {
+              // Ignore parse errors
+            }
+          }
+        }
       }
-    });
+    } catch (error) {
+      console.error('AI estimation failed:', error);
+      setEstimating(false);
+    }
   };
 
-  const handleReveal = () => {
-    setRevealed(true);
-  };
-
-  const handleAcceptEstimate = (points) => {
+  const acceptEstimate = (points) => {
     const currentStory = stories[currentStoryIndex];
     if (!currentStory) return;
     
@@ -135,6 +169,8 @@ const PokerPlanning = () => {
       ...estimatedStories,
       [currentStory.story_id]: {
         points,
+        aiEstimates,
+        summary: estimateSummary,
         estimatedAt: new Date().toISOString()
       }
     };
@@ -144,56 +180,46 @@ const PokerPlanning = () => {
     // Move to next story
     if (currentStoryIndex < stories.length - 1) {
       setCurrentStoryIndex(prev => prev + 1);
-      resetVoting();
+      resetEstimation();
     }
   };
 
   const handleNextStory = () => {
     if (currentStoryIndex < stories.length - 1) {
       setCurrentStoryIndex(prev => prev + 1);
-      resetVoting();
+      resetEstimation();
     }
   };
 
   const handlePrevStory = () => {
     if (currentStoryIndex > 0) {
       setCurrentStoryIndex(prev => prev - 1);
-      resetVoting();
+      resetEstimation();
     }
   };
 
-  const addParticipant = () => {
-    if (newParticipant.trim() && !participants.includes(newParticipant.trim())) {
-      setParticipants(prev => [...prev, newParticipant.trim()]);
-      setNewParticipant('');
+  const getConfidenceColor = (confidence) => {
+    switch (confidence) {
+      case 'high': return 'text-green-500';
+      case 'medium': return 'text-yellow-500';
+      case 'low': return 'text-red-500';
+      default: return 'text-muted-foreground';
     }
   };
 
-  const removeParticipant = (name) => {
-    if (name !== 'You') {
-      setParticipants(prev => prev.filter(p => p !== name));
-      setVotes(prev => {
-        const newVotes = { ...prev };
-        delete newVotes[name];
-        return newVotes;
-      });
+  const getConsensusColor = (consensus) => {
+    switch (consensus) {
+      case 'high': return 'bg-green-500/10 text-green-500 border-green-500/30';
+      case 'medium': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30';
+      case 'low': return 'bg-red-500/10 text-red-500 border-red-500/30';
+      default: return 'bg-muted';
     }
-  };
-
-  const getAverageVote = () => {
-    const numericVotes = Object.values(votes).filter(v => typeof v === 'number');
-    if (numericVotes.length === 0) return null;
-    const avg = numericVotes.reduce((a, b) => a + b, 0) / numericVotes.length;
-    // Find closest Fibonacci number
-    const closest = FIBONACCI.filter(f => typeof f === 'number').reduce((prev, curr) => 
-      Math.abs(curr - avg) < Math.abs(prev - avg) ? curr : prev
-    );
-    return closest;
   };
 
   const currentStory = stories[currentStoryIndex];
-  const allVoted = participants.every(p => votes[p] !== undefined);
-  const estimatedCount = Object.keys(estimatedStories).length;
+  const estimatedCount = Object.keys(estimatedStories).filter(id => 
+    stories.some(s => s.story_id === id)
+  ).length;
   const totalStories = stories.length;
 
   if (loading && !selectedEpic) {
@@ -209,15 +235,15 @@ const PokerPlanning = () => {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Planning Poker</h1>
-          <p className="text-muted-foreground mt-1">Estimate story points collaboratively</p>
+          <h1 className="text-3xl font-bold text-foreground">AI Poker Planning</h1>
+          <p className="text-muted-foreground mt-1">Get story estimates from AI team personas</p>
         </div>
       </div>
 
       {/* Epic Selector */}
       <Card className="bg-card border-border">
         <CardContent className="p-4">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div className="flex-1">
               <Select value={selectedEpic} onValueChange={setSelectedEpic}>
                 <SelectTrigger>
@@ -234,7 +260,7 @@ const PokerPlanning = () => {
             </div>
             {selectedEpic && stories.length > 0 && (
               <div className="text-sm text-muted-foreground">
-                {currentStoryIndex + 1} of {stories.length} stories
+                Story {currentStoryIndex + 1} of {stories.length}
               </div>
             )}
           </div>
@@ -242,9 +268,9 @@ const PokerPlanning = () => {
       </Card>
 
       {selectedEpic && (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Main Voting Area */}
-          <div className="lg:col-span-3 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content Area */}
+          <div className="lg:col-span-2 space-y-6">
             {/* Progress */}
             {stories.length > 0 && (
               <Card className="bg-card border-border">
@@ -277,90 +303,181 @@ const PokerPlanning = () => {
                       </Badge>
                     )}
                   </div>
-                  <CardTitle className="text-xl">{currentStory.title}</CardTitle>
-                  {currentStory.description && (
-                    <CardDescription>{currentStory.description}</CardDescription>
-                  )}
+                  <CardTitle className="text-xl">{currentStory.title || 'Untitled Story'}</CardTitle>
+                  <CardDescription className="text-base">
+                    As a <span className="font-medium text-foreground">{currentStory.persona}</span>, 
+                    I want to <span className="font-medium text-foreground">{currentStory.action}</span>, 
+                    so that <span className="font-medium text-foreground">{currentStory.benefit}</span>.
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  {currentStory.acceptance_criteria && (
-                    <div className="mb-6">
+                <CardContent className="space-y-6">
+                  {/* Acceptance Criteria */}
+                  {currentStory.acceptance_criteria?.length > 0 && (
+                    <div>
                       <h4 className="text-sm font-medium text-foreground mb-2">Acceptance Criteria</h4>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                        {currentStory.acceptance_criteria}
+                      <ul className="space-y-1">
+                        {currentStory.acceptance_criteria.map((c, i) => (
+                          <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                            <span className="text-primary mt-1">•</span>
+                            <span>{c}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <Separator />
+
+                  {/* AI Estimation Controls */}
+                  {!estimating && aiEstimates.length === 0 && (
+                    <div className="text-center py-6">
+                      <Sparkles className="h-12 w-12 text-primary mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-foreground mb-2">
+                        Ready to Estimate
+                      </h3>
+                      <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                        Click the button below to get estimates from 5 AI team personas: 
+                        Sr. Developer, Jr. Developer, QA Engineer, DevOps, and UX Designer.
+                      </p>
+                      <Button onClick={runAIEstimation} size="lg" data-testid="start-ai-estimation">
+                        <Play className="h-5 w-5 mr-2" />
+                        Get AI Estimates
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Estimating Progress */}
+                  {estimating && (
+                    <div className="py-6">
+                      <div className="flex items-center justify-center gap-3 mb-4">
+                        <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                        <span className="text-lg font-medium text-foreground">
+                          {currentPersona ? (
+                            <>
+                              <span className="text-2xl mr-2">{currentPersona.avatar}</span>
+                              {currentPersona.name} is thinking...
+                            </>
+                          ) : (
+                            'Starting estimation...'
+                          )}
+                        </span>
+                      </div>
+                      <Progress value={(aiEstimates.length / 5) * 100} className="h-2" />
+                      <p className="text-center text-sm text-muted-foreground mt-2">
+                        {aiEstimates.length} of 5 personas have voted
                       </p>
                     </div>
                   )}
 
-                  {/* Voting Cards */}
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-medium text-foreground">Your Vote</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {FIBONACCI.map((value) => (
-                        <Button
-                          key={value}
-                          variant={selectedVote === value ? 'default' : 'outline'}
-                          className={`h-16 w-12 text-lg font-bold ${
-                            selectedVote === value ? 'bg-primary text-primary-foreground' : ''
-                          }`}
-                          onClick={() => handleVote(value)}
-                          disabled={revealed}
-                        >
-                          {value}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Results */}
-                  {Object.keys(votes).length > 0 && (
-                    <div className="mt-6 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium text-foreground">Votes</h4>
-                        {!revealed && allVoted && (
-                          <Button size="sm" onClick={handleReveal}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            Reveal
-                          </Button>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-3">
-                        {participants.map((participant) => (
+                  {/* AI Estimates Display */}
+                  {aiEstimates.length > 0 && (
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Team Estimates
+                      </h4>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {aiEstimates.map((estimate) => (
                           <div 
-                            key={participant}
-                            className="flex flex-col items-center gap-1"
+                            key={estimate.persona_id}
+                            className="p-3 rounded-lg border border-border bg-muted/30"
                           >
-                            <div className={`h-12 w-10 rounded-lg border-2 flex items-center justify-center font-bold ${
-                              revealed ? 'bg-primary/10 border-primary text-primary' : 'bg-muted border-border'
-                            }`}>
-                              {revealed ? (votes[participant] ?? '—') : (votes[participant] ? '✓' : '?')}
+                            <div className="flex items-center gap-3 mb-2">
+                              <Avatar className="h-10 w-10">
+                                <AvatarFallback className="text-lg bg-primary/10">
+                                  {estimate.avatar}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-foreground truncate">
+                                  {estimate.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {estimate.role}
+                                </p>
+                              </div>
+                              <div className="text-2xl font-bold text-primary">
+                                {estimate.estimate}
+                              </div>
                             </div>
-                            <span className="text-xs text-muted-foreground truncate max-w-[60px]">
-                              {participant}
-                            </span>
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {estimate.reasoning}
+                            </p>
+                            <div className="mt-2 flex items-center gap-1 text-xs">
+                              <span className="text-muted-foreground">Confidence:</span>
+                              <span className={getConfidenceColor(estimate.confidence)}>
+                                {estimate.confidence}
+                              </span>
+                            </div>
                           </div>
                         ))}
                       </div>
+                    </div>
+                  )}
 
-                      {/* Average & Accept */}
-                      {revealed && (
-                        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                          <div>
-                            <p className="text-sm text-muted-foreground">Suggested Estimate</p>
-                            <p className="text-2xl font-bold text-primary">{getAverageVote()} points</p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button variant="outline" onClick={resetVoting}>
-                              <RotateCcw className="h-4 w-4 mr-2" />
-                              Re-vote
-                            </Button>
-                            <Button onClick={() => handleAcceptEstimate(getAverageVote())}>
-                              <Check className="h-4 w-4 mr-2" />
-                              Accept
-                            </Button>
-                          </div>
+                  {/* Summary & Accept */}
+                  {estimateSummary && (
+                    <div className="space-y-4 pt-4 border-t border-border">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+                          <Trophy className="h-4 w-4 text-yellow-500" />
+                          Estimation Summary
+                        </h4>
+                        <Badge className={getConsensusColor(estimateSummary.consensus)}>
+                          {estimateSummary.consensus} consensus
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-4 gap-4 text-center">
+                        <div className="p-3 rounded-lg bg-muted/50">
+                          <p className="text-xs text-muted-foreground">Suggested</p>
+                          <p className="text-2xl font-bold text-primary">{estimateSummary.suggested}</p>
                         </div>
-                      )}
+                        <div className="p-3 rounded-lg bg-muted/50">
+                          <p className="text-xs text-muted-foreground">Average</p>
+                          <p className="text-2xl font-bold text-foreground">{estimateSummary.average}</p>
+                        </div>
+                        <div className="p-3 rounded-lg bg-muted/50">
+                          <p className="text-xs text-muted-foreground">Min</p>
+                          <p className="text-2xl font-bold text-foreground">{estimateSummary.min}</p>
+                        </div>
+                        <div className="p-3 rounded-lg bg-muted/50">
+                          <p className="text-xs text-muted-foreground">Max</p>
+                          <p className="text-2xl font-bold text-foreground">{estimateSummary.max}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row items-center gap-3 pt-4">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            resetEstimation();
+                            runAIEstimation();
+                          }}
+                          disabled={estimating}
+                        >
+                          <RotateCcw className="h-4 w-4 mr-2" />
+                          Re-estimate
+                        </Button>
+                        <div className="flex-1 flex flex-wrap justify-center gap-2">
+                          {FIBONACCI.map((value) => (
+                            <Button
+                              key={value}
+                              variant={value === estimateSummary.suggested ? 'default' : 'outline'}
+                              className="h-12 w-12 text-lg font-bold"
+                              onClick={() => acceptEstimate(value)}
+                              data-testid={`accept-estimate-${value}`}
+                            >
+                              {value}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <p className="text-center text-sm text-muted-foreground">
+                        Click a number to accept that estimate for this story
+                      </p>
                     </div>
                   )}
                 </CardContent>
@@ -368,13 +485,16 @@ const PokerPlanning = () => {
             ) : (
               <Card className="bg-card border-border">
                 <CardContent className="p-12 text-center">
-                  <Clock className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-xl font-medium text-foreground mb-2">
                     No Stories to Estimate
                   </h3>
-                  <p className="text-muted-foreground">
-                    This epic doesn't have any approved stories yet.
+                  <p className="text-muted-foreground mb-6">
+                    This epic doesn't have any user stories yet. Create stories first, then come back to estimate them.
                   </p>
+                  <Button onClick={() => navigate('/dashboard')}>
+                    Go to Dashboard
+                  </Button>
                 </CardContent>
               </Card>
             )}
@@ -387,6 +507,7 @@ const PokerPlanning = () => {
                   onClick={handlePrevStory}
                   disabled={currentStoryIndex === 0}
                 >
+                  <ChevronLeft className="h-4 w-4 mr-2" />
                   Previous Story
                 </Button>
                 <Button 
@@ -401,49 +522,81 @@ const PokerPlanning = () => {
             )}
           </div>
 
-          {/* Participants Sidebar */}
+          {/* Sidebar */}
           <div className="space-y-4">
+            {/* AI Team */}
             <Card className="bg-card border-border">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Users className="h-4 w-4" />
-                  Participants
+                  AI Team Personas
+                </CardTitle>
+                <CardDescription>
+                  Each persona evaluates from their unique perspective
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {[
+                  { avatar: '👩‍💻', name: 'Sarah', role: 'Sr. Developer', focus: 'Technical complexity' },
+                  { avatar: '👨‍💻', name: 'Alex', role: 'Jr. Developer', focus: 'Learning curve' },
+                  { avatar: '🧪', name: 'Maya', role: 'QA Engineer', focus: 'Test coverage' },
+                  { avatar: '🔧', name: 'Jordan', role: 'DevOps', focus: 'Deployment & infra' },
+                  { avatar: '🎨', name: 'Riley', role: 'UX Designer', focus: 'User experience' },
+                ].map((persona) => (
+                  <div 
+                    key={persona.name}
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50"
+                  >
+                    <span className="text-2xl">{persona.avatar}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm text-foreground">{persona.name}</p>
+                      <p className="text-xs text-muted-foreground">{persona.role}</p>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {persona.focus}
+                    </Badge>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Fibonacci Scale */}
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  Fibonacci Scale
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Add participant"
-                    value={newParticipant}
-                    onChange={(e) => setNewParticipant(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && addParticipant()}
-                  />
-                  <Button size="icon" onClick={addParticipant}>
-                    <Users className="h-4 w-4" />
-                  </Button>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <Badge variant="outline">1</Badge>
+                  <span className="text-muted-foreground">Trivial - few hours</span>
                 </div>
-                <div className="space-y-2">
-                  {participants.map((p) => (
-                    <div 
-                      key={p}
-                      className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
-                    >
-                      <span className="text-sm font-medium">{p}</span>
-                      {p !== 'You' && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => removeParticipant(p)}
-                        >
-                          ×
-                        </Button>
-                      )}
-                    </div>
-                  ))}
+                <div className="flex justify-between">
+                  <Badge variant="outline">2</Badge>
+                  <span className="text-muted-foreground">Small - about a day</span>
+                </div>
+                <div className="flex justify-between">
+                  <Badge variant="outline">3</Badge>
+                  <span className="text-muted-foreground">Medium - 2-3 days</span>
+                </div>
+                <div className="flex justify-between">
+                  <Badge variant="outline">5</Badge>
+                  <span className="text-muted-foreground">Large - about a week</span>
+                </div>
+                <div className="flex justify-between">
+                  <Badge variant="outline">8</Badge>
+                  <span className="text-muted-foreground">Very large - 1-2 weeks</span>
+                </div>
+                <div className="flex justify-between">
+                  <Badge variant="outline">13</Badge>
+                  <span className="text-muted-foreground">Huge - consider splitting</span>
                 </div>
               </CardContent>
             </Card>
 
+            {/* Tips */}
             <Card className="bg-card border-border">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -452,10 +605,10 @@ const PokerPlanning = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground space-y-2">
-                <p>• Use Fibonacci sequence for more accurate estimates</p>
-                <p>• Discuss stories before voting</p>
-                <p>• Re-vote if there's large variance</p>
-                <p>• Add team members as participants</p>
+                <p>• AI personas consider different aspects of the work</p>
+                <p>• Low consensus means the story may need more clarity</p>
+                <p>• Consider splitting stories estimated at 13 points</p>
+                <p>• The suggested estimate is based on team consensus</p>
               </CardContent>
             </Card>
           </div>
