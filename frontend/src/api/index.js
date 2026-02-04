@@ -338,4 +338,34 @@ export const pokerAPI = {
   },
 };
 
+// Initiative Library API
+export const initiativeAPI = {
+  // List with filters and pagination
+  list: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return api.get(`/initiatives${query ? `?${query}` : ''}`);
+  },
+  
+  // Get single initiative
+  get: (epicId) => api.get(`/initiatives/${epicId}`),
+  
+  // Update status
+  updateStatus: (epicId, status) => 
+    api.patch(`/initiatives/${epicId}/status`, { status }),
+  
+  // Duplicate initiative
+  duplicate: (epicId, newTitle = null) => 
+    api.post(`/initiatives/${epicId}/duplicate`, { new_title: newTitle }),
+  
+  // Archive/unarchive
+  archive: (epicId) => api.patch(`/initiatives/${epicId}/archive`),
+  unarchive: (epicId) => api.patch(`/initiatives/${epicId}/unarchive`),
+  
+  // Delete permanently
+  delete: (epicId) => api.delete(`/initiatives/${epicId}`),
+  
+  // Get summary stats
+  getSummary: () => api.get('/initiatives/stats/summary'),
+};
+
 export default api;
