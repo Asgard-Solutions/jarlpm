@@ -815,3 +815,32 @@ When an Epic is locked, users enter Feature Planning Mode:
 - Already implemented in previous session
 - `build_context_prompt()` injects: industry, methodology, team size, sprint length, velocity, platform
 - All 4 passes receive personalized system prompts
+
+### 2026-02-04: Persistent Model Health & Confidence Panel (COMPLETE)
+**1. Persistent Model Health Metrics**
+- New DB table `model_health_metrics` for tracking per user+provider+model
+- Tracks: total_calls, validation_failures, repair_successes
+- Warning state persists across server restarts
+- Users can dismiss warnings (warning_dismissed flag)
+- API: `track_call()`, `get_model_warning()`, `dismiss_warning()` - all async
+
+**2. Quality Mode UX Enhancement**
+- Added cost tradeoff info in Settings UI:
+  - "Cost tradeoff: Quality mode uses ~2x tokens but produces more reliable output"
+  - "Recommended for smaller models (GPT-3.5, Claude Haiku) or complex initiatives"
+- Visual alert box with amber warning icon
+
+**3. Confidence & Risks Panel (Premium PM Feature)**
+- New `confidence_assessment` in critic pass output:
+  - `confidence_score`: 0-100 percentage
+  - `top_risks`: Array of top 3 risks
+  - `key_assumptions`: Array of critical assumptions
+  - `validate_first`: What to validate before heavy development
+  - `success_factors`: Critical success factors
+- New UI panel in NewInitiative.jsx after quality summary:
+  - Confidence score with color coding (green >70%, amber 50-70%, red <50%)
+  - Top Risks section with numbered list
+  - Key Assumptions section
+  - "Validate First" badges (high visibility)
+  - Critical Success Factors
+- PMs love this - helps prioritize discovery work
