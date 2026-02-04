@@ -633,6 +633,36 @@ When an Epic is locked, users enter Feature Planning Mode:
   - MICROSOFT_GRAPH_TENANT_ID
 - **Tests:** 17/17 backend tests passed
 
+### 2026-02-04: PRD Generator, Lean Canvas & AI Poker Planning (COMPLETE)
+- **PRD Generator (`/prd`):** Auto-generates Product Requirements Documents from Epic data
+  - Epic selector with completed/in-progress grouping
+  - Template-based PRD with all epic fields (problem, outcome, features, scope, etc.)
+  - Copy to clipboard and download as Markdown
+  - Word count and document summary sidebar
+- **Lean Canvas (`/lean-canvas`):** 9-box business model canvas tied to Epics
+  - Standard Lean Canvas sections: Problem, Solution, UVP, Unfair Advantage, Customer Segments, Key Metrics, Channels, Cost Structure, Revenue Streams
+  - Pre-populates from Epic data (problem_statement, vision, desired_outcome, etc.)
+  - Local storage persistence per epic
+  - Export as Markdown
+- **AI Poker Planning (`/poker`):** AI-powered story point estimation
+  - 5 AI personas with unique perspectives:
+    - Sarah (Sr. Developer) - Technical complexity focus
+    - Alex (Jr. Developer) - Learning curve focus
+    - Maya (QA Engineer) - Test coverage focus
+    - Jordan (DevOps) - Deployment & infrastructure focus
+    - Riley (UX Designer) - User experience focus
+  - Fibonacci scale (1, 2, 3, 5, 8, 13) with max 13
+  - Each persona provides estimate + reasoning + confidence
+  - Summary with average, suggested, min/max, and consensus level
+  - Streaming SSE for real-time feedback as each persona "thinks"
+- **Backend:**
+  - New route: `/api/poker` with `/personas` (public) and `/estimate` (authenticated)
+  - Integrated into server.py router
+- **Frontend:**
+  - Routes added to App.jsx: `/prd`, `/lean-canvas`, `/poker`
+  - Sidebar already had correct links
+- **Tests:** 21/21 tests passed (iteration_21.json)
+
 ---
 
 ## Backlog
@@ -643,6 +673,8 @@ When an Epic is locked, users enter Feature Planning Mode:
 ### P1 - Upcoming
 - Test persona generation end-to-end with a completed epic
 - Test Stripe checkout flow
+- Sprint Planning (Kanban board) implementation
+- MoSCoW/RICE Scoring page implementation (page exists but may need enhancement)
 
 ### P2 - Future
 - Google OAuth authentication (nice-to-have)
