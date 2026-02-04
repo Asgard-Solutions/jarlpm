@@ -37,7 +37,7 @@ const PRDGenerator = () => {
 
   const loadEpics = async () => {
     try {
-      const response = await epicAPI.getEpics();
+      const response = await epicAPI.list();
       setEpics(response.data || []);
     } catch (error) {
       console.error('Failed to load epics:', error);
@@ -52,8 +52,8 @@ const PRDGenerator = () => {
     setLoading(true);
     try {
       const [epicRes, featuresRes] = await Promise.all([
-        epicAPI.getEpic(selectedEpic),
-        featureAPI.getFeatures(selectedEpic),
+        epicAPI.get(selectedEpic),
+        featureAPI.listForEpic(selectedEpic),
       ]);
       
       setEpicData(epicRes.data);
