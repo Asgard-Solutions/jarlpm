@@ -230,6 +230,7 @@ const Settings = () => {
         num_developers: deliveryContext.num_developers ? parseInt(deliveryContext.num_developers) : null,
         num_qa: deliveryContext.num_qa ? parseInt(deliveryContext.num_qa) : null,
         delivery_platform: deliveryContext.delivery_platform || null,
+        quality_mode: deliveryContext.quality_mode || 'standard',
       };
       
       await deliveryContextAPI.update(data);
