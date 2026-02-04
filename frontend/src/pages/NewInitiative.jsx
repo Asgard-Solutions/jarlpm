@@ -300,6 +300,71 @@ and small agencies (2-5 people)."`}
         {/* Results Section */}
         {initiative && (
           <div className="space-y-6">
+            {/* Quality Summary & Warnings */}
+            {(initiative.warnings?.length > 0 || initiative.quality_summary) && (
+              <Card className={`border ${
+                initiative.quality_summary?.scope_assessment === 'overloaded' 
+                  ? 'bg-red-500/10 border-red-500/30' 
+                  : initiative.quality_summary?.scope_assessment === 'at_risk'
+                  ? 'bg-amber-500/10 border-amber-500/30'
+                  : 'bg-nordic-green/10 border-nordic-green/30'
+              }`}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className={`w-4 h-4 ${
+                          initiative.quality_summary?.scope_assessment === 'overloaded' ? 'text-red-500' :
+                          initiative.quality_summary?.scope_assessment === 'at_risk' ? 'text-amber-500' :
+                          'text-nordic-green'
+                        }`} />
+                        <span className="font-medium text-nordic-text-primary">
+                          PM Quality Check
+                        </span>
+                        {initiative.quality_summary?.auto_fixed > 0 && (
+                          <Badge variant="outline" className="text-xs border-nordic-green text-nordic-green">
+                            {initiative.quality_summary.auto_fixed} auto-fixed
+                          </Badge>
+                        )}
+                      </div>
+                      {initiative.quality_summary?.recommendation && (
+                        <p className="text-sm text-nordic-text-muted mb-2">
+                          {initiative.quality_summary.recommendation}
+                        </p>
+                      )}
+                      {initiative.warnings?.length > 0 && (
+                        <div className="space-y-1">
+                          {initiative.warnings.slice(0, 3).map((w, i) => (
+                            <div key={i} className="text-xs text-nordic-text-muted flex items-start gap-2">
+                              <span className="text-amber-500">⚠</span>
+                              <span><strong>{w.location}:</strong> {w.problem}</span>
+                            </div>
+                          ))}
+                          {initiative.warnings.length > 3 && (
+                            <div className="text-xs text-nordic-text-muted">
+                              +{initiative.warnings.length - 3} more warnings
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <Badge className={
+                      initiative.quality_summary?.scope_assessment === 'overloaded' 
+                        ? 'bg-red-500 text-white' 
+                        : initiative.quality_summary?.scope_assessment === 'at_risk'
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-nordic-green text-white'
+                    }>
+                      {initiative.quality_summary?.scope_assessment === 'on_track' ? 'On Track' :
+                       initiative.quality_summary?.scope_assessment === 'at_risk' ? 'At Risk' :
+                       initiative.quality_summary?.scope_assessment === 'overloaded' ? 'Overloaded' :
+                       'Reviewed'}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Summary Header */}
             <Card className="bg-gradient-to-r from-nordic-accent/20 to-nordic-green/20 border-nordic-accent/30">
               <CardContent className="p-6">
