@@ -779,3 +779,39 @@ When an Epic is locked, users enter Feature Planning Mode:
   - `GET /api/initiative/analytics/edit-patterns` - User edit patterns
 - **Token Pricing:** Estimates based on OpenAI, Anthropic, local models
 - **Prompt Versioning:** Current version `v1.1`, tracked in `CURRENT_PROMPT_VERSION`
+
+### 2026-02-04: Strict Output Layer & Quality Mode (COMPLETE)
+**1. Strict Output Layer** - Schema validation + auto-repair for every AI call
+- Created `services/strict_output_service.py` with:
+  - `extract_json()` - Multi-strategy JSON extraction (code blocks, braces, auto-fix)
+  - `validate_against_schema()` - Pydantic schema validation
+  - `validate_and_repair()` - Auto-repair loop (up to 2 retries)
+  - `build_repair_prompt()` - Context-aware repair instructions
+- Pass-specific Pydantic schemas: `Pass1PRDOutput`, `Pass2DecompOutput`, `Pass3PlanningOutput`, `Pass4CriticOutput`
+- All 4 passes now use `run_llm_pass_with_validation()` with strict output
+
+**2. Quality Mode Toggle** - Optional 2-pass generation
+- New field `quality_mode` in `ProductDeliveryContext` (standard | quality)
+- Quality mode adds a second AI pass to critique and improve output
+- UI toggle in Settings > Delivery Context with visual cards
+- Best for smaller models that benefit from critique
+
+**3. Guardrail Defaults per Task Type**
+- Task-specific temperature settings in `TASK_TEMPERATURE`:
+  - PRD: 0.8 (higher creativity)
+  - Decomposition: 0.6 (balanced)
+  - Planning: 0.3 (must follow constraints)
+  - Critic: 0.2 (analytical)
+  - AC/Export: 0.1-0.2 (strict format)
+- Temperature passed to all LLM API calls (OpenAI, Anthropic, Local)
+
+**4. Weak Model Detection** - Warns but doesn't block
+- `ModelHealthMetrics` tracks: total_calls, validation_failures, repair_successes
+- Warning triggered if failure rate > 30% after 3+ calls
+- Warning message suggests switching to GPT-4o or Claude Sonnet
+- Displayed in SSE stream before generation starts
+
+**5. Delivery Context in Every Prompt**
+- Already implemented in previous session
+- `build_context_prompt()` injects: industry, methodology, team size, sprint length, velocity, platform
+- All 4 passes receive personalized system prompts
