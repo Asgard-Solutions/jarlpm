@@ -341,6 +341,8 @@ OUTCOME: {desired_outcome}
 
 OUT OF SCOPE: {out_of_scope}
 
+{dod_section}
+
 Generate features with detailed user stories and acceptance criteria. Return only valid JSON."""
 
 
