@@ -1017,7 +1017,18 @@ async def generate_initiative(
                 stories_list=stories_list
             )
             
-            planning_result = await run_llm_pass(llm_service, user_id, planning_system, planning_prompt, max_retries=1, pass_metrics=metrics.pass_3)
+            # Use strict output with schema validation (low temperature for planning)
+            planning_result = await run_llm_pass_with_validation(
+                llm_service=llm_service,
+                strict_service=strict_service,
+                user_id=user_id,
+                system=planning_system,
+                user=planning_prompt,
+                schema=Pass3PlanningOutput,
+                task_type=TaskType.PLANNING,
+                pass_metrics=metrics.pass_3,
+                quality_mode="standard"  # No quality pass for planning - must be deterministic
+            )
             
             # Apply estimates to stories
             if planning_result:
