@@ -198,6 +198,7 @@ class ExportService:
             for story in feature.user_stories:
                 story_data = {
                     "story_id": story.story_id,
+                    "title": story.title,
                     "story_text": story.story_text,
                     "persona": story.persona,
                     "action": story.action,
@@ -210,6 +211,11 @@ class ExportService:
                     "rice_effort": story.rice_effort,
                     "rice_total": story.rice_total,
                     "acceptance_criteria": story.acceptance_criteria or [],
+                    # Export-ready fields
+                    "labels": story.labels or [],
+                    "story_priority": story.story_priority,
+                    "dependencies": story.dependencies or [],
+                    "risks": story.risks or [],
                 }
                 feature_data["user_stories"].append(story_data)
             
