@@ -48,7 +48,15 @@ const NewInitiative = () => {
       
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.detail || 'Failed to generate initiative');
+        // Handle specific error codes with actionable CTAs
+        if (response.status === 402) {
+          setError('subscription_required');
+        } else if (response.status === 400 && err.detail?.includes('LLM provider')) {
+          setError('llm_not_configured');
+        } else {
+          setError(err.detail || 'Failed to generate initiative');
+        }
+        return;
       }
       
       const reader = response.body.getReader();
