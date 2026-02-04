@@ -289,7 +289,7 @@ const Settings = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="delivery" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-nordic-bg-secondary border border-nordic-border">
             <TabsTrigger value="delivery" className="data-[state=active]:bg-nordic-bg-primary" data-testid="tab-delivery">
               <Briefcase className="w-4 h-4 mr-2" />
