@@ -103,41 +103,55 @@ class InitiativeDetail(BaseModel):
     updated_at: datetime
 
 
+def map_stage_to_status(stage: str) -> str:
+    """Map Epic current_stage to Initiative status for frontend"""
+    status_map = {
+        "problem_capture": "draft",
+        "problem_confirmed": "draft",
+        "outcome_capture": "draft",
+        "outcome_confirmed": "draft",
+        "epic_drafted": "active",
+        "epic_locked": "completed"
+    }
+    return status_map.get(stage, "draft")
+
+
+def map_status_to_stages(status: str) -> List[str]:
+    """Map Initiative status to possible Epic stages for filtering"""
+    stage_map = {
+        "draft": ["problem_capture", "problem_confirmed", "outcome_capture", "outcome_confirmed"],
+        "active": ["epic_drafted"],
+        "completed": ["epic_locked"],
+        "archived": []  # Archived is tracked separately
+    }
+    return stage_map.get(status, [])
+
+
 @router.get("", response_model=InitiativeListResponse)
 async def list_initiatives(
     request: Request,
     session: AsyncSession = Depends(get_db),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    status: Optional[str] = Query(None, description="Filter by status"),
-    search: Optional[str] = Query(None, description="Search in title and problem statement"),
-    sort_by: str = Query("updated_at", description="Sort field"),
+    status: Optional[str] = Query(None, description="Filter by status: draft, active, completed, archived"),
+    search: Optional[str] = Query(None, description="Search in title, tagline, or problem statement"),
+    sort_by: str = Query("updated_at", description="Sort field: updated_at, created_at, title"),
     sort_order: str = Query("desc", description="Sort order: asc or desc")
 ):
     """
     List all initiatives for the current user with pagination and filtering.
+    Default sort: Most recently updated first.
     """
     user_id = await get_current_user_id(request, session)
     
     # Base query
     base_filter = Epic.user_id == user_id
     
-    # Status filter
+    # Status filter - map to epic stages
     if status:
-        # Map 'draft' to 'in_progress' for backwards compatibility
-        db_status = status if status != "draft" else "in_progress"
-        base_filter = and_(base_filter, Epic.current_stage == db_status)
-    
-    # Search filter
-    if search:
-        search_term = f"%{search}%"
-        base_filter = and_(
-            base_filter,
-            or_(
-                Epic.title.ilike(search_term),
-                Epic.description.ilike(search_term)
-            )
-        )
+        stages = map_status_to_stages(status)
+        if stages:
+            base_filter = and_(base_filter, Epic.current_stage.in_(stages))
     
     # Count total
     count_query = select(func.count(Epic.id)).where(base_filter)
@@ -146,7 +160,7 @@ async def list_initiatives(
     
     # Sort
     sort_column = getattr(Epic, sort_by, Epic.updated_at)
-    order_func = desc if sort_order == "desc" else lambda x: x
+    order_func = desc if sort_order == "desc" else asc
     
     # Fetch initiatives with pagination
     offset = (page - 1) * page_size
@@ -176,37 +190,44 @@ async def list_initiatives(
         story_result = await session.execute(story_q)
         story_row = story_result.fetchone()
         stories_count = story_row[0] if story_row else 0
-        total_points = story_row[1] if story_row else 0
+        total_points = int(story_row[1]) if story_row else 0
         
-        # Get snapshot for problem statement
+        # Get snapshot for problem statement and tagline
         snapshot_q = select(EpicSnapshot).where(EpicSnapshot.epic_id == epic.epic_id)
         snapshot_result = await session.execute(snapshot_q)
         snapshot = snapshot_result.scalar_one_or_none()
         
-        # Map status for frontend
-        status_map = {
-            "in_progress": "draft",
-            "problem_capture": "draft",
-            "problem_confirmed": "draft",
-            "outcome_capture": "draft",
-            "outcome_confirmed": "draft",
-            "epic_drafted": "active",
-            "epic_locked": "complete"
-        }
-        display_status = status_map.get(epic.current_stage, "draft")
+        # Generate tagline from problem statement if needed
+        problem_text = snapshot.problem_statement if snapshot and snapshot.problem_statement else None
+        tagline = problem_text[:100] + "..." if problem_text and len(problem_text) > 100 else problem_text
+        
+        # Map stage to display status
+        display_status = map_stage_to_status(epic.current_stage)
         
         initiatives.append(InitiativeSummary(
             epic_id=epic.epic_id,
             title=epic.title,
-            tagline=epic.description[:100] if epic.description else None,
+            tagline=tagline,
             status=display_status,
-            problem_statement=snapshot.problem_statement[:200] if snapshot and snapshot.problem_statement else None,
+            problem_statement=problem_text[:200] if problem_text and len(problem_text) > 200 else problem_text,
             features_count=features_count,
             stories_count=stories_count,
             total_points=total_points,
             created_at=epic.created_at,
             updated_at=epic.updated_at
         ))
+    
+    # Apply search filter client-side to include problem statement
+    # (since we need to join with snapshot)
+    if search:
+        search_lower = search.lower()
+        initiatives = [
+            i for i in initiatives
+            if search_lower in (i.title or "").lower()
+            or search_lower in (i.tagline or "").lower()
+            or search_lower in (i.problem_statement or "").lower()
+        ]
+        total = len(initiatives)
     
     return InitiativeListResponse(
         initiatives=initiatives,
