@@ -1075,7 +1075,8 @@ async def generate_initiative(
                 schema=Pass3PlanningOutput,
                 task_type=TaskType.PLANNING,
                 pass_metrics=metrics.pass_3,
-                quality_mode="standard"  # No quality pass for planning - must be deterministic
+                quality_mode="standard",  # No quality pass for planning - must be deterministic
+                pass_name="Pass3-Planning"
             )
             
             # Apply estimates to stories
