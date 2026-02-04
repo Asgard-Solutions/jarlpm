@@ -64,7 +64,8 @@ class LLMService:
         model: str,
         system_prompt: str,
         user_prompt: str,
-        conversation_history: list[dict] = None
+        conversation_history: list[dict] = None,
+        temperature: float = None
     ) -> AsyncGenerator[str, None]:
         """Stream from OpenAI API"""
         model = model or "gpt-4o"
@@ -74,6 +75,14 @@ class LLMService:
             messages.extend(conversation_history)
         messages.append({"role": "user", "content": user_prompt})
         
+        request_body = {
+            "model": model,
+            "messages": messages,
+            "stream": True
+        }
+        if temperature is not None:
+            request_body["temperature"] = temperature
+        
         async with httpx.AsyncClient() as client:
             async with client.stream(
                 "POST",
@@ -82,11 +91,7 @@ class LLMService:
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json"
                 },
-                json={
-                    "model": model,
-                    "messages": messages,
-                    "stream": True
-                },
+                json=request_body,
                 timeout=120.0
             ) as response:
                 if response.status_code != 200:
