@@ -32,6 +32,8 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState(false);
   const [checkingPayment, setCheckingPayment] = useState(false);
+  const [canceling, setCanceling] = useState(false);
+  const [reactivating, setReactivating] = useState(false);
   
   // LLM Provider state
   const [provider, setProvider] = useState('openai');
@@ -133,6 +135,34 @@ const Settings = () => {
     } catch (error) {
       console.error('Failed to create checkout:', error);
       setSubscribing(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!confirm('Are you sure you want to cancel your subscription? You will retain access until the end of your billing period.')) {
+      return;
+    }
+    
+    setCanceling(true);
+    try {
+      await subscriptionAPI.cancel(true); // Cancel at period end
+      await loadData();
+    } catch (error) {
+      console.error('Failed to cancel subscription:', error);
+    } finally {
+      setCanceling(false);
+    }
+  };
+
+  const handleReactivateSubscription = async () => {
+    setReactivating(true);
+    try {
+      await subscriptionAPI.reactivate();
+      await loadData();
+    } catch (error) {
+      console.error('Failed to reactivate subscription:', error);
+    } finally {
+      setReactivating(false);
     }
   };
 
@@ -461,33 +491,71 @@ const Settings = () => {
                         variant={isActive ? "default" : "secondary"}
                         className={isActive ? "bg-nordic-green text-white" : "bg-nordic-text-muted/20 text-nordic-text-muted"}
                       >
-                        {isActive ? 'Active' : 'Inactive'}
+                        {isActive ? 'Active' : subscription?.status === 'past_due' ? 'Past Due' : 'Inactive'}
                       </Badge>
+                      {subscription?.cancel_at_period_end && (
+                        <Badge variant="outline" className="border-amber-500 text-amber-500">
+                          Cancels at period end
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-nordic-text-muted text-sm">
                       {isActive 
-                        ? `Your subscription is active until ${new Date(subscription.current_period_end).toLocaleDateString()}`
-                        : 'Subscribe to unlock AI-powered features'
+                        ? subscription?.cancel_at_period_end
+                          ? `Your subscription will end on ${new Date(subscription.current_period_end).toLocaleDateString()}`
+                          : `Your subscription renews on ${new Date(subscription.current_period_end).toLocaleDateString()}`
+                        : subscription?.status === 'past_due'
+                          ? 'Payment failed. Please update your payment method.'
+                          : 'Subscribe to unlock AI-powered features'
                       }
                     </p>
                   </div>
-                  {!isActive && (
-                    <Button
-                      onClick={handleSubscribe}
-                      disabled={subscribing || checkingPayment}
-                      className="bg-nordic-accent hover:bg-nordic-accent/90 text-white"
-                      data-testid="subscribe-button"
-                    >
-                      {subscribing || checkingPayment ? (
-                        <>
+                  <div className="flex gap-2">
+                    {!isActive && (
+                      <Button
+                        onClick={handleSubscribe}
+                        disabled={subscribing || checkingPayment}
+                        className="bg-nordic-accent hover:bg-nordic-accent/90 text-white"
+                        data-testid="subscribe-button"
+                      >
+                        {subscribing || checkingPayment ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            {checkingPayment ? 'Verifying...' : 'Processing...'}
+                          </>
+                        ) : (
+                          <>Subscribe - $45/month</>
+                        )}
+                      </Button>
+                    )}
+                    {isActive && subscription?.cancel_at_period_end && (
+                      <Button
+                        onClick={handleReactivateSubscription}
+                        disabled={reactivating}
+                        className="bg-nordic-green hover:bg-nordic-green/90 text-white"
+                        data-testid="reactivate-button"
+                      >
+                        {reactivating ? (
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          {checkingPayment ? 'Verifying...' : 'Processing...'}
-                        </>
-                      ) : (
-                        <>Subscribe - $45/month</>
-                      )}
-                    </Button>
-                  )}
+                        ) : null}
+                        Reactivate
+                      </Button>
+                    )}
+                    {isActive && !subscription?.cancel_at_period_end && (
+                      <Button
+                        onClick={handleCancelSubscription}
+                        disabled={canceling}
+                        variant="outline"
+                        className="border-red-500 text-red-500 hover:bg-red-500/10"
+                        data-testid="cancel-subscription-button"
+                      >
+                        {canceling ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : null}
+                        Cancel Subscription
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="border-t border-nordic-border pt-6">

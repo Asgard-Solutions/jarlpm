@@ -663,6 +663,48 @@ When an Epic is locked, users enter Feature Planning Mode:
   - Sidebar already had correct links
 - **Tests:** 21/21 tests passed (iteration_21.json)
 
+### 2026-02-04: Real Stripe Subscription Billing (COMPLETE)
+- **Migrated from one-time payments to real Stripe subscriptions**
+  - Changed `mode="payment"` to `mode="subscription"` in Stripe Checkout
+  - Auto-creates Stripe Product + recurring Price if not configured
+  - Supports `STRIPE_PRICE_ID` env var for pre-configured price
+- **Full subscription lifecycle management via webhooks:**
+  - `customer.subscription.created` - New subscription activated
+  - `customer.subscription.updated` - Status changes, renewals
+  - `customer.subscription.deleted` - Cancellation
+  - `invoice.paid` - Successful payment/renewal
+  - `invoice.payment_failed` - Failed payment → past_due status
+- **New endpoints:**
+  - `POST /api/subscription/cancel` - Cancel at period end or immediately
+  - `POST /api/subscription/reactivate` - Reactivate canceled subscription
+  - Enhanced `GET /api/subscription/status` - Syncs with Stripe, returns `cancel_at_period_end`
+- **Frontend updates (Settings.jsx):**
+  - Cancel subscription button (appears when active)
+  - Reactivate button (appears when scheduled for cancellation)
+  - "Cancels at period end" badge
+  - Different messaging for renewal vs. cancellation date
+- **Benefits:**
+  - Automatic renewals handled by Stripe
+  - Proper handling of failed payments
+  - Proration handled automatically
+  - No manual period tracking needed
+
+### 2026-02-04: Magic Moment - New Initiative Wizard (COMPLETE)
+- **One-click PRD + Epic + Features + Stories + Sprint Plan generation**
+- **New route:** `/new` - Single input box for messy ideas
+- **Backend:** `/api/initiative/generate` (streaming) + `/api/initiative/save`
+- **What it generates:**
+  - Clean PRD (problem, target users, outcome, metrics, risks, out-of-scope)
+  - Epic with vision statement
+  - Features with priority (must-have/should-have/nice-to-have)
+  - User stories with acceptance criteria and story points
+  - 2-sprint delivery plan with goals and point totals
+- **UX:**
+  - Progress indicators while AI generates
+  - Beautiful results display with summary stats
+  - One-click "Save & Start Working" to create everything in DB
+- **Sidebar:** New prominent "New Initiative" button with Sparkles icon
+
 ---
 
 ## Backlog
@@ -671,10 +713,9 @@ When an Epic is locked, users enter Feature Planning Mode:
 - None! All critical items completed.
 
 ### P1 - Upcoming
-- Test persona generation end-to-end with a completed epic
-- Test Stripe checkout flow
+- Configure Stripe webhook in Stripe Dashboard (endpoint: /api/webhook/stripe)
+- Test full subscription flow with real Stripe test keys
 - Sprint Planning (Kanban board) implementation
-- MoSCoW/RICE Scoring page implementation (page exists but may need enhancement)
 
 ### P2 - Future
 - Google OAuth authentication (nice-to-have)
