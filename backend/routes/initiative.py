@@ -333,26 +333,33 @@ OUTPUT: Valid JSON only.
       "priority": "must-have | should-have | nice-to-have",
       "stories": [
         {{
-          "title": "Story title",
+          "title": "Short, actionable title (5-10 words)",
           "persona": "a [user type]",
           "action": "[what they want to do]",
           "benefit": "[why they want it]",
           "acceptance_criteria": [
             "Given X, When Y, Then Z",
             "Given A, When B, Then C"
-          ]
+          ],
+          "labels": ["backend", "frontend", "api", "auth", "database", "integration", "mvp", "ui"],
+          "priority": "must-have | should-have | nice-to-have",
+          "dependencies": ["Description of what this story depends on"],
+          "risks": ["Potential risks or blockers for this story"]
         }}
       ]
     }}
   ]
-}
+}}
 
 RULES:
 - 3-5 features for MVP
 - 2-4 stories per feature
-- Each story has 2-4 acceptance criteria in Given/When/Then format
-- Priorities: at least 1 must-have, rest should-have or nice-to-have
+- Each story has 2-4 acceptance criteria in Given/When/Then (Gherkin) format
+- Labels: Choose from [backend, frontend, api, auth, database, integration, mvp, ui, performance, security]
+- Priorities: at least 1 must-have feature, stories inherit feature priority unless overridden
 - Stories should be small enough to complete in 1-3 days
+- Dependencies: Reference other stories by title or external dependencies
+- Risks: Include technical risks, integration risks, or unknowns
 - Use platform-appropriate story format"""
 
 
