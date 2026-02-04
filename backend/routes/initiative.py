@@ -749,9 +749,10 @@ async def generate_initiative(
             
             # Format decomp system prompt with context
             decomp_system = DECOMP_SYSTEM.format(context=context_prompt)
-            decomp_result = await run_llm_pass(llm_service, user_id, decomp_system, decomp_prompt, max_retries=1)
+            decomp_result = await run_llm_pass(llm_service, user_id, decomp_system, decomp_prompt, max_retries=1, pass_metrics=metrics.pass_2)
             
             if not decomp_result:
+                metrics.error_message = "Failed to decompose features"
                 yield f"data: {json.dumps({'type': 'error', 'message': 'Failed to decompose features. Please try again.'})}\n\n"
                 return
             
