@@ -490,7 +490,7 @@ const PokerPlanning = () => {
                     No Stories to Estimate
                   </h3>
                   <p className="text-muted-foreground mb-6">
-                    This epic doesn't have any user stories yet. Create stories first, then come back to estimate them.
+                    This epic doesn&apos;t have any user stories yet. Create stories first, then come back to estimate them.
                   </p>
                   <Button onClick={() => navigate('/dashboard')}>
                     Go to Dashboard
