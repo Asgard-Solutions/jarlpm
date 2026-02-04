@@ -608,7 +608,10 @@ async def _handle_subscription_updated(subscription_obj):
 
 
 async def _handle_subscription_deleted(subscription_obj):
-    """Handle subscription cancellation/deletion"""
+    """
+    Handle subscription cancellation/deletion
+    THIS IS THE SOURCE OF TRUTH - webhook sets final canceled state
+    """
     from db.database import AsyncSessionLocal
     
     async with AsyncSessionLocal() as session:
@@ -621,9 +624,10 @@ async def _handle_subscription_deleted(subscription_obj):
         
         if subscription:
             subscription.status = SubscriptionStatus.CANCELED.value
+            subscription.cancel_at_period_end = False  # No longer pending, actually canceled
             subscription.updated_at = datetime.now(timezone.utc)
             await session.commit()
-            logger.info(f"Subscription canceled: {subscription_obj.id}")
+            logger.info(f"Subscription deleted via webhook: {subscription_obj.id}")
 
 
 async def _handle_invoice_paid(invoice_obj):
