@@ -89,34 +89,16 @@ class ValidationResult:
     repair_attempts: int = 0
 
 
-@dataclass
-class ModelHealthMetrics:
-    """Tracks model performance for weak model detection"""
-    total_calls: int = 0
-    validation_failures: int = 0
-    repair_successes: int = 0
-    
-    @property
-    def failure_rate(self) -> float:
-        if self.total_calls == 0:
-            return 0.0
-        return self.validation_failures / self.total_calls
-    
-    @property
-    def needs_warning(self) -> bool:
-        # Warn if failure rate > 30% after at least 3 calls
-        return self.total_calls >= 3 and self.failure_rate > 0.3
-
-
 class StrictOutputService:
     """
     Service for ensuring LLM outputs are valid and consistent.
     Wraps LLM calls with schema validation, auto-repair, and quality modes.
+    
+    Model health metrics are persisted to DB for consistent weak model detection.
     """
     
-    def __init__(self):
-        # Track model health per user+provider
-        self._model_health: Dict[str, ModelHealthMetrics] = {}
+    def __init__(self, session=None):
+        self.session = session  # Optional DB session for persistent metrics
     
     def get_temperature(self, task_type: TaskType) -> float:
         """Get the recommended temperature for a task type"""
