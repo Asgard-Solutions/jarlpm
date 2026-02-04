@@ -720,3 +720,38 @@ When an Epic is locked, users enter Feature Planning Mode:
 ### P2 - Future
 - Google OAuth authentication (nice-to-have)
 - Team collaboration features
+
+---
+
+## Changelog (Continued)
+
+### 2026-02-04: Export-Ready Story Formatting (COMPLETE)
+- **Enhanced User Story Schema:** Stories now include all fields needed for Jira/Azure DevOps export
+  - `title` - Short, actionable title (5-10 words)
+  - `description` - Structured description from user story format
+  - `acceptance_criteria` - Gherkin format (Given/When/Then)
+  - `labels` - Array of tags: backend, frontend, api, auth, database, integration, mvp, ui, etc.
+  - `priority` - Story-level priority: must-have, should-have, nice-to-have
+  - `points` - Fibonacci story points (1, 2, 3, 5, 8, 13)
+  - `dependencies` - Array of story IDs or descriptions
+  - `risks` - Array of risk descriptions
+- **Database Migration:** Added new columns to `user_stories` table:
+  - `labels TEXT[] DEFAULT '{}'`
+  - `story_priority VARCHAR(50)`
+  - `dependencies TEXT[] DEFAULT '{}'`
+  - `risks TEXT[] DEFAULT '{}'`
+- **AI Prompt Updates:** DECOMP_SYSTEM prompt now generates:
+  - Labels from predefined set
+  - Story-level priority (inherits from feature unless overridden)
+  - Dependencies between stories
+  - Risk identification
+- **Export Service Updates:**
+  - Jira CSV export includes labels, priority, dependencies, risks columns
+  - Azure DevOps CSV export includes all export-ready fields
+  - Markdown export enhanced with priority tables, checkable AC, risk warnings
+  - JSON export includes all story metadata
+- **Frontend Updates:** NewInitiative.jsx story cards now display:
+  - Story-level priority badge (color-coded)
+  - Labels as small badges
+  - Dependencies and risks in collapsible section
+- **Tests:** Backend compiles, frontend builds successfully
