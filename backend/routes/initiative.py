@@ -590,6 +590,8 @@ async def generate_initiative(
     2. Decomposition Pass - features & stories
     3. Planning Pass - points & sprints
     4. Critic Pass - PM reality checks & auto-fixes
+    
+    Uses delivery context for personalized output.
     """
     user_id = await get_current_user_id(request, session)
     
@@ -613,6 +615,15 @@ async def generate_initiative(
     llm_config = await llm_service.get_user_llm_config(user_id)
     if not llm_config:
         raise HTTPException(status_code=400, detail="Please configure an LLM provider in Settings first")
+    
+    # Fetch delivery context for personalization
+    ctx_result = await session.execute(
+        select(ProductDeliveryContext).where(ProductDeliveryContext.user_id == user_id)
+    )
+    delivery_context = ctx_result.scalar_one_or_none()
+    ctx = format_delivery_context(delivery_context)
+    context_prompt = build_context_prompt(ctx)
+    dod = build_dod_for_methodology(ctx['methodology'])
 
     async def generate():
         try:
