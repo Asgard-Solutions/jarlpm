@@ -133,7 +133,7 @@ curl http://localhost:8001/api/auth/me -b cookies.txt
 
 ## Database & Migrations
 
-JarlPM uses **PostgreSQL** with **SQLAlchemy ORM**. Tables are auto-created on startup.
+JarlPM uses **PostgreSQL** with **SQLAlchemy ORM** and **Alembic** for migrations.
 
 ### Local PostgreSQL:
 
@@ -151,17 +151,30 @@ DATABASE_URL=postgresql://localhost/jarlpm
 2. Copy connection string to `DATABASE_URL`
 3. Append `?sslmode=require` if not present
 
-### Schema auto-migration:
+### Database Migrations (Alembic):
 
-Tables are created automatically when the server starts via:
-
-```python
-# In db/database.py
-async with engine.begin() as conn:
-    await conn.run_sync(Base.metadata.create_all)
+**Production deployment:**
+```bash
+cd backend
+alembic upgrade head  # Apply all pending migrations
 ```
 
-### Manual migration (if needed):
+**Development (create new migration):**
+```bash
+cd backend
+alembic revision --autogenerate -m "description_of_changes"
+alembic upgrade head
+```
+
+**Rollback:**
+```bash
+alembic downgrade -1  # Rollback one migration
+```
+
+> **Note:** App startup no longer modifies schema in production. 
+> Set `DB_RESET_ON_STARTUP=true` only in development to reset the database.
+
+### Legacy: Manual table creation (deprecated)
 
 ```bash
 cd backend
