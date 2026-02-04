@@ -477,7 +477,7 @@ Generate {count} personas that represent the key user types for this product. Re
         if not prompt:
             prompt = f"Professional headshot of a {persona.age_range} {persona.role}, friendly expression"
         
-        image_base64 = await self.generate_portrait_image(prompt, settings)
+        image_base64 = await self.generate_portrait_image(prompt, settings, user_id)
         
         if image_base64:
             persona.portrait_image_base64 = image_base64
