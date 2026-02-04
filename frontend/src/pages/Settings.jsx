@@ -626,21 +626,27 @@ const Settings = () => {
                 )}
 
                 <div className="border-t border-nordic-border pt-6">
-                  <h4 className="font-medium text-nordic-text-primary mb-4">Included Features</h4>
+                  <h4 className="font-medium text-nordic-text-primary mb-4">What You Get</h4>
                   <ul className="space-y-3">
                     {[
-                      'AI-powered Epic refinement',
-                      'Problem statement analysis',
-                      'Outcome definition assistance',
-                      'User story generation',
-                      'Acceptance criteria suggestions',
+                      { text: 'Turn messy ideas into PRD + stories in seconds', highlight: true },
+                      { text: 'AI team estimates (5 personas, Fibonacci points)', highlight: true },
+                      { text: 'Lean Canvas generation from your epic', highlight: false },
+                      { text: 'Sprint planning with 2-sprint roadmap', highlight: false },
+                      { text: 'Export to Jira / Azure DevOps', highlight: false },
+                      { text: 'Unlimited epics, features & stories', highlight: false },
                     ].map((feature, i) => (
                       <li key={i} className="flex items-center gap-3 text-nordic-text-secondary">
-                        <CheckCircle className="w-4 h-4 text-nordic-green flex-shrink-0" />
-                        {feature}
+                        <CheckCircle className={`w-4 h-4 flex-shrink-0 ${feature.highlight ? 'text-nordic-accent' : 'text-nordic-green'}`} />
+                        <span className={feature.highlight ? 'font-medium text-nordic-text-primary' : ''}>
+                          {feature.text}
+                        </span>
                       </li>
                     ))}
                   </ul>
+                  <p className="text-xs text-nordic-text-muted mt-4">
+                    Save 2-4 hours per epic. One initiative pays for itself.
+                  </p>
                 </div>
               </CardContent>
             </Card>
