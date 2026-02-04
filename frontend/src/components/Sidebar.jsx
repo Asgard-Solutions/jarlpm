@@ -176,6 +176,22 @@ const Sidebar = ({ collapsed, onToggle }) => {
           )}
         </div>
 
+        {/* New Initiative Button */}
+        <div className={cn('px-2 py-4', collapsed && 'px-1')}>
+          <NavLink to="/new">
+            <Button 
+              className={cn(
+                'w-full bg-primary hover:bg-primary/90 text-primary-foreground',
+                collapsed ? 'px-2' : 'gap-2'
+              )}
+              data-testid="new-initiative-button"
+            >
+              <Sparkles className="h-4 w-4" />
+              {!collapsed && 'New Initiative'}
+            </Button>
+          </NavLink>
+        </div>
+
         {/* Main Navigation */}
         <nav className="flex-1 px-2 py-4 overflow-y-auto">
           {navSections.map((section, sectionIndex) => (
