@@ -659,6 +659,7 @@ async def generate_initiative(
     4. Critic Pass - PM reality checks & auto-fixes
     
     Uses delivery context for personalized output.
+    Logs all generation metrics for quality analysis.
     """
     user_id = await get_current_user_id(request, session)
     
@@ -691,6 +692,17 @@ async def generate_initiative(
     ctx = format_delivery_context(delivery_context)
     context_prompt = build_context_prompt(ctx)
     dod = build_dod_for_methodology(ctx['methodology'])
+    
+    # Initialize analytics
+    analytics = AnalyticsService(session)
+    metrics = analytics.create_metrics(
+        user_id=user_id,
+        idea=body.idea,
+        product_name_provided=bool(body.product_name),
+        llm_provider=llm_config.provider,
+        model_name=llm_config.model_name,
+        delivery_context=ctx
+    )
 
     async def generate():
         try:
@@ -704,9 +716,10 @@ async def generate_initiative(
             
             # Format PRD system prompt with context
             prd_system = PRD_SYSTEM.format(context=context_prompt)
-            prd_result = await run_llm_pass(llm_service, user_id, prd_system, prd_prompt, max_retries=1)
+            prd_result = await run_llm_pass(llm_service, user_id, prd_system, prd_prompt, max_retries=1, pass_metrics=metrics.pass_1)
             
             if not prd_result:
+                metrics.error_message = "Failed to generate PRD"
                 yield f"data: {json.dumps({'type': 'error', 'message': 'Failed to generate PRD. Please try again.'})}\n\n"
                 return
             
