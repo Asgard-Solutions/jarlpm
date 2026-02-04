@@ -4,6 +4,7 @@ Uses real Stripe subscriptions with recurring billing
 """
 from fastapi import APIRouter, HTTPException, Request, Depends
 from pydantic import BaseModel
+from typing import Literal
 from datetime import datetime, timezone
 import os
 import logging
@@ -20,17 +21,19 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/subscription", tags=["subscription"])
 
-# Subscription configuration
-SUBSCRIPTION_PRICE = 45.00
+# Subscription pricing configuration
+MONTHLY_PRICE = 45.00  # $45/month
+ANNUAL_PRICE = 432.00  # $432/year ($36/mo, 2 months free)
 SUBSCRIPTION_CURRENCY = "usd"
 
-# Stripe Price ID - set in .env or create dynamically
-# This should be a recurring price created in Stripe Dashboard
-STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID")
+# Stripe Price IDs - set in .env or create dynamically
+STRIPE_MONTHLY_PRICE_ID = os.environ.get("STRIPE_MONTHLY_PRICE_ID")
+STRIPE_ANNUAL_PRICE_ID = os.environ.get("STRIPE_ANNUAL_PRICE_ID")
 
 
 class CreateCheckoutRequest(BaseModel):
     origin_url: str
+    billing_cycle: Literal["monthly", "annual"] = "monthly"
 
 
 class SubscriptionStatusResponse(BaseModel):
@@ -38,6 +41,7 @@ class SubscriptionStatusResponse(BaseModel):
     stripe_subscription_id: str | None = None
     current_period_end: datetime | None = None
     cancel_at_period_end: bool = False
+    billing_cycle: str | None = None
 
 
 class CancelSubscriptionRequest(BaseModel):
@@ -99,11 +103,15 @@ async def get_or_create_stripe_customer(
     return customer.id
 
 
-async def get_or_create_price(stripe_client) -> str:
-    """Get existing price or create a new one"""
+async def get_or_create_price(stripe_client, billing_cycle: str = "monthly") -> str:
+    """Get existing price or create a new one for the specified billing cycle"""
+    is_annual = billing_cycle == "annual"
+    
     # If price ID is configured, use it
-    if STRIPE_PRICE_ID:
-        return STRIPE_PRICE_ID
+    if is_annual and STRIPE_ANNUAL_PRICE_ID:
+        return STRIPE_ANNUAL_PRICE_ID
+    if not is_annual and STRIPE_MONTHLY_PRICE_ID:
+        return STRIPE_MONTHLY_PRICE_ID
     
     # Check for existing JarlPM product
     products = stripe_client.Product.list(limit=10)
@@ -118,7 +126,7 @@ async def get_or_create_price(stripe_client) -> str:
     if not jarlpm_product:
         jarlpm_product = stripe_client.Product.create(
             name="JarlPM Pro",
-            description="AI-agnostic Product Management subscription - $45/month",
+            description="AI-agnostic Product Management - Turn ideas into plans",
             metadata={"app": "jarlpm"}
         )
         logger.info(f"Created Stripe product: {jarlpm_product.id}")
@@ -126,21 +134,24 @@ async def get_or_create_price(stripe_client) -> str:
     # Check for existing price on this product
     prices = stripe_client.Price.list(product=jarlpm_product.id, active=True, limit=10)
     
+    target_amount = int(ANNUAL_PRICE * 100) if is_annual else int(MONTHLY_PRICE * 100)
+    target_interval = "year" if is_annual else "month"
+    
     for price in prices.data:
         if (price.recurring and 
-            price.recurring.interval == "month" and 
-            price.unit_amount == int(SUBSCRIPTION_PRICE * 100)):
+            price.recurring.interval == target_interval and 
+            price.unit_amount == target_amount):
             return price.id
     
     # Create new recurring price
     price = stripe_client.Price.create(
         product=jarlpm_product.id,
-        unit_amount=int(SUBSCRIPTION_PRICE * 100),
+        unit_amount=target_amount,
         currency=SUBSCRIPTION_CURRENCY,
-        recurring={"interval": "month"},
-        metadata={"app": "jarlpm"}
+        recurring={"interval": target_interval},
+        metadata={"app": "jarlpm", "billing_cycle": billing_cycle}
     )
-    logger.info(f"Created Stripe price: {price.id}")
+    logger.info(f"Created Stripe {billing_cycle} price: {price.id}")
     
     return price.id
 
@@ -169,12 +180,14 @@ async def create_checkout_session(
         stripe_client, user_id, user.email, session
     )
     
-    # Get or create price
-    price_id = await get_or_create_price(stripe_client)
+    # Get or create price for selected billing cycle
+    price_id = await get_or_create_price(stripe_client, body.billing_cycle)
     
     # Build URLs from frontend origin
     success_url = f"{body.origin_url}/settings?payment=success&session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{body.origin_url}/settings?payment=cancelled"
+    
+    price_amount = ANNUAL_PRICE if body.billing_cycle == "annual" else MONTHLY_PRICE
     
     try:
         # Create subscription checkout session
@@ -188,12 +201,14 @@ async def create_checkout_session(
             subscription_data={
                 "metadata": {
                     "user_id": user_id,
-                    "app": "jarlpm"
+                    "app": "jarlpm",
+                    "billing_cycle": body.billing_cycle
                 }
             },
             metadata={
                 "user_id": user_id,
-                "type": "subscription"
+                "type": "subscription",
+                "billing_cycle": body.billing_cycle
             }
         )
     except stripe.error.StripeError as e:
@@ -208,12 +223,34 @@ async def create_checkout_session(
         currency=SUBSCRIPTION_CURRENCY,
         payment_status="pending",
         transaction_type="subscription",
-        payment_metadata={"type": "subscription", "mode": "subscription"}
+        payment_metadata={"type": "subscription", "mode": "subscription", "billing_cycle": body.billing_cycle}
     )
     session.add(transaction)
     await session.commit()
     
     return {"checkout_url": checkout_session.url, "session_id": checkout_session.id}
+
+
+@router.get("/pricing")
+async def get_pricing():
+    """Get subscription pricing options"""
+    return {
+        "monthly": {
+            "price": MONTHLY_PRICE,
+            "currency": SUBSCRIPTION_CURRENCY,
+            "interval": "month",
+            "display": f"${int(MONTHLY_PRICE)}/month"
+        },
+        "annual": {
+            "price": ANNUAL_PRICE,
+            "currency": SUBSCRIPTION_CURRENCY,
+            "interval": "year",
+            "monthly_equivalent": ANNUAL_PRICE / 12,
+            "display": f"${int(ANNUAL_PRICE)}/year",
+            "savings": int(MONTHLY_PRICE * 12 - ANNUAL_PRICE),
+            "savings_months": 2
+        }
+    }
 
 
 @router.get("/checkout-status/{session_id}")
@@ -251,7 +288,8 @@ async def get_checkout_status(
         transaction.payment_status = payment_status
         transaction.updated_at = datetime.now(timezone.utc)
     
-    # If subscription created, update our records
+    # If subscription created, update our records (but webhook is source of truth)
+    # This is a fallback for immediate UI feedback before webhook arrives
     if checkout_session.subscription:
         stripe_sub = checkout_session.subscription
         if isinstance(stripe_sub, str):
@@ -265,15 +303,18 @@ async def get_checkout_status(
         subscription = sub_result.scalar_one_or_none()
         
         if subscription:
-            subscription.stripe_subscription_id = stripe_sub.id
-            subscription.status = _map_stripe_status(stripe_sub.status)
-            subscription.current_period_start = datetime.fromtimestamp(
-                stripe_sub.current_period_start, tz=timezone.utc
-            )
-            subscription.current_period_end = datetime.fromtimestamp(
-                stripe_sub.current_period_end, tz=timezone.utc
-            )
-            subscription.updated_at = datetime.now(timezone.utc)
+            # Only update if we don't already have this subscription set (webhook may have arrived first)
+            if not subscription.stripe_subscription_id or subscription.stripe_subscription_id == stripe_sub.id:
+                subscription.stripe_subscription_id = stripe_sub.id
+                subscription.status = _map_stripe_status(stripe_sub.status)
+                subscription.current_period_start = datetime.fromtimestamp(
+                    stripe_sub.current_period_start, tz=timezone.utc
+                )
+                subscription.current_period_end = datetime.fromtimestamp(
+                    stripe_sub.current_period_end, tz=timezone.utc
+                )
+                subscription.cancel_at_period_end = stripe_sub.cancel_at_period_end
+                subscription.updated_at = datetime.now(timezone.utc)
             
             if transaction:
                 transaction.payment_status = "processed"
@@ -294,7 +335,10 @@ async def get_subscription_status(
     request: Request,
     session: AsyncSession = Depends(get_db)
 ):
-    """Get current subscription status"""
+    """
+    Get current subscription status.
+    Acts as fallback sync - if webhook was missed, this syncs from Stripe.
+    """
     user_id = await get_current_user_id(request, session)
     
     result = await session.execute(
@@ -305,47 +349,54 @@ async def get_subscription_status(
     if not subscription:
         return SubscriptionStatusResponse(status="inactive")
     
-    status_value = subscription.status if isinstance(subscription.status, str) else subscription.status.value
-    
-    # If we have a Stripe subscription, sync status from Stripe
+    # If we have a Stripe subscription, sync ALL fields from Stripe (fallback for missed webhooks)
     if subscription.stripe_subscription_id:
         try:
             stripe_client = get_stripe_client()
             stripe_sub = stripe_client.Subscription.retrieve(subscription.stripe_subscription_id)
             
-            # Update local record with Stripe data
+            # Always sync from Stripe - this is our fallback if webhooks missed
             new_status = _map_stripe_status(stripe_sub.status)
-            if new_status != subscription.status:
+            new_period_start = datetime.fromtimestamp(stripe_sub.current_period_start, tz=timezone.utc)
+            new_period_end = datetime.fromtimestamp(stripe_sub.current_period_end, tz=timezone.utc)
+            new_cancel_at_period_end = stripe_sub.cancel_at_period_end
+            
+            # Check if anything changed
+            if (subscription.status != new_status or
+                subscription.current_period_start != new_period_start or
+                subscription.current_period_end != new_period_end or
+                subscription.cancel_at_period_end != new_cancel_at_period_end):
+                
                 subscription.status = new_status
-                subscription.current_period_start = datetime.fromtimestamp(
-                    stripe_sub.current_period_start, tz=timezone.utc
-                )
-                subscription.current_period_end = datetime.fromtimestamp(
-                    stripe_sub.current_period_end, tz=timezone.utc
-                )
+                subscription.current_period_start = new_period_start
+                subscription.current_period_end = new_period_end
+                subscription.cancel_at_period_end = new_cancel_at_period_end
                 subscription.updated_at = datetime.now(timezone.utc)
                 await session.commit()
+                logger.info(f"Synced subscription {subscription.stripe_subscription_id} from Stripe (fallback)")
             
             return SubscriptionStatusResponse(
                 status=new_status,
                 stripe_subscription_id=subscription.stripe_subscription_id,
-                current_period_end=datetime.fromtimestamp(
-                    stripe_sub.current_period_end, tz=timezone.utc
-                ),
-                cancel_at_period_end=stripe_sub.cancel_at_period_end
+                current_period_end=new_period_end,
+                cancel_at_period_end=new_cancel_at_period_end
             )
         except stripe.error.StripeError as e:
-            logger.warning(f"Failed to sync Stripe subscription: {e}")
+            logger.warning(f"Failed to sync from Stripe, using local data: {e}")
             # Fall through to return local data
     
-    # Check if subscription is expired (for legacy records)
+    # Return local data (no Stripe sub or Stripe API failed)
+    status_value = subscription.status if isinstance(subscription.status, str) else subscription.status.value
+    
+    # Check if subscription is expired (for legacy records without Stripe)
     if subscription.current_period_end and subscription.current_period_end < datetime.now(timezone.utc):
         status_value = "expired"
     
     return SubscriptionStatusResponse(
         status=status_value,
         stripe_subscription_id=subscription.stripe_subscription_id,
-        current_period_end=subscription.current_period_end
+        current_period_end=subscription.current_period_end,
+        cancel_at_period_end=subscription.cancel_at_period_end
     )
 
 
@@ -541,6 +592,7 @@ async def _handle_subscription_created(subscription_obj):
             subscription.current_period_end = datetime.fromtimestamp(
                 subscription_obj.current_period_end, tz=timezone.utc
             )
+            subscription.cancel_at_period_end = subscription_obj.cancel_at_period_end
             subscription.updated_at = now
         else:
             subscription = Subscription(
@@ -553,7 +605,8 @@ async def _handle_subscription_created(subscription_obj):
                 ),
                 current_period_end=datetime.fromtimestamp(
                     subscription_obj.current_period_end, tz=timezone.utc
-                )
+                ),
+                cancel_at_period_end=subscription_obj.cancel_at_period_end
             )
             session.add(subscription)
         
@@ -562,7 +615,10 @@ async def _handle_subscription_created(subscription_obj):
 
 
 async def _handle_subscription_updated(subscription_obj):
-    """Handle subscription updates (renewals, status changes, etc.)"""
+    """
+    Handle subscription updates (renewals, status changes, cancellation scheduling, etc.)
+    THIS IS THE SOURCE OF TRUTH - webhooks set the canonical state
+    """
     from db.database import AsyncSessionLocal
     
     async with AsyncSessionLocal() as session:
@@ -577,6 +633,7 @@ async def _handle_subscription_updated(subscription_obj):
             logger.warning(f"Subscription not found for update: {subscription_obj.id}")
             return
         
+        # Update ALL fields from Stripe - webhook is source of truth
         subscription.status = _map_stripe_status(subscription_obj.status)
         subscription.current_period_start = datetime.fromtimestamp(
             subscription_obj.current_period_start, tz=timezone.utc
@@ -584,14 +641,18 @@ async def _handle_subscription_updated(subscription_obj):
         subscription.current_period_end = datetime.fromtimestamp(
             subscription_obj.current_period_end, tz=timezone.utc
         )
+        subscription.cancel_at_period_end = subscription_obj.cancel_at_period_end
         subscription.updated_at = datetime.now(timezone.utc)
         
         await session.commit()
-        logger.info(f"Subscription updated: {subscription_obj.id} -> {subscription_obj.status}")
+        logger.info(f"Subscription updated via webhook: {subscription_obj.id} -> status={subscription_obj.status}, cancel_at_period_end={subscription_obj.cancel_at_period_end}")
 
 
 async def _handle_subscription_deleted(subscription_obj):
-    """Handle subscription cancellation/deletion"""
+    """
+    Handle subscription cancellation/deletion
+    THIS IS THE SOURCE OF TRUTH - webhook sets final canceled state
+    """
     from db.database import AsyncSessionLocal
     
     async with AsyncSessionLocal() as session:
@@ -604,9 +665,10 @@ async def _handle_subscription_deleted(subscription_obj):
         
         if subscription:
             subscription.status = SubscriptionStatus.CANCELED.value
+            subscription.cancel_at_period_end = False  # No longer pending, actually canceled
             subscription.updated_at = datetime.now(timezone.utc)
             await session.commit()
-            logger.info(f"Subscription canceled: {subscription_obj.id}")
+            logger.info(f"Subscription deleted via webhook: {subscription_obj.id}")
 
 
 async def _handle_invoice_paid(invoice_obj):

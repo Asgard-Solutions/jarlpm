@@ -140,6 +140,9 @@ Generate a comprehensive plan with PRD, epic, features, user stories with accept
         yield f"data: {json.dumps({'type': 'start', 'message': 'Analyzing your idea...'})}\n\n"
         
         full_response = ""
+        features_started = False
+        stories_started = False
+        sprint_started = False
         
         try:
             # Stream the LLM response
@@ -154,13 +157,13 @@ Generate a comprehensive plan with PRD, epic, features, user stories with accept
                 full_response += chunk
                 
                 # Send progress updates based on content
-                if '"features"' in full_response and 'features_started' not in dir():
+                if '"features"' in full_response and not features_started:
                     features_started = True
                     yield f"data: {json.dumps({'type': 'progress', 'message': 'Breaking down features...'})}\n\n"
-                elif '"stories"' in full_response and 'stories_started' not in dir():
+                elif '"stories"' in full_response and not stories_started:
                     stories_started = True
                     yield f"data: {json.dumps({'type': 'progress', 'message': 'Writing user stories...'})}\n\n"
-                elif '"sprint_plan"' in full_response and 'sprint_started' not in dir():
+                elif '"sprint_plan"' in full_response and not sprint_started:
                     sprint_started = True
                     yield f"data: {json.dumps({'type': 'progress', 'message': 'Planning sprints...'})}\n\n"
             

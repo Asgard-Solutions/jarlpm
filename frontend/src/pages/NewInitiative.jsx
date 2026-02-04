@@ -48,7 +48,15 @@ const NewInitiative = () => {
       
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.detail || 'Failed to generate initiative');
+        // Handle specific error codes with actionable CTAs
+        if (response.status === 402) {
+          setError('subscription_required');
+        } else if (response.status === 400 && err.detail?.includes('LLM provider')) {
+          setError('llm_not_configured');
+        } else {
+          setError(err.detail || 'Failed to generate initiative');
+        }
+        return;
       }
       
       const reader = response.body.getReader();
@@ -135,7 +143,7 @@ const NewInitiative = () => {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-nordic-accent/10 rounded-full text-nordic-accent mb-4">
             <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-medium">Magic Moment</span>
+            <span className="text-sm font-medium">Turn idea into plan</span>
           </div>
           <h1 className="text-4xl font-bold text-nordic-text-primary mb-3">
             New Initiative
@@ -188,8 +196,44 @@ and small agencies (2-5 people)."`}
               </div>
 
               {error && (
-                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-                  {error}
+                <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                  {error === 'subscription_required' ? (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-red-400">Active subscription required</p>
+                        <p className="text-sm text-nordic-text-muted mt-1">
+                          Upgrade to JarlPM Pro to use AI-powered features.
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => navigate('/settings?tab=subscription')}
+                        className="bg-nordic-accent hover:bg-nordic-accent/90 text-white shrink-0"
+                        data-testid="upgrade-cta"
+                      >
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Upgrade Now
+                      </Button>
+                    </div>
+                  ) : error === 'llm_not_configured' ? (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-red-400">No LLM provider configured</p>
+                        <p className="text-sm text-nordic-text-muted mt-1">
+                          Add your OpenAI or Anthropic API key to enable AI features.
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => navigate('/settings?tab=llm')}
+                        variant="outline"
+                        className="border-nordic-accent text-nordic-accent hover:bg-nordic-accent/10 shrink-0"
+                        data-testid="configure-llm-cta"
+                      >
+                        Configure LLM
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-red-400 text-sm">{error}</p>
+                  )}
                 </div>
               )}
 

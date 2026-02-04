@@ -34,6 +34,7 @@ const Settings = () => {
   const [checkingPayment, setCheckingPayment] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const [reactivating, setReactivating] = useState(false);
+  const [billingCycle, setBillingCycle] = useState('annual'); // Default to annual (better value)
   
   // LLM Provider state
   const [provider, setProvider] = useState('openai');
@@ -56,6 +57,17 @@ const Settings = () => {
   const [savingContext, setSavingContext] = useState(false);
   const [contextError, setContextError] = useState('');
   const [contextSuccess, setContextSuccess] = useState(false);
+
+  // Tab state - controlled by query param
+  const [activeTab, setActiveTab] = useState('delivery');
+
+  // Handle tab from URL query params
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['delivery', 'subscription', 'llm', 'appearance'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   // Select logo based on theme
   const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
@@ -130,7 +142,7 @@ const Settings = () => {
   const handleSubscribe = async () => {
     setSubscribing(true);
     try {
-      const res = await subscriptionAPI.createCheckout(window.location.origin);
+      const res = await subscriptionAPI.createCheckout(window.location.origin, billingCycle);
       window.location.href = res.data.checkout_url;
     } catch (error) {
       console.error('Failed to create checkout:', error);
@@ -278,7 +290,7 @@ const Settings = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="delivery" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-nordic-bg-secondary border border-nordic-border">
             <TabsTrigger value="delivery" className="data-[state=active]:bg-nordic-bg-primary" data-testid="tab-delivery">
               <Briefcase className="w-4 h-4 mr-2" />
@@ -511,23 +523,6 @@ const Settings = () => {
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    {!isActive && (
-                      <Button
-                        onClick={handleSubscribe}
-                        disabled={subscribing || checkingPayment}
-                        className="bg-nordic-accent hover:bg-nordic-accent/90 text-white"
-                        data-testid="subscribe-button"
-                      >
-                        {subscribing || checkingPayment ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            {checkingPayment ? 'Verifying...' : 'Processing...'}
-                          </>
-                        ) : (
-                          <>Subscribe - $45/month</>
-                        )}
-                      </Button>
-                    )}
                     {isActive && subscription?.cancel_at_period_end && (
                       <Button
                         onClick={handleReactivateSubscription}
@@ -558,22 +553,100 @@ const Settings = () => {
                   </div>
                 </div>
 
+                {/* Pricing Options - Show when not subscribed */}
+                {!isActive && (
+                  <div className="border-t border-nordic-border pt-6">
+                    <h4 className="font-medium text-nordic-text-primary mb-4">Choose Your Plan</h4>
+                    
+                    {/* Billing Toggle */}
+                    <div className="flex items-center justify-center gap-4 mb-6">
+                      <button
+                        onClick={() => setBillingCycle('monthly')}
+                        className={`px-4 py-2 rounded-lg transition-all ${
+                          billingCycle === 'monthly' 
+                            ? 'bg-nordic-accent text-white' 
+                            : 'bg-nordic-bg-primary text-nordic-text-muted hover:text-nordic-text-primary'
+                        }`}
+                      >
+                        Monthly
+                      </button>
+                      <button
+                        onClick={() => setBillingCycle('annual')}
+                        className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
+                          billingCycle === 'annual' 
+                            ? 'bg-nordic-accent text-white' 
+                            : 'bg-nordic-bg-primary text-nordic-text-muted hover:text-nordic-text-primary'
+                        }`}
+                      >
+                        Annual
+                        <Badge className="bg-nordic-green text-white text-xs">Save $108</Badge>
+                      </button>
+                    </div>
+
+                    {/* Pricing Card */}
+                    <div className={`p-6 rounded-xl border-2 transition-all ${
+                      billingCycle === 'annual' 
+                        ? 'border-nordic-green bg-nordic-green/5' 
+                        : 'border-nordic-border bg-nordic-bg-primary'
+                    }`}>
+                      <div className="text-center mb-4">
+                        {billingCycle === 'annual' ? (
+                          <>
+                            <div className="text-4xl font-bold text-nordic-text-primary">
+                              $432<span className="text-lg font-normal text-nordic-text-muted">/year</span>
+                            </div>
+                            <div className="text-nordic-green text-sm mt-1">
+                              $36/month · 2 months free
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-4xl font-bold text-nordic-text-primary">
+                            $45<span className="text-lg font-normal text-nordic-text-muted">/month</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <Button
+                        onClick={handleSubscribe}
+                        disabled={subscribing || checkingPayment}
+                        className="w-full bg-nordic-accent hover:bg-nordic-accent/90 text-white py-6 text-lg"
+                        data-testid="subscribe-button"
+                      >
+                        {subscribing || checkingPayment ? (
+                          <>
+                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                            {checkingPayment ? 'Verifying...' : 'Processing...'}
+                          </>
+                        ) : (
+                          <>Get Started</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="border-t border-nordic-border pt-6">
-                  <h4 className="font-medium text-nordic-text-primary mb-4">Included Features</h4>
+                  <h4 className="font-medium text-nordic-text-primary mb-4">What You Get</h4>
                   <ul className="space-y-3">
                     {[
-                      'AI-powered Epic refinement',
-                      'Problem statement analysis',
-                      'Outcome definition assistance',
-                      'User story generation',
-                      'Acceptance criteria suggestions',
+                      { text: 'Turn messy ideas into PRD + stories in seconds', highlight: true },
+                      { text: 'AI team estimates (5 personas, Fibonacci points)', highlight: true },
+                      { text: 'Lean Canvas generation from your epic', highlight: false },
+                      { text: 'Sprint planning with 2-sprint roadmap', highlight: false },
+                      { text: 'Export to Jira / Azure DevOps', highlight: false },
+                      { text: 'Unlimited epics, features & stories', highlight: false },
                     ].map((feature, i) => (
                       <li key={i} className="flex items-center gap-3 text-nordic-text-secondary">
-                        <CheckCircle className="w-4 h-4 text-nordic-green flex-shrink-0" />
-                        {feature}
+                        <CheckCircle className={`w-4 h-4 flex-shrink-0 ${feature.highlight ? 'text-nordic-accent' : 'text-nordic-green'}`} />
+                        <span className={feature.highlight ? 'font-medium text-nordic-text-primary' : ''}>
+                          {feature.text}
+                        </span>
                       </li>
                     ))}
                   </ul>
+                  <p className="text-xs text-nordic-text-muted mt-4">
+                    Save 2-4 hours per epic. One initiative pays for itself.
+                  </p>
                 </div>
               </CardContent>
             </Card>
