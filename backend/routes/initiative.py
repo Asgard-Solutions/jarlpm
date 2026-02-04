@@ -350,31 +350,32 @@ Generate features with detailed user stories and acceptance criteria. Return onl
 # Pass 3: Sprint Planning + Points
 # ============================================
 
-PLANNING_SYSTEM = """You are JarlPM. Given features and stories, assign story points and create a 2-sprint plan.
+PLANNING_SYSTEM = """You are JarlPM. Given features and stories, assign story points and create a sprint plan.
+{context}
 
 OUTPUT: Valid JSON only.
 
-{
+{{
   "estimated_stories": [
-    {
+    {{
       "story_id": "the story id",
       "title": "story title (for reference)",
       "points": 3
-    }
+    }}
   ],
-  "sprint_plan": {
-    "sprint_1": {
+  "sprint_plan": {{
+    "sprint_1": {{
       "goal": "Sprint 1 goal - what's delivered",
       "story_ids": ["story_id1", "story_id2"],
       "total_points": 13
-    },
-    "sprint_2": {
+    }},
+    "sprint_2": {{
       "goal": "Sprint 2 goal - what's delivered",
       "story_ids": ["story_id3", "story_id4"],
       "total_points": 8
-    }
-  }
-}
+    }}
+  }}
+}}
 
 FIBONACCI SCALE:
 - 1: Trivial (few hours)
