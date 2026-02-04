@@ -34,6 +34,7 @@ const Settings = () => {
   const [checkingPayment, setCheckingPayment] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const [reactivating, setReactivating] = useState(false);
+  const [billingCycle, setBillingCycle] = useState('annual'); // Default to annual (better value)
   
   // LLM Provider state
   const [provider, setProvider] = useState('openai');
