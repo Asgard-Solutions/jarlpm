@@ -209,6 +209,6 @@ class ModelHealthMetrics(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     __table_args__ = (
-        Index('idx_model_health_user_provider', 'user_id', 'provider'),
+        Index('idx_model_health_user_provider_model', 'user_id', 'provider', 'model_name'),
         Index('idx_model_health_user', 'user_id'),
     )
