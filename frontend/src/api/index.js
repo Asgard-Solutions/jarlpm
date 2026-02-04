@@ -31,9 +31,11 @@ export const authAPI = {
 
 // Subscription API
 export const subscriptionAPI = {
-  createCheckout: (originUrl) => api.post('/subscription/create-checkout', { origin_url: originUrl }),
+  createCheckout: (originUrl, billingCycle = 'monthly') => 
+    api.post('/subscription/create-checkout', { origin_url: originUrl, billing_cycle: billingCycle }),
   getCheckoutStatus: (sessionId) => api.get(`/subscription/checkout-status/${sessionId}`),
   getStatus: () => api.get('/subscription/status'),
+  getPricing: () => api.get('/subscription/pricing'),
   cancel: (cancelAtPeriodEnd = true) => api.post('/subscription/cancel', { cancel_at_period_end: cancelAtPeriodEnd }),
   reactivate: () => api.post('/subscription/reactivate'),
 };
