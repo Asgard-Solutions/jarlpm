@@ -180,12 +180,14 @@ async def create_checkout_session(
         stripe_client, user_id, user.email, session
     )
     
-    # Get or create price
-    price_id = await get_or_create_price(stripe_client)
+    # Get or create price for selected billing cycle
+    price_id = await get_or_create_price(stripe_client, body.billing_cycle)
     
     # Build URLs from frontend origin
     success_url = f"{body.origin_url}/settings?payment=success&session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{body.origin_url}/settings?payment=cancelled"
+    
+    price_amount = ANNUAL_PRICE if body.billing_cycle == "annual" else MONTHLY_PRICE
     
     try:
         # Create subscription checkout session
@@ -199,12 +201,14 @@ async def create_checkout_session(
             subscription_data={
                 "metadata": {
                     "user_id": user_id,
-                    "app": "jarlpm"
+                    "app": "jarlpm",
+                    "billing_cycle": body.billing_cycle
                 }
             },
             metadata={
                 "user_id": user_id,
-                "type": "subscription"
+                "type": "subscription",
+                "billing_cycle": body.billing_cycle
             }
         )
     except stripe.error.StripeError as e:
