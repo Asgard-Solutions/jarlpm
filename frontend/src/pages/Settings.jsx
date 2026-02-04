@@ -93,6 +93,7 @@ const Settings = () => {
           num_developers: ctxRes.data.num_developers?.toString() || '',
           num_qa: ctxRes.data.num_qa?.toString() || '',
           delivery_platform: ctxRes.data.delivery_platform || '',
+          quality_mode: ctxRes.data.quality_mode || 'standard',
         });
       }
     } catch (error) {
