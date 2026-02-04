@@ -493,6 +493,9 @@ class ProductDeliveryContext(Base):
     num_qa: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     delivery_platform: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # jira, azure_devops, none, other
     
+    # Quality mode: standard (1-pass) or quality (2-pass with critique)
+    quality_mode: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, default="standard")
+    
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
