@@ -723,7 +723,8 @@ async def generate_initiative(
                         )
                         nfr_feature.stories.append(nfr_story)
                 
-                yield f"data: {json.dumps({'type': 'progress', 'pass': 4, 'message': f'Quality check complete: {summary.get(\"auto_fixed\", 0)} auto-fixes applied'})}\n\n"
+                auto_fixed_count = summary.get('auto_fixed', 0)
+                yield f"data: {json.dumps({'type': 'progress', 'pass': 4, 'message': f'Quality check complete: {auto_fixed_count} auto-fixes applied'})}\n\n"
             else:
                 summary = {}
                 logger.warning("Critic pass failed, skipping quality checks")
