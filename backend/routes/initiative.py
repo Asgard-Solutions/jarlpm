@@ -11,6 +11,11 @@ Uses delivery context for personalized output:
   - Team capacity-aware sprint planning
   - Platform-appropriate story formats (Jira/Linear/Azure DevOps)
   - Methodology-aligned processes (Scrum/Kanban/Hybrid)
+
+Observability:
+  - Logs all generations with token usage, cost, and timing
+  - Tracks parse/validation success rates per prompt version
+  - Records user edits for quality feedback loop
 """
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import StreamingResponse
@@ -20,6 +25,7 @@ import json
 import logging
 import uuid
 import re
+import time
 from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,6 +36,7 @@ from db.models import Epic, EpicSnapshot, Subscription, SubscriptionStatus, Prod
 from db.feature_models import Feature
 from db.user_story_models import UserStory
 from services.llm_service import LLMService
+from services.analytics_service import AnalyticsService, GenerationMetrics, PassMetrics, CURRENT_PROMPT_VERSION
 from routes.auth import get_current_user_id
 
 logger = logging.getLogger(__name__)
