@@ -262,8 +262,8 @@ async def get_initiative(
     snapshot_result = await session.execute(snapshot_q)
     snapshot = snapshot_result.scalar_one_or_none()
     
-    # Fetch features with stories
-    features_q = select(Feature).where(Feature.epic_id == epic_id).order_by(Feature.order_index)
+    # Fetch features with stories (sorted by priority/created_at)
+    features_q = select(Feature).where(Feature.epic_id == epic_id).order_by(Feature.priority.nullslast(), Feature.created_at)
     features_result = await session.execute(features_q)
     features = features_result.scalars().all()
     
@@ -283,9 +283,9 @@ async def get_initiative(
         
         features_data.append({
             "feature_id": feature.feature_id,
-            "name": feature.title,
+            "name": feature.title,  # Use title field
             "description": feature.description,
-            "priority": feature.priority or "should-have",
+            "priority": feature.moscow_score or "should-have",
             "stories_count": len(stories),
             "total_points": feature_points,
             "stories": [
@@ -303,29 +303,17 @@ async def get_initiative(
         })
     
     # Map status
-    status_map = {
-        "in_progress": "draft",
-        "problem_capture": "draft",
-        "problem_confirmed": "draft",
-        "outcome_capture": "draft",
-        "outcome_confirmed": "draft",
-        "epic_drafted": "active",
-        "epic_locked": "complete"
-    }
-    display_status = status_map.get(epic.current_stage, "draft")
+    display_status = map_stage_to_status(epic.current_stage)
     
     return InitiativeDetail(
         epic_id=epic.epic_id,
         title=epic.title,
-        tagline=epic.description[:100] if epic.description else None,
+        tagline=snapshot.problem_statement[:100] if snapshot and snapshot.problem_statement else None,
         status=display_status,
         problem_statement=snapshot.problem_statement if snapshot else None,
         desired_outcome=snapshot.desired_outcome if snapshot else None,
-        target_users=snapshot.target_users if snapshot else None,
-        vision=snapshot.vision if snapshot else None,
-        out_of_scope=snapshot.out_of_scope if snapshot else None,
-        risks=snapshot.risks if snapshot else None,
-        success_metrics=snapshot.success_metrics if snapshot else None,
+        epic_summary=snapshot.epic_summary if snapshot else None,
+        acceptance_criteria=snapshot.acceptance_criteria if snapshot else None,
         features_count=len(features),
         stories_count=stories_count,
         total_points=total_points,
