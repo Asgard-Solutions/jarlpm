@@ -487,20 +487,54 @@ and small agencies (2-5 people)."`}
                             
                             <div className="space-y-2">
                               {feature.stories?.map((story, si) => (
-                                <div key={si} className="bg-nordic-bg-primary rounded p-3">
-                                  <div className="flex items-center justify-between mb-1">
+                                <div key={si} className="bg-nordic-bg-primary rounded p-3" data-testid={`story-card-${story.id || si}`}>
+                                  {/* Story Header: Title + Points + Priority */}
+                                  <div className="flex items-center justify-between mb-2">
                                     <span className="font-medium text-sm text-nordic-text-primary">
                                       {story.title}
                                     </span>
-                                    <Badge variant="outline" className="text-xs">
-                                      {story.points} pts
-                                    </Badge>
+                                    <div className="flex items-center gap-2">
+                                      <Badge 
+                                        variant="outline" 
+                                        className={`text-xs ${
+                                          story.priority === 'must-have' 
+                                            ? 'border-red-500/50 text-red-400'
+                                            : story.priority === 'should-have'
+                                            ? 'border-amber-500/50 text-amber-400'
+                                            : 'border-nordic-text-muted/50'
+                                        }`}
+                                      >
+                                        {story.priority}
+                                      </Badge>
+                                      <Badge variant="outline" className="text-xs">
+                                        {story.points} pts
+                                      </Badge>
+                                    </div>
                                   </div>
+                                  
+                                  {/* User Story Format */}
                                   <p className="text-xs text-nordic-text-muted mb-2">
                                     As {story.persona}, I want to {story.action} so that {story.benefit}
                                   </p>
+                                  
+                                  {/* Labels */}
+                                  {story.labels?.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mb-2">
+                                      {story.labels.map((label, li) => (
+                                        <Badge 
+                                          key={li} 
+                                          variant="secondary" 
+                                          className="text-[10px] px-1.5 py-0 bg-nordic-accent/10 text-nordic-accent"
+                                        >
+                                          {label}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Acceptance Criteria (Gherkin) */}
                                   <div className="text-xs text-nordic-text-muted">
-                                    <span className="font-medium">AC:</span>
+                                    <span className="font-medium">Acceptance Criteria:</span>
                                     <ul className="ml-3 mt-1 space-y-0.5">
                                       {story.acceptance_criteria?.slice(0, 2).map((ac, ai) => (
                                         <li key={ai} className="flex items-start gap-1">
@@ -515,6 +549,32 @@ and small agencies (2-5 people)."`}
                                       )}
                                     </ul>
                                   </div>
+                                  
+                                  {/* Dependencies & Risks (collapsible) */}
+                                  {(story.dependencies?.length > 0 || story.risks?.length > 0) && (
+                                    <div className="mt-2 pt-2 border-t border-nordic-border/50 grid grid-cols-2 gap-2">
+                                      {story.dependencies?.length > 0 && (
+                                        <div className="text-[10px]">
+                                          <span className="text-nordic-text-muted font-medium">Dependencies:</span>
+                                          <ul className="mt-0.5 text-nordic-text-muted/70">
+                                            {story.dependencies.slice(0, 2).map((dep, di) => (
+                                              <li key={di} className="truncate">→ {dep}</li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+                                      {story.risks?.length > 0 && (
+                                        <div className="text-[10px]">
+                                          <span className="text-amber-500 font-medium">Risks:</span>
+                                          <ul className="mt-0.5 text-amber-500/70">
+                                            {story.risks.slice(0, 2).map((risk, ri) => (
+                                              <li key={ri} className="truncate">⚠ {risk}</li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>
