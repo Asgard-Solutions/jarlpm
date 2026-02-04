@@ -603,6 +603,130 @@ async def generate_initiative(
             
             yield f"data: {json.dumps({'type': 'progress', 'pass': 3, 'message': 'Sprint plan complete'})}\n\n"
             
+            # ========== PASS 4: PM REALITY CHECK ==========
+            yield f"data: {json.dumps({'type': 'pass', 'pass': 4, 'message': 'Running PM quality checks...'})}\n\n"
+            
+            # Build detailed stories list for critic
+            stories_detail = ""
+            for f in features:
+                stories_detail += f"\n[{f.priority.upper()}] {f.name}: {f.description}\n"
+                for s in f.stories:
+                    stories_detail += f"  • {s.id}: {s.title} ({s.points} pts)\n"
+                    stories_detail += f"    As {s.persona}, I want to {s.action} so that {s.benefit}\n"
+                    stories_detail += f"    AC: {'; '.join(s.acceptance_criteria[:3])}\n"
+            
+            # Calculate totals for critic
+            sprint1_points = sum(
+                next((s.points for f in features for s in f.stories if s.id == sid), 0)
+                for sid in (sprint_plan.sprint_1.story_ids if planning_result else [])
+            )
+            sprint2_points = sum(
+                next((s.points for f in features for s in f.stories if s.id == sid), 0)
+                for sid in (sprint_plan.sprint_2.story_ids if planning_result else [])
+            )
+            total_points = sum(s.points for f in features for s in f.stories)
+            
+            critic_prompt = CRITIC_USER.format(
+                product_name=product_name,
+                problem_statement=prd_data.get('problem_statement', ''),
+                target_users=prd_data.get('target_users', ''),
+                metrics=', '.join(prd_data.get('key_metrics', [])),
+                stories_detail=stories_detail,
+                sprint1_points=sprint1_points,
+                sprint2_points=sprint2_points,
+                total_points=total_points
+            )
+            
+            critic_result = await run_llm_pass(llm_service, user_id, CRITIC_SYSTEM, critic_prompt, max_retries=1)
+            
+            # Apply critic fixes
+            warnings = []
+            if critic_result:
+                fixes = critic_result.get('fixes', {})
+                issues = critic_result.get('issues', [])
+                summary = critic_result.get('summary', {})
+                
+                # Collect warnings for UI
+                for issue in issues:
+                    if issue.get('severity') == 'warning' or not issue.get('fix'):
+                        warnings.append({
+                            'type': issue.get('type', 'other'),
+                            'location': issue.get('location', ''),
+                            'problem': issue.get('problem', '')
+                        })
+                
+                # Apply metric improvements
+                if fixes.get('metrics'):
+                    prd_data['key_metrics'] = fixes['metrics']
+                
+                # Apply AC improvements
+                for ac_fix in fixes.get('improved_acceptance_criteria', []):
+                    story_id = ac_fix.get('story_id')
+                    new_criteria = ac_fix.get('improved_criteria', [])
+                    for feature in features:
+                        for story in feature.stories:
+                            if story.id == story_id and new_criteria:
+                                story.acceptance_criteria = new_criteria
+                
+                # Split large stories
+                for split in fixes.get('split_stories', []):
+                    original_id = split.get('original_story_id')
+                    new_stories_data = split.get('new_stories', [])
+                    
+                    # Find and replace the original story
+                    for feature in features:
+                        for i, story in enumerate(feature.stories):
+                            if story.id == original_id and new_stories_data:
+                                # Remove original, add split stories
+                                feature.stories.pop(i)
+                                for ns_data in new_stories_data:
+                                    new_story = StorySchema(
+                                        title=ns_data.get('title', 'Split Story'),
+                                        persona=ns_data.get('persona', story.persona),
+                                        action=ns_data.get('action', ''),
+                                        benefit=ns_data.get('benefit', story.benefit),
+                                        acceptance_criteria=ns_data.get('acceptance_criteria', []),
+                                        points=min(8, ns_data.get('points', 3))
+                                    )
+                                    feature.stories.insert(i, new_story)
+                                break
+                
+                # Add NFR stories to a new feature or existing
+                nfr_stories = fixes.get('added_nfr_stories', [])
+                if nfr_stories:
+                    # Find or create NFR feature
+                    nfr_feature = None
+                    for f in features:
+                        if 'non-functional' in f.name.lower() or 'nfr' in f.name.lower():
+                            nfr_feature = f
+                            break
+                    
+                    if not nfr_feature:
+                        nfr_feature = FeatureSchema(
+                            name="Non-Functional Requirements",
+                            description="Security, performance, and accessibility requirements",
+                            priority="should-have",
+                            stories=[]
+                        )
+                        features.append(nfr_feature)
+                    
+                    for nfr_data in nfr_stories:
+                        nfr_story = StorySchema(
+                            title=nfr_data.get('title', 'NFR Story'),
+                            persona=nfr_data.get('persona', 'a developer'),
+                            action=nfr_data.get('action', ''),
+                            benefit=nfr_data.get('benefit', ''),
+                            acceptance_criteria=nfr_data.get('acceptance_criteria', []),
+                            points=nfr_data.get('points', 2)
+                        )
+                        nfr_feature.stories.append(nfr_story)
+                
+                yield f"data: {json.dumps({'type': 'progress', 'pass': 4, 'message': f'Quality check complete: {summary.get(\"auto_fixed\", 0)} auto-fixes applied'})}\n\n"
+            else:
+                summary = {}
+                logger.warning("Critic pass failed, skipping quality checks")
+                yield f"data: {json.dumps({'type': 'progress', 'pass': 4, 'message': 'Quality check skipped'})}\n\n"
+            
             # ========== BUILD FINAL OUTPUT ==========
             initiative = InitiativeSchema(
                 product_name=product_name,
@@ -628,8 +752,15 @@ async def generate_initiative(
                 story_points_map.get(sid, 0) for sid in initiative.sprint_plan.sprint_2.story_ids
             )
             
+            # Build final response with warnings
+            response_data = initiative.model_dump()
+            if warnings:
+                response_data['warnings'] = warnings
+            if critic_result and critic_result.get('summary'):
+                response_data['quality_summary'] = critic_result['summary']
+            
             # Send final result
-            yield f"data: {json.dumps({'type': 'initiative', 'data': initiative.model_dump()})}\n\n"
+            yield f"data: {json.dumps({'type': 'initiative', 'data': response_data})}\n\n"
             yield f"data: {json.dumps({'type': 'done', 'message': 'Initiative generated!'})}\n\n"
             
         except Exception as e:
