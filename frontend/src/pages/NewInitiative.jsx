@@ -61,13 +61,17 @@ const NewInitiative = () => {
       
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
+      let buffer = ''; // SSE buffer for handling split chunks
       
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        
+        // Keep the last incomplete line in the buffer
+        buffer = lines.pop() || '';
         
         for (const line of lines) {
           if (line.startsWith('data: ')) {
@@ -75,13 +79,14 @@ const NewInitiative = () => {
               const data = JSON.parse(line.slice(6));
               
               switch (data.type) {
-                case 'start':
+                case 'pass':
+                  // New pass starting (4 passes: 20%, 40%, 60%, 80%)
                   setProgress(data.message);
-                  setProgressPercent(20);
+                  setProgressPercent(data.pass * 20);
                   break;
                 case 'progress':
                   setProgress(data.message);
-                  setProgressPercent(prev => Math.min(prev + 20, 90));
+                  setProgressPercent(prev => Math.min(prev + 5, 95));
                   break;
                 case 'initiative':
                   setInitiative(data.data);
@@ -95,7 +100,7 @@ const NewInitiative = () => {
                   break;
               }
             } catch (e) {
-              // Ignore parse errors
+              // Ignore parse errors - incomplete JSON will be caught next iteration
             }
           }
         }
@@ -238,7 +243,30 @@ and small agencies (2-5 people)."`}
               )}
 
               {generating && (
-                <div className="space-y-3">
+                <div className="space-y-4">
+                  {/* 3-Pass Pipeline Indicator */}
+                  <div className="flex items-center justify-between text-xs text-nordic-text-muted mb-2">
+                    <div className={`flex items-center gap-1 ${progressPercent >= 25 ? 'text-nordic-accent' : ''}`}>
+                      <div className={`w-2 h-2 rounded-full ${progressPercent >= 25 ? 'bg-nordic-accent' : 'bg-nordic-text-muted/30'}`} />
+                      PRD
+                    </div>
+                    <div className={`flex items-center gap-1 ${progressPercent >= 50 ? 'text-nordic-accent' : ''}`}>
+                      <div className={`w-2 h-2 rounded-full ${progressPercent >= 50 ? 'bg-nordic-accent' : 'bg-nordic-text-muted/30'}`} />
+                      Features
+                    </div>
+                    <div className={`flex items-center gap-1 ${progressPercent >= 60 ? 'text-nordic-accent' : ''}`}>
+                      <div className={`w-2 h-2 rounded-full ${progressPercent >= 60 ? 'bg-nordic-accent' : 'bg-nordic-text-muted/30'}`} />
+                      Planning
+                    </div>
+                    <div className={`flex items-center gap-1 ${progressPercent >= 80 ? 'text-nordic-accent' : ''}`}>
+                      <div className={`w-2 h-2 rounded-full ${progressPercent >= 80 ? 'bg-nordic-accent' : 'bg-nordic-text-muted/30'}`} />
+                      Review
+                    </div>
+                    <div className={`flex items-center gap-1 ${progressPercent >= 100 ? 'text-nordic-green' : ''}`}>
+                      <div className={`w-2 h-2 rounded-full ${progressPercent >= 100 ? 'bg-nordic-green' : 'bg-nordic-text-muted/30'}`} />
+                      Done
+                    </div>
+                  </div>
                   <Progress value={progressPercent} className="h-2" />
                   <div className="flex items-center justify-center gap-2 text-nordic-accent">
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -272,6 +300,71 @@ and small agencies (2-5 people)."`}
         {/* Results Section */}
         {initiative && (
           <div className="space-y-6">
+            {/* Quality Summary & Warnings */}
+            {(initiative.warnings?.length > 0 || initiative.quality_summary) && (
+              <Card className={`border ${
+                initiative.quality_summary?.scope_assessment === 'overloaded' 
+                  ? 'bg-red-500/10 border-red-500/30' 
+                  : initiative.quality_summary?.scope_assessment === 'at_risk'
+                  ? 'bg-amber-500/10 border-amber-500/30'
+                  : 'bg-nordic-green/10 border-nordic-green/30'
+              }`}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className={`w-4 h-4 ${
+                          initiative.quality_summary?.scope_assessment === 'overloaded' ? 'text-red-500' :
+                          initiative.quality_summary?.scope_assessment === 'at_risk' ? 'text-amber-500' :
+                          'text-nordic-green'
+                        }`} />
+                        <span className="font-medium text-nordic-text-primary">
+                          PM Quality Check
+                        </span>
+                        {initiative.quality_summary?.auto_fixed > 0 && (
+                          <Badge variant="outline" className="text-xs border-nordic-green text-nordic-green">
+                            {initiative.quality_summary.auto_fixed} auto-fixed
+                          </Badge>
+                        )}
+                      </div>
+                      {initiative.quality_summary?.recommendation && (
+                        <p className="text-sm text-nordic-text-muted mb-2">
+                          {initiative.quality_summary.recommendation}
+                        </p>
+                      )}
+                      {initiative.warnings?.length > 0 && (
+                        <div className="space-y-1">
+                          {initiative.warnings.slice(0, 3).map((w, i) => (
+                            <div key={i} className="text-xs text-nordic-text-muted flex items-start gap-2">
+                              <span className="text-amber-500">⚠</span>
+                              <span><strong>{w.location}:</strong> {w.problem}</span>
+                            </div>
+                          ))}
+                          {initiative.warnings.length > 3 && (
+                            <div className="text-xs text-nordic-text-muted">
+                              +{initiative.warnings.length - 3} more warnings
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <Badge className={
+                      initiative.quality_summary?.scope_assessment === 'overloaded' 
+                        ? 'bg-red-500 text-white' 
+                        : initiative.quality_summary?.scope_assessment === 'at_risk'
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-nordic-green text-white'
+                    }>
+                      {initiative.quality_summary?.scope_assessment === 'on_track' ? 'On Track' :
+                       initiative.quality_summary?.scope_assessment === 'at_risk' ? 'At Risk' :
+                       initiative.quality_summary?.scope_assessment === 'overloaded' ? 'Overloaded' :
+                       'Reviewed'}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Summary Header */}
             <Card className="bg-gradient-to-r from-nordic-accent/20 to-nordic-green/20 border-nordic-accent/30">
               <CardContent className="p-6">
@@ -394,20 +487,54 @@ and small agencies (2-5 people)."`}
                             
                             <div className="space-y-2">
                               {feature.stories?.map((story, si) => (
-                                <div key={si} className="bg-nordic-bg-primary rounded p-3">
-                                  <div className="flex items-center justify-between mb-1">
+                                <div key={si} className="bg-nordic-bg-primary rounded p-3" data-testid={`story-card-${story.id || si}`}>
+                                  {/* Story Header: Title + Points + Priority */}
+                                  <div className="flex items-center justify-between mb-2">
                                     <span className="font-medium text-sm text-nordic-text-primary">
                                       {story.title}
                                     </span>
-                                    <Badge variant="outline" className="text-xs">
-                                      {story.points} pts
-                                    </Badge>
+                                    <div className="flex items-center gap-2">
+                                      <Badge 
+                                        variant="outline" 
+                                        className={`text-xs ${
+                                          story.priority === 'must-have' 
+                                            ? 'border-red-500/50 text-red-400'
+                                            : story.priority === 'should-have'
+                                            ? 'border-amber-500/50 text-amber-400'
+                                            : 'border-nordic-text-muted/50'
+                                        }`}
+                                      >
+                                        {story.priority}
+                                      </Badge>
+                                      <Badge variant="outline" className="text-xs">
+                                        {story.points} pts
+                                      </Badge>
+                                    </div>
                                   </div>
+                                  
+                                  {/* User Story Format */}
                                   <p className="text-xs text-nordic-text-muted mb-2">
                                     As {story.persona}, I want to {story.action} so that {story.benefit}
                                   </p>
+                                  
+                                  {/* Labels */}
+                                  {story.labels?.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mb-2">
+                                      {story.labels.map((label, li) => (
+                                        <Badge 
+                                          key={li} 
+                                          variant="secondary" 
+                                          className="text-[10px] px-1.5 py-0 bg-nordic-accent/10 text-nordic-accent"
+                                        >
+                                          {label}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Acceptance Criteria (Gherkin) */}
                                   <div className="text-xs text-nordic-text-muted">
-                                    <span className="font-medium">AC:</span>
+                                    <span className="font-medium">Acceptance Criteria:</span>
                                     <ul className="ml-3 mt-1 space-y-0.5">
                                       {story.acceptance_criteria?.slice(0, 2).map((ac, ai) => (
                                         <li key={ai} className="flex items-start gap-1">
@@ -422,6 +549,32 @@ and small agencies (2-5 people)."`}
                                       )}
                                     </ul>
                                   </div>
+                                  
+                                  {/* Dependencies & Risks (collapsible) */}
+                                  {(story.dependencies?.length > 0 || story.risks?.length > 0) && (
+                                    <div className="mt-2 pt-2 border-t border-nordic-border/50 grid grid-cols-2 gap-2">
+                                      {story.dependencies?.length > 0 && (
+                                        <div className="text-[10px]">
+                                          <span className="text-nordic-text-muted font-medium">Dependencies:</span>
+                                          <ul className="mt-0.5 text-nordic-text-muted/70">
+                                            {story.dependencies.slice(0, 2).map((dep, di) => (
+                                              <li key={di} className="truncate">→ {dep}</li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+                                      {story.risks?.length > 0 && (
+                                        <div className="text-[10px]">
+                                          <span className="text-amber-500 font-medium">Risks:</span>
+                                          <ul className="mt-0.5 text-amber-500/70">
+                                            {story.risks.slice(0, 2).map((risk, ri) => (
+                                              <li key={ri} className="truncate">⚠ {risk}</li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -532,6 +685,53 @@ and small agencies (2-5 people)."`}
                           </li>
                         ))}
                       </ul>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Delivery Context - shows personalization */}
+                {initiative.delivery_context && (
+                  <Card className="bg-nordic-bg-secondary border-nordic-border">
+                    <CardContent className="p-4">
+                      <h4 className="text-sm font-medium text-nordic-text-primary mb-3 flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Tailored For Your Team
+                      </h4>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-nordic-text-muted">Industry</span>
+                          <span className="text-nordic-text-primary capitalize">{initiative.delivery_context.industry}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-nordic-text-muted">Methodology</span>
+                          <span className="text-nordic-text-primary capitalize">{initiative.delivery_context.methodology}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-nordic-text-muted">Sprint Length</span>
+                          <span className="text-nordic-text-primary">{initiative.delivery_context.sprint_length} days</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-nordic-text-muted">Team Velocity</span>
+                          <span className="text-nordic-text-primary">~{initiative.delivery_context.team_velocity} pts/sprint</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-nordic-text-muted">Platform</span>
+                          <span className="text-nordic-text-primary capitalize">{initiative.delivery_context.platform?.replace('_', ' ')}</span>
+                        </div>
+                      </div>
+                      {initiative.delivery_context.definition_of_done?.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-nordic-border">
+                          <h5 className="text-xs font-medium text-nordic-text-muted mb-2">Definition of Done</h5>
+                          <ul className="space-y-1">
+                            {initiative.delivery_context.definition_of_done.slice(0, 4).map((d, i) => (
+                              <li key={i} className="text-xs text-nordic-text-muted flex items-start gap-1">
+                                <Check className="w-3 h-3 mt-0.5 text-nordic-green flex-shrink-0" />
+                                {d}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 )}

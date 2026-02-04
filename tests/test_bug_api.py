@@ -7,7 +7,7 @@ import requests
 import os
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://agile-pm-1.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://jarlpm-planner.preview.emergentagent.com')
 TEST_SESSION_TOKEN = "test_session_jarlpm_full_access_2025"
 
 

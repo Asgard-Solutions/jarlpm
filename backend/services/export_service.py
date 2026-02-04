@@ -124,6 +124,10 @@ MOSCOW_TO_PRIORITY = {
     "should_have": 2,  # High
     "could_have": 3,  # Medium
     "wont_have": 4,  # Low
+    # Story-level priority mapping (hyphenated format)
+    "must-have": 1,
+    "should-have": 2,
+    "nice-to-have": 3,
 }
 
 MOSCOW_TO_JIRA_PRIORITY = {
@@ -131,6 +135,10 @@ MOSCOW_TO_JIRA_PRIORITY = {
     "should_have": "High", 
     "could_have": "Medium",
     "wont_have": "Low",
+    # Story-level priority mapping (hyphenated format)
+    "must-have": "Highest",
+    "should-have": "High",
+    "nice-to-have": "Medium",
 }
 
 SEVERITY_TO_AZURE = {
@@ -198,6 +206,7 @@ class ExportService:
             for story in feature.user_stories:
                 story_data = {
                     "story_id": story.story_id,
+                    "title": story.title,
                     "story_text": story.story_text,
                     "persona": story.persona,
                     "action": story.action,
@@ -210,6 +219,11 @@ class ExportService:
                     "rice_effort": story.rice_effort,
                     "rice_total": story.rice_total,
                     "acceptance_criteria": story.acceptance_criteria or [],
+                    # Export-ready fields
+                    "labels": story.labels or [],
+                    "story_priority": story.story_priority,
+                    "dependencies": story.dependencies or [],
+                    "risks": story.risks or [],
                 }
                 feature_data["user_stories"].append(story_data)
             
@@ -251,14 +265,15 @@ class ExportService:
     # ============================================
     
     def export_to_jira_csv(self, epic_data: Dict[str, Any], bugs: List[Dict[str, Any]]) -> str:
-        """Export to Jira-compatible CSV format"""
+        """Export to Jira-compatible CSV format with export-ready story fields"""
         output = io.StringIO()
         writer = csv.writer(output)
         
-        # Jira CSV headers
+        # Jira CSV headers - enhanced for export-ready stories
         headers = [
             "Issue Type", "Summary", "Description", "Priority", 
-            "Acceptance Criteria", "Story Points", "Parent", "Labels"
+            "Acceptance Criteria", "Story Points", "Parent", "Labels",
+            "Dependencies", "Risks"
         ]
         writer.writerow(headers)
         
@@ -271,7 +286,9 @@ class ExportService:
             "\n".join(epic_data.get("acceptance_criteria") or []),
             "",
             "",
-            "jarlpm-export"
+            "jarlpm-export",
+            "",
+            ""
         ]
         writer.writerow(epic_row)
         
@@ -285,21 +302,41 @@ class ExportService:
                 "\n".join(feature.get("acceptance_criteria") or []),
                 str(feature.get("rice_total", "")) if feature.get("rice_total") else "",
                 epic_data["title"],  # Parent epic
-                "jarlpm-export,feature"
+                "jarlpm-export,feature",
+                "",
+                ""
             ]
             writer.writerow(feature_row)
             
-            # Export User Stories as Sub-tasks
+            # Export User Stories as Sub-tasks with full export-ready format
             for story in feature.get("user_stories") or []:
+                # Build structured description
+                description_parts = [
+                    f"**Title:** {story.get('title', '')}",
+                    "",
+                    f"**User Story:**",
+                    f"As {story.get('persona', '')}, I want to {story.get('action', '')} so that {story.get('benefit', '')}",
+                ]
+                
+                story_labels = story.get("labels", [])
+                story_priority = story.get("story_priority", "should-have")
+                story_deps = story.get("dependencies", [])
+                story_risks = story.get("risks", [])
+                
+                # All labels including jarlpm markers
+                all_labels = ["jarlpm-export", "user-story", story_priority] + story_labels
+                
                 story_row = [
                     "Sub-task",
-                    story["story_text"],
-                    f"Persona: {story.get('persona') or ''}\nAction: {story.get('action') or ''}\nBenefit: {story.get('benefit') or ''}",
-                    "Medium",
+                    story.get('title', story["story_text"][:80]),  # Use title if available
+                    "\n".join(description_parts),
+                    MOSCOW_TO_JIRA_PRIORITY.get(story_priority, "Medium"),
                     "\n".join(story.get("acceptance_criteria") or []),
                     str(story.get("story_points", "")) if story.get("story_points") else "",
                     feature["title"],  # Parent story/feature
-                    "jarlpm-export,user-story"
+                    ",".join(all_labels),
+                    "\n".join(story_deps) if story_deps else "",
+                    "\n".join(story_risks) if story_risks else ""
                 ]
                 writer.writerow(story_row)
         
@@ -313,21 +350,24 @@ class ExportService:
                 "",
                 "",
                 "",
-                "jarlpm-export,bug"
+                "jarlpm-export,bug",
+                "",
+                ""
             ]
             writer.writerow(bug_row)
         
         return output.getvalue()
     
     def export_to_azure_devops_csv(self, epic_data: Dict[str, Any], bugs: List[Dict[str, Any]]) -> str:
-        """Export to Azure DevOps-compatible CSV format"""
+        """Export to Azure DevOps-compatible CSV format with export-ready story fields"""
         output = io.StringIO()
         writer = csv.writer(output)
         
-        # Azure DevOps CSV headers
+        # Azure DevOps CSV headers - enhanced for export-ready stories
         headers = [
             "Work Item Type", "Title", "Description", "Priority", 
-            "Acceptance Criteria", "Story Points", "Area Path", "Tags"
+            "Acceptance Criteria", "Story Points", "Area Path", "Tags",
+            "Dependencies", "Risks"
         ]
         writer.writerow(headers)
         
@@ -340,7 +380,9 @@ class ExportService:
             "\n".join(epic_data.get("acceptance_criteria") or []),
             "",
             "",
-            "jarlpm-export"
+            "jarlpm-export",
+            "",
+            ""
         ]
         writer.writerow(epic_row)
         
@@ -354,21 +396,36 @@ class ExportService:
                 "\n".join(feature.get("acceptance_criteria") or []),
                 str(feature.get("rice_total", "")) if feature.get("rice_total") else "",
                 "",
-                "jarlpm-export;feature"
+                "jarlpm-export;feature",
+                "",
+                ""
             ]
             writer.writerow(feature_row)
             
-            # Export User Stories
+            # Export User Stories with full export-ready format
             for story in feature.get("user_stories") or []:
+                # Build structured description
+                description = f"As {story.get('persona', '')}, I want to {story.get('action', '')} so that {story.get('benefit', '')}"
+                
+                story_labels = story.get("labels", [])
+                story_priority = story.get("story_priority", "should-have")
+                story_deps = story.get("dependencies", [])
+                story_risks = story.get("risks", [])
+                
+                # All tags including jarlpm markers
+                all_tags = ["jarlpm-export", "user-story", story_priority] + story_labels
+                
                 story_row = [
                     "User Story",
-                    story["story_text"],
-                    f"As a {story.get('persona') or ''}, I want to {story.get('action') or ''} so that {story.get('benefit') or ''}",
-                    3,
+                    story.get('title', story["story_text"][:80]),  # Use title if available
+                    description,
+                    MOSCOW_TO_PRIORITY.get(story_priority, 3),
                     "\n".join(story.get("acceptance_criteria") or []),
                     str(story.get("story_points", "")) if story.get("story_points") else "",
                     "",
-                    "jarlpm-export;user-story"
+                    ";".join(all_tags),
+                    "\n".join(story_deps) if story_deps else "",
+                    "\n".join(story_risks) if story_risks else ""
                 ]
                 writer.writerow(story_row)
         
@@ -382,7 +439,9 @@ class ExportService:
                 "",
                 "",
                 "",
-                "jarlpm-export;bug"
+                "jarlpm-export;bug",
+                "",
+                ""
             ]
             writer.writerow(bug_row)
         
@@ -462,20 +521,51 @@ class ExportService:
                         lines.append(f"- {ac}")
                     lines.append("")
                 
-                # User Stories
+                # User Stories with export-ready format
                 if feature.get("user_stories"):
                     lines.append("**User Stories:**")
                     lines.append("")
                     for j, story in enumerate(feature["user_stories"], 1):
-                        lines.append(f"  {j}. {story['story_text']}")
-                        if story.get("story_points"):
-                            lines.append(f"     - Story Points: {story['story_points']}")
-                        if story.get("rice_total"):
-                            lines.append(f"     - RICE Score: {story['rice_total']:.1f}")
+                        # Title and basic info
+                        story_title = story.get('title', story['story_text'][:60])
+                        lines.append(f"#### {j}. {story_title}")
+                        lines.append("")
+                        
+                        # User story format
+                        lines.append(f"> As {story.get('persona', 'a user')}, I want to {story.get('action', '')} so that {story.get('benefit', '')}")
+                        lines.append("")
+                        
+                        # Metadata table
+                        story_priority = story.get('story_priority', 'should-have')
+                        lines.append(f"| Priority | Points | Labels |")
+                        lines.append(f"|----------|--------|--------|")
+                        labels = ", ".join(story.get('labels', [])) or "—"
+                        lines.append(f"| {story_priority} | {story.get('story_points', '—')} | {labels} |")
+                        lines.append("")
+                        
+                        # Acceptance Criteria (Gherkin)
                         if story.get("acceptance_criteria"):
-                            lines.append("     - Acceptance Criteria:")
+                            lines.append("**Acceptance Criteria:**")
                             for ac in story["acceptance_criteria"]:
-                                lines.append(f"       - {ac}")
+                                lines.append(f"- [ ] {ac}")
+                            lines.append("")
+                        
+                        # Dependencies
+                        if story.get("dependencies"):
+                            lines.append("**Dependencies:**")
+                            for dep in story["dependencies"]:
+                                lines.append(f"- {dep}")
+                            lines.append("")
+                        
+                        # Risks
+                        if story.get("risks"):
+                            lines.append("**Risks:**")
+                            for risk in story["risks"]:
+                                lines.append(f"- ⚠️ {risk}")
+                            lines.append("")
+                        
+                        lines.append("---")
+                        lines.append("")
                     lines.append("")
         
         # Bugs

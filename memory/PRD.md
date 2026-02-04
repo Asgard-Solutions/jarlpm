@@ -46,6 +46,7 @@ JarlPM is an AI-agnostic, conversation-driven Product Management system for Prod
 - num_developers (integer)
 - num_qa (integer)
 - delivery_platform: jira | azure_devops | none | other
+- quality_mode: standard | quality (NEW - 2-pass with critique)
 - created_at, updated_at
 
 ### Subscription
@@ -720,3 +721,97 @@ When an Epic is locked, users enter Feature Planning Mode:
 ### P2 - Future
 - Google OAuth authentication (nice-to-have)
 - Team collaboration features
+
+---
+
+## Changelog (Continued)
+
+### 2026-02-04: Export-Ready Story Formatting (COMPLETE)
+- **Enhanced User Story Schema:** Stories now include all fields needed for Jira/Azure DevOps export
+  - `title` - Short, actionable title (5-10 words)
+  - `description` - Structured description from user story format
+  - `acceptance_criteria` - Gherkin format (Given/When/Then)
+  - `labels` - Array of tags: backend, frontend, api, auth, database, integration, mvp, ui, etc.
+  - `priority` - Story-level priority: must-have, should-have, nice-to-have
+  - `points` - Fibonacci story points (1, 2, 3, 5, 8, 13)
+  - `dependencies` - Array of story IDs or descriptions
+  - `risks` - Array of risk descriptions
+- **Database Migration:** Added new columns to `user_stories` table:
+  - `labels TEXT[] DEFAULT '{}'`
+  - `story_priority VARCHAR(50)`
+  - `dependencies TEXT[] DEFAULT '{}'`
+  - `risks TEXT[] DEFAULT '{}'`
+- **AI Prompt Updates:** DECOMP_SYSTEM prompt now generates:
+  - Labels from predefined set
+  - Story-level priority (inherits from feature unless overridden)
+  - Dependencies between stories
+  - Risk identification
+- **Export Service Updates:**
+  - Jira CSV export includes labels, priority, dependencies, risks columns
+  - Azure DevOps CSV export includes all export-ready fields
+  - Markdown export enhanced with priority tables, checkable AC, risk warnings
+  - JSON export includes all story metadata
+- **Frontend Updates:** NewInitiative.jsx story cards now display:
+  - Story-level priority badge (color-coded)
+  - Labels as small badges
+  - Dependencies and risks in collapsible section
+- **Tests:** Backend compiles, frontend builds successfully
+
+### 2026-02-04: AI Generation Observability (COMPLETE)
+- **Generation Analytics:** Private logging of all initiative generation attempts
+  - Tracks prompt version, model/provider, token usage
+  - Estimates cost based on provider pricing
+  - Monitors parse/validation success rates per pass
+  - Records timing for each pipeline pass
+  - Logs critic findings (issues found, auto-fixed)
+- **Database Tables:**
+  - `initiative_generation_logs`: Full generation metrics (tokens, retries, duration, success)
+  - `initiative_edit_logs`: Tracks what users edit after generation
+  - `prompt_version_registry`: Tracks prompt versions and their performance
+- **Analytics Service (`services/analytics_service.py`):**
+  - `create_metrics()` - Initialize metrics tracker
+  - `save_generation_log()` - Persist generation metrics
+  - `log_edit()` - Track user edits with change classification
+  - `get_generation_stats()` - Aggregated stats (success rate, tokens, cost)
+  - `get_edit_patterns()` - Most edited fields, edit types
+- **API Endpoints:**
+  - `GET /api/initiative/analytics/stats` - Generation statistics (last N days)
+  - `GET /api/initiative/analytics/edit-patterns` - User edit patterns
+- **Token Pricing:** Estimates based on OpenAI, Anthropic, local models
+- **Prompt Versioning:** Current version `v1.1`, tracked in `CURRENT_PROMPT_VERSION`
+
+### 2026-02-04: Strict Output Layer & Quality Mode (COMPLETE)
+**1. Strict Output Layer** - Schema validation + auto-repair for every AI call
+- Created `services/strict_output_service.py` with:
+  - `extract_json()` - Multi-strategy JSON extraction (code blocks, braces, auto-fix)
+  - `validate_against_schema()` - Pydantic schema validation
+  - `validate_and_repair()` - Auto-repair loop (up to 2 retries)
+  - `build_repair_prompt()` - Context-aware repair instructions
+- Pass-specific Pydantic schemas: `Pass1PRDOutput`, `Pass2DecompOutput`, `Pass3PlanningOutput`, `Pass4CriticOutput`
+- All 4 passes now use `run_llm_pass_with_validation()` with strict output
+
+**2. Quality Mode Toggle** - Optional 2-pass generation
+- New field `quality_mode` in `ProductDeliveryContext` (standard | quality)
+- Quality mode adds a second AI pass to critique and improve output
+- UI toggle in Settings > Delivery Context with visual cards
+- Best for smaller models that benefit from critique
+
+**3. Guardrail Defaults per Task Type**
+- Task-specific temperature settings in `TASK_TEMPERATURE`:
+  - PRD: 0.8 (higher creativity)
+  - Decomposition: 0.6 (balanced)
+  - Planning: 0.3 (must follow constraints)
+  - Critic: 0.2 (analytical)
+  - AC/Export: 0.1-0.2 (strict format)
+- Temperature passed to all LLM API calls (OpenAI, Anthropic, Local)
+
+**4. Weak Model Detection** - Warns but doesn't block
+- `ModelHealthMetrics` tracks: total_calls, validation_failures, repair_successes
+- Warning triggered if failure rate > 30% after 3+ calls
+- Warning message suggests switching to GPT-4o or Claude Sonnet
+- Displayed in SSE stream before generation starts
+
+**5. Delivery Context in Every Prompt**
+- Already implemented in previous session
+- `build_context_prompt()` injects: industry, methodology, team size, sprint length, velocity, platform
+- All 4 passes receive personalized system prompts

@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ArrowLeft, CreditCard, Key, Loader2, 
   CheckCircle, AlertCircle, Trash2, ExternalLink, Palette, Sun, Moon, Monitor,
-  Briefcase, Users, Calendar
+  Briefcase, Users, Calendar, Sparkles
 } from 'lucide-react';
 
 const Settings = () => {
@@ -53,6 +53,7 @@ const Settings = () => {
     num_developers: '',
     num_qa: '',
     delivery_platform: '',
+    quality_mode: 'standard',
   });
   const [savingContext, setSavingContext] = useState(false);
   const [contextError, setContextError] = useState('');
@@ -92,6 +93,7 @@ const Settings = () => {
           num_developers: ctxRes.data.num_developers?.toString() || '',
           num_qa: ctxRes.data.num_qa?.toString() || '',
           delivery_platform: ctxRes.data.delivery_platform || '',
+          quality_mode: ctxRes.data.quality_mode || 'standard',
         });
       }
     } catch (error) {
@@ -228,6 +230,7 @@ const Settings = () => {
         num_developers: deliveryContext.num_developers ? parseInt(deliveryContext.num_developers) : null,
         num_qa: deliveryContext.num_qa ? parseInt(deliveryContext.num_qa) : null,
         delivery_platform: deliveryContext.delivery_platform || null,
+        quality_mode: deliveryContext.quality_mode || 'standard',
       };
       
       await deliveryContextAPI.update(data);
@@ -434,6 +437,45 @@ const Settings = () => {
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Quality Mode Toggle */}
+                <div className="space-y-3 pt-4 border-t border-border">
+                  <Label className="text-nordic-text-secondary flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    AI Quality Mode
+                  </Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryContext({ ...deliveryContext, quality_mode: 'standard' })}
+                      className={`p-3 rounded-lg border transition-all ${
+                        deliveryContext.quality_mode === 'standard'
+                          ? 'border-nordic-accent bg-nordic-accent/10 text-nordic-accent'
+                          : 'border-border bg-background text-muted-foreground hover:border-nordic-accent/50'
+                      }`}
+                      data-testid="quality-mode-standard"
+                    >
+                      <div className="font-medium text-sm">Standard</div>
+                      <div className="text-xs mt-1 opacity-70">Single pass, faster</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryContext({ ...deliveryContext, quality_mode: 'quality' })}
+                      className={`p-3 rounded-lg border transition-all ${
+                        deliveryContext.quality_mode === 'quality'
+                          ? 'border-nordic-accent bg-nordic-accent/10 text-nordic-accent'
+                          : 'border-border bg-background text-muted-foreground hover:border-nordic-accent/50'
+                      }`}
+                      data-testid="quality-mode-quality"
+                    >
+                      <div className="font-medium text-sm">Quality</div>
+                      <div className="text-xs mt-1 opacity-70">2-pass with critique</div>
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Quality mode adds a second AI pass to critique and improve output. Best for smaller models.
+                  </p>
                 </div>
 
                 {/* Error/Success Messages */}

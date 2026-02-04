@@ -34,7 +34,8 @@ class LLMService:
         user_id: str,
         system_prompt: str,
         user_prompt: str,
-        conversation_history: list[dict] = None
+        conversation_history: list[dict] = None,
+        temperature: float = None  # None = use model default
     ) -> AsyncGenerator[str, None]:
         """Generate text using the user's configured LLM provider (streaming)"""
         
@@ -46,13 +47,13 @@ class LLMService:
         
         # Compare with string values since provider is now stored as string
         if config.provider == LLMProvider.OPENAI.value:
-            async for chunk in self._openai_stream(api_key, config.model_name, system_prompt, user_prompt, conversation_history):
+            async for chunk in self._openai_stream(api_key, config.model_name, system_prompt, user_prompt, conversation_history, temperature):
                 yield chunk
         elif config.provider == LLMProvider.ANTHROPIC.value:
-            async for chunk in self._anthropic_stream(api_key, config.model_name, system_prompt, user_prompt, conversation_history):
+            async for chunk in self._anthropic_stream(api_key, config.model_name, system_prompt, user_prompt, conversation_history, temperature):
                 yield chunk
         elif config.provider == LLMProvider.LOCAL.value:
-            async for chunk in self._local_stream(api_key, config.base_url, config.model_name, system_prompt, user_prompt, conversation_history):
+            async for chunk in self._local_stream(api_key, config.base_url, config.model_name, system_prompt, user_prompt, conversation_history, temperature):
                 yield chunk
         else:
             raise ValueError(f"Unsupported LLM provider: {config.provider}")
@@ -63,7 +64,8 @@ class LLMService:
         model: str,
         system_prompt: str,
         user_prompt: str,
-        conversation_history: list[dict] = None
+        conversation_history: list[dict] = None,
+        temperature: float = None
     ) -> AsyncGenerator[str, None]:
         """Stream from OpenAI API"""
         model = model or "gpt-4o"
@@ -73,6 +75,14 @@ class LLMService:
             messages.extend(conversation_history)
         messages.append({"role": "user", "content": user_prompt})
         
+        request_body = {
+            "model": model,
+            "messages": messages,
+            "stream": True
+        }
+        if temperature is not None:
+            request_body["temperature"] = temperature
+        
         async with httpx.AsyncClient() as client:
             async with client.stream(
                 "POST",
@@ -81,11 +91,7 @@ class LLMService:
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json"
                 },
-                json={
-                    "model": model,
-                    "messages": messages,
-                    "stream": True
-                },
+                json=request_body,
                 timeout=120.0
             ) as response:
                 if response.status_code != 200:
@@ -111,7 +117,8 @@ class LLMService:
         model: str,
         system_prompt: str,
         user_prompt: str,
-        conversation_history: list[dict] = None
+        conversation_history: list[dict] = None,
+        temperature: float = None
     ) -> AsyncGenerator[str, None]:
         """Stream from Anthropic API"""
         model = model or "claude-sonnet-4-20250514"
@@ -125,6 +132,16 @@ class LLMService:
                 })
         messages.append({"role": "user", "content": user_prompt})
         
+        request_body = {
+            "model": model,
+            "max_tokens": 4096,
+            "system": system_prompt,
+            "messages": messages,
+            "stream": True
+        }
+        if temperature is not None:
+            request_body["temperature"] = temperature
+        
         async with httpx.AsyncClient() as client:
             async with client.stream(
                 "POST",
@@ -134,13 +151,7 @@ class LLMService:
                     "anthropic-version": "2023-06-01",
                     "Content-Type": "application/json"
                 },
-                json={
-                    "model": model,
-                    "max_tokens": 4096,
-                    "system": system_prompt,
-                    "messages": messages,
-                    "stream": True
-                },
+                json=request_body,
                 timeout=120.0
             ) as response:
                 if response.status_code != 200:
@@ -166,7 +177,8 @@ class LLMService:
         model: str,
         system_prompt: str,
         user_prompt: str,
-        conversation_history: list[dict] = None
+        conversation_history: list[dict] = None,
+        temperature: float = None
     ) -> AsyncGenerator[str, None]:
         """Stream from local/custom HTTP endpoint (OpenAI-compatible)"""
         if not base_url:
@@ -181,16 +193,20 @@ class LLMService:
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
         
+        request_body = {
+            "model": model or "default",
+            "messages": messages,
+            "stream": True
+        }
+        if temperature is not None:
+            request_body["temperature"] = temperature
+        
         async with httpx.AsyncClient() as client:
             async with client.stream(
                 "POST",
                 f"{base_url.rstrip('/')}/v1/chat/completions",
                 headers=headers,
-                json={
-                    "model": model or "default",
-                    "messages": messages,
-                    "stream": True
-                },
+                json=request_body,
                 timeout=120.0
             ) as response:
                 if response.status_code != 200:

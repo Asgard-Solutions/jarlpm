@@ -68,8 +68,14 @@ class UserStory(Base):
     # Optional title for standalone stories
     title: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     
-    # Acceptance Criteria in Given/When/Then format
+    # Acceptance Criteria in Given/When/Then (Gherkin) format
     acceptance_criteria: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)
+    
+    # Export-ready fields
+    labels: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)  # e.g., ["backend", "api", "auth"]
+    story_priority: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # must-have, should-have, nice-to-have
+    dependencies: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)  # e.g., ["story_abc123", "API endpoint X"]
+    risks: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)  # e.g., ["Third-party API reliability"]
     
     # Lifecycle
     current_stage: Mapped[str] = mapped_column(String(50), default=UserStoryStage.DRAFT.value, nullable=False)

@@ -24,6 +24,7 @@ class DeliveryContextCreate(BaseModel):
     num_developers: Optional[int] = Field(None, ge=0, description="Number of developers")
     num_qa: Optional[int] = Field(None, ge=0, description="Number of QA engineers")
     delivery_platform: Optional[str] = Field(None, description="jira, azure_devops, none, other")
+    quality_mode: Optional[str] = Field("standard", description="standard or quality (2-pass with critique)")
 
 
 class DeliveryContextResponse(BaseModel):
@@ -35,6 +36,7 @@ class DeliveryContextResponse(BaseModel):
     num_developers: Optional[int] = None
     num_qa: Optional[int] = None
     delivery_platform: Optional[str] = None
+    quality_mode: Optional[str] = "standard"
     created_at: datetime
     updated_at: datetime
 
@@ -94,6 +96,7 @@ async def get_delivery_context(
         num_developers=context.num_developers,
         num_qa=context.num_qa,
         delivery_platform=context.delivery_platform,
+        quality_mode=context.quality_mode or "standard",
         created_at=context.created_at,
         updated_at=context.updated_at
     )
@@ -127,7 +130,8 @@ async def update_delivery_context(
             sprint_start_date=datetime.combine(body.sprint_start_date, datetime.min.time()).replace(tzinfo=timezone.utc) if body.sprint_start_date else None,
             num_developers=body.num_developers,
             num_qa=body.num_qa,
-            delivery_platform=platform
+            delivery_platform=platform,
+            quality_mode=body.quality_mode or "standard"
         )
         session.add(context)
     else:
@@ -139,6 +143,7 @@ async def update_delivery_context(
         context.num_developers = body.num_developers
         context.num_qa = body.num_qa
         context.delivery_platform = platform
+        context.quality_mode = body.quality_mode or "standard"
         context.updated_at = datetime.now(timezone.utc)
     
     await session.commit()
@@ -153,6 +158,7 @@ async def update_delivery_context(
         num_developers=context.num_developers,
         num_qa=context.num_qa,
         delivery_platform=context.delivery_platform,
+        quality_mode=context.quality_mode or "standard",
         created_at=context.created_at,
         updated_at=context.updated_at
     )
