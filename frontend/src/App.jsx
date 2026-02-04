@@ -30,6 +30,7 @@ import PRDGenerator from '@/pages/PRDGenerator';
 import LeanCanvas from '@/pages/LeanCanvas';
 import PokerPlanning from '@/pages/PokerPlanning';
 import NewInitiative from '@/pages/NewInitiative';
+import Initiatives from '@/pages/Initiatives';
 
 // Theme initializer component
 const ThemeInitializer = ({ children }) => {
