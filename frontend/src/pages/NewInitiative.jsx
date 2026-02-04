@@ -79,13 +79,14 @@ const NewInitiative = () => {
               const data = JSON.parse(line.slice(6));
               
               switch (data.type) {
-                case 'start':
+                case 'pass':
+                  // New pass starting
                   setProgress(data.message);
-                  setProgressPercent(20);
+                  setProgressPercent(data.pass * 25); // 25%, 50%, 75%
                   break;
                 case 'progress':
                   setProgress(data.message);
-                  setProgressPercent(prev => Math.min(prev + 20, 90));
+                  setProgressPercent(prev => Math.min(prev + 8, 95));
                   break;
                 case 'initiative':
                   setInitiative(data.data);
