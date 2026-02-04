@@ -110,6 +110,14 @@ export const featureAPI = {
   },
 };
 
+// Story API (all stories - feature-based and standalone)
+export const storyAPI = {
+  getAllStories: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return api.get(`/stories/all${query ? `?${query}` : ''}`);
+  },
+};
+
 // User Story API (lifecycle-based stories from features)
 export const userStoryAPI = {
   // Feature-level operations
