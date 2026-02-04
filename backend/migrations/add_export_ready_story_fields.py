@@ -6,20 +6,15 @@ Migration: Add export-ready fields to user_stories table
 - risks: Array of risks
 """
 import asyncio
-import os
+import sys
+sys.path.insert(0, '/app/backend')
+
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
+from db.database import engine
 
 async def run_migration():
-    database_url = os.environ.get("DATABASE_URL")
-    if not database_url:
-        raise ValueError("DATABASE_URL not set")
-    
-    # Convert to async URL if needed
-    if database_url.startswith("postgresql://"):
-        database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    
-    engine = create_async_engine(database_url)
+    if not engine:
+        raise ValueError("Database engine not configured")
     
     async with engine.begin() as conn:
         # Add labels column
@@ -47,8 +42,6 @@ async def run_migration():
         """))
         
         print("Migration completed: Added export-ready fields to user_stories")
-    
-    await engine.dispose()
 
 if __name__ == "__main__":
     asyncio.run(run_migration())
