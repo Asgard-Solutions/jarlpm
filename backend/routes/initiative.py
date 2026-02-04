@@ -1,9 +1,10 @@
 """
 Magic Moment: New Initiative Generator
-3-Pass Pipeline for higher quality output:
+4-Pass Pipeline for production-quality output:
   1. PRD Pass - problem, users, metrics, constraints
   2. Decomposition Pass - features → stories with AC
   3. Planning Pass - 2-sprint plan + story points
+  4. Critic Pass - PM reality checks + auto-fixes
 """
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import StreamingResponse
