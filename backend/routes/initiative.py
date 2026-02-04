@@ -450,10 +450,11 @@ async def generate_initiative(
     session: AsyncSession = Depends(get_db)
 ):
     """
-    Generate initiative using 3-pass pipeline:
+    Generate initiative using 4-pass pipeline:
     1. PRD Pass - problem definition
     2. Decomposition Pass - features & stories
     3. Planning Pass - points & sprints
+    4. Critic Pass - PM reality checks & auto-fixes
     """
     user_id = await get_current_user_id(request, session)
     
