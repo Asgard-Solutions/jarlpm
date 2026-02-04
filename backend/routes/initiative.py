@@ -1166,7 +1166,8 @@ async def generate_initiative(
                 schema=Pass4CriticOutput,
                 task_type=TaskType.CRITIC,
                 pass_metrics=metrics.pass_4,
-                quality_mode="standard"  # No quality pass for critic
+                quality_mode="standard",  # No quality pass for critic
+                pass_name="Pass4-Critic"
             )
             
             # Apply critic fixes
