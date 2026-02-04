@@ -100,10 +100,12 @@ async def get_db():
 
 async def init_db():
     """
-    Initialize database - create tables if they don't exist.
+    Initialize database connection and verify schema.
     
-    If DB_RESET_ON_STARTUP=true (DANGEROUS), drops all tables first.
-    Default behavior is safe for production - only creates missing tables.
+    PRODUCTION: Schema should be managed by Alembic migrations.
+    Run `alembic upgrade head` during deployment, not here.
+    
+    DEV MODE (DB_RESET_ON_STARTUP=true): Drops and recreates all tables.
     """
     if not engine:
         logger.error("Database engine not initialized. Check DATABASE_URL.")
@@ -116,18 +118,24 @@ async def init_db():
     from .analytics_models import InitiativeGenerationLog, InitiativeEditLog, PromptVersionRegistry, ModelHealthMetrics
     
     async with engine.begin() as conn:
-        # DANGER: Only reset DB if explicitly enabled (dev only)
         if DB_RESET_ON_STARTUP:
+            # DEV ONLY: Full reset
             logger.warning("⚠️  DB_RESET_ON_STARTUP=true - DROPPING ALL TABLES!")
             await conn.execute(text("DROP SCHEMA public CASCADE"))
             await conn.execute(text("CREATE SCHEMA public"))
-            logger.warning("⚠️  All tables dropped. Recreating...")
+            await conn.run_sync(Base.metadata.create_all)
+            logger.warning("⚠️  Tables recreated from models (dev mode)")
+        else:
+            # PRODUCTION: Just verify connection, don't modify schema
+            # Schema changes should be done via: alembic upgrade head
+            try:
+                await conn.execute(text("SELECT 1"))
+                logger.info("Database connection verified. Schema managed by Alembic.")
+            except Exception as e:
+                logger.error(f"Database connection failed: {e}")
+                raise
         
-        # Create tables only if they don't exist (safe for production)
-        await conn.run_sync(Base.metadata.create_all)
-        logger.info("Database tables initialized (create_all - safe mode)")
-        
-        # Create append-only trigger function (safe to re-run)
+        # Create append-only trigger function (idempotent - safe to re-run)
         await conn.execute(text("""
             CREATE OR REPLACE FUNCTION prevent_update_delete()
             RETURNS TRIGGER AS $$
