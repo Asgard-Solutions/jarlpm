@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 # Add backend to path
 sys.path.insert(0, '/app/backend')
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://jarlpm-planner.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://jarlpm-ai-1.preview.emergentagent.com').rstrip('/')
 TEST_SESSION_TOKEN = "test_session_jarlpm_full_access_2025"
 
 

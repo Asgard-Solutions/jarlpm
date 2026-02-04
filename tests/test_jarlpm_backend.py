@@ -19,7 +19,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 # Get base URL from environment
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://jarlpm-planner.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://jarlpm-ai-1.preview.emergentagent.com').rstrip('/')
 
 
 class TestHealthEndpoints:
