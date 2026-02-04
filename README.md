@@ -57,6 +57,9 @@ App runs at `http://localhost:3000`
 # Database (PostgreSQL)
 DATABASE_URL=postgresql://user:pass@host:5432/dbname?sslmode=require
 
+# DANGER: Only set to "true" in development to reset DB on startup
+DB_RESET_ON_STARTUP=false
+
 # Security
 JWT_SECRET=your-256-bit-secret-key
 ENCRYPTION_SECRET_KEY=your-32-byte-hex-key
