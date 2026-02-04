@@ -254,9 +254,13 @@ and small agencies (2-5 people)."`}
                       <div className={`w-2 h-2 rounded-full ${progressPercent >= 50 ? 'bg-nordic-accent' : 'bg-nordic-text-muted/30'}`} />
                       Features
                     </div>
-                    <div className={`flex items-center gap-1 ${progressPercent >= 75 ? 'text-nordic-accent' : ''}`}>
-                      <div className={`w-2 h-2 rounded-full ${progressPercent >= 75 ? 'bg-nordic-accent' : 'bg-nordic-text-muted/30'}`} />
+                    <div className={`flex items-center gap-1 ${progressPercent >= 60 ? 'text-nordic-accent' : ''}`}>
+                      <div className={`w-2 h-2 rounded-full ${progressPercent >= 60 ? 'bg-nordic-accent' : 'bg-nordic-text-muted/30'}`} />
                       Planning
+                    </div>
+                    <div className={`flex items-center gap-1 ${progressPercent >= 80 ? 'text-nordic-accent' : ''}`}>
+                      <div className={`w-2 h-2 rounded-full ${progressPercent >= 80 ? 'bg-nordic-accent' : 'bg-nordic-text-muted/30'}`} />
+                      Review
                     </div>
                     <div className={`flex items-center gap-1 ${progressPercent >= 100 ? 'text-nordic-green' : ''}`}>
                       <div className={`w-2 h-2 rounded-full ${progressPercent >= 100 ? 'bg-nordic-green' : 'bg-nordic-text-muted/30'}`} />
