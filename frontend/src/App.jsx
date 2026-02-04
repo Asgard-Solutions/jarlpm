@@ -24,6 +24,8 @@ import Bugs from '@/pages/Bugs';
 import Stories from '@/pages/Stories';
 import Personas from '@/pages/Personas';
 import Export from '@/pages/Export';
+import Scoring from '@/pages/Scoring';
+import Sprints from '@/pages/Sprints';
 
 // Theme initializer component
 const ThemeInitializer = ({ children }) => {
