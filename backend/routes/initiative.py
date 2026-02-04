@@ -635,7 +635,9 @@ async def generate_initiative(
                 name_hint=f"Product name hint: {body.product_name}" if body.product_name else ""
             )
             
-            prd_result = await run_llm_pass(llm_service, user_id, PRD_SYSTEM, prd_prompt, max_retries=1)
+            # Format PRD system prompt with context
+            prd_system = PRD_SYSTEM.format(context=context_prompt)
+            prd_result = await run_llm_pass(llm_service, user_id, prd_system, prd_prompt, max_retries=1)
             
             if not prd_result:
                 yield f"data: {json.dumps({'type': 'error', 'message': 'Failed to generate PRD. Please try again.'})}\n\n"
@@ -652,16 +654,22 @@ async def generate_initiative(
             # ========== PASS 2: DECOMPOSITION ==========
             yield f"data: {json.dumps({'type': 'pass', 'pass': 2, 'message': 'Breaking down features...'})}\n\n"
             
+            # Build DoD section
+            dod_section = f"DEFINITION OF DONE:\n" + "\n".join(f"- {d}" for d in dod)
+            
             decomp_prompt = DECOMP_USER.format(
                 product_name=product_name,
                 tagline=tagline,
                 problem_statement=prd_data.get('problem_statement', ''),
                 target_users=prd_data.get('target_users', ''),
                 desired_outcome=prd_data.get('desired_outcome', ''),
-                out_of_scope=', '.join(prd_data.get('out_of_scope', []))
+                out_of_scope=', '.join(prd_data.get('out_of_scope', [])),
+                dod_section=dod_section
             )
             
-            decomp_result = await run_llm_pass(llm_service, user_id, DECOMP_SYSTEM, decomp_prompt, max_retries=1)
+            # Format decomp system prompt with context
+            decomp_system = DECOMP_SYSTEM.format(context=context_prompt)
+            decomp_result = await run_llm_pass(llm_service, user_id, decomp_system, decomp_prompt, max_retries=1)
             
             if not decomp_result:
                 yield f"data: {json.dumps({'type': 'error', 'message': 'Failed to decompose features. Please try again.'})}\n\n"
