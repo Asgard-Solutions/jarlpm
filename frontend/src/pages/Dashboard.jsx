@@ -284,7 +284,6 @@ const Dashboard = () => {
             })}
           </div>
         )}
-      </main>
 
       {/* New Epic Dialog */}
       <Dialog open={showNewEpicDialog} onOpenChange={setShowNewEpicDialog}>
