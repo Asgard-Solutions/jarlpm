@@ -631,7 +631,7 @@ async def get_feature_for_regeneration(
     return {
         "epic_id": epic_id,
         "feature_id": feature_id,
-        "feature_name": feature.title,
+        "feature_name": feature.title,  # Use title field
         "feature_description": feature.description,
         "context": {
             "product_name": epic.title,
