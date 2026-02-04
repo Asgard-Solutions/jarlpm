@@ -47,13 +47,19 @@ def generate_id(prefix: str = "") -> str:
 
 
 class StorySchema(BaseModel):
+    """Export-ready user story schema with all fields needed for Jira/Azure DevOps/Linear export"""
     id: str = Field(default_factory=lambda: generate_id("story_"))
-    title: str
+    title: str  # Short, actionable title
+    description: str = ""  # Structured description (auto-generated from user story format)
     persona: str
     action: str
     benefit: str
-    acceptance_criteria: List[str] = Field(default_factory=list)
+    acceptance_criteria: List[str] = Field(default_factory=list)  # Gherkin format: Given/When/Then
+    labels: List[str] = Field(default_factory=list)  # e.g., ["backend", "api", "auth", "mvp"]
+    priority: str = "should-have"  # must-have, should-have, nice-to-have
     points: int = Field(default=3, ge=1, le=13)
+    dependencies: List[str] = Field(default_factory=list)  # Story IDs or descriptions
+    risks: List[str] = Field(default_factory=list)  # Risk descriptions
     
     @validator('points', pre=True, always=True)
     def validate_fibonacci(cls, v):
@@ -64,6 +70,26 @@ class StorySchema(BaseModel):
         if v not in valid:
             return min(valid, key=lambda x: abs(x - v))
         return v
+    
+    @validator('priority', pre=True, always=True)
+    def validate_priority(cls, v):
+        if not v:
+            return 'should-have'
+        valid = ['must-have', 'should-have', 'nice-to-have']
+        v_lower = str(v).lower().strip()
+        return v_lower if v_lower in valid else 'should-have'
+    
+    @validator('labels', pre=True, always=True)
+    def validate_labels(cls, v):
+        if not v:
+            return []
+        if isinstance(v, str):
+            return [v]
+        return list(v)[:10]  # Max 10 labels
+    
+    def generate_description(self) -> str:
+        """Generate structured description from user story components"""
+        return f"As {self.persona}, I want to {self.action} so that {self.benefit}"
 
 
 class FeatureSchema(BaseModel):
