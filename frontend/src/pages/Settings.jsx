@@ -473,9 +473,13 @@ const Settings = () => {
                       <div className="text-xs mt-1 opacity-70">2-pass with critique</div>
                     </button>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Quality mode adds a second AI pass to critique and improve output. Best for smaller models.
-                  </p>
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border">
+                    <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">Cost tradeoff:</span> Quality mode uses ~2x tokens but produces more reliable output. 
+                      Recommended for smaller models (GPT-3.5, Claude Haiku) or complex initiatives.
+                    </div>
+                  </div>
                 </div>
 
                 {/* Error/Success Messages */}
