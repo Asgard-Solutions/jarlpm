@@ -26,6 +26,9 @@ import Personas from '@/pages/Personas';
 import Export from '@/pages/Export';
 import Scoring from '@/pages/Scoring';
 import Sprints from '@/pages/Sprints';
+import PRDGenerator from '@/pages/PRDGenerator';
+import LeanCanvas from '@/pages/LeanCanvas';
+import PokerPlanning from '@/pages/PokerPlanning';
 
 // Theme initializer component
 const ThemeInitializer = ({ children }) => {
