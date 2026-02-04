@@ -932,7 +932,19 @@ async def generate_initiative(
             
             # Format decomp system prompt with context
             decomp_system = DECOMP_SYSTEM.format(context=context_prompt)
-            decomp_result = await run_llm_pass(llm_service, user_id, decomp_system, decomp_prompt, max_retries=1, pass_metrics=metrics.pass_2)
+            
+            # Use strict output with schema validation
+            decomp_result = await run_llm_pass_with_validation(
+                llm_service=llm_service,
+                strict_service=strict_service,
+                user_id=user_id,
+                system=decomp_system,
+                user=decomp_prompt,
+                schema=Pass2DecompOutput,
+                task_type=TaskType.DECOMPOSITION,
+                pass_metrics=metrics.pass_2,
+                quality_mode=quality_mode
+            )
             
             if not decomp_result:
                 metrics.error_message = "Failed to decompose features"
