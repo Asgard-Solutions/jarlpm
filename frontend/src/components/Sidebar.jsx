@@ -17,6 +17,7 @@ import {
   LayoutGrid,
   Users2,
   Sparkles,
+  Library,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -31,6 +32,12 @@ const navSections = [
         icon: LayoutDashboard,
         href: '/dashboard',
         description: 'Manage your epics',
+      },
+      {
+        title: 'Initiatives',
+        icon: Library,
+        href: '/initiatives',
+        description: 'Initiative library',
       },
       {
         title: 'Stories',
