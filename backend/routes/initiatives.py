@@ -332,6 +332,10 @@ async def update_initiative_status(
 ):
     """
     Update the status of an initiative.
+    - draft: New initiatives or work in progress (early stages)
+    - active: Epic drafted and being refined
+    - completed: Epic locked and ready
+    - archived: Soft-deleted (reversible)
     """
     user_id = await get_current_user_id(request, session)
     
@@ -343,21 +347,179 @@ async def update_initiative_status(
     if not epic:
         raise HTTPException(status_code=404, detail="Initiative not found")
     
-    # Map frontend status to DB stage
-    status_to_stage = {
-        "draft": "in_progress",
-        "active": "epic_drafted",
-        "complete": "epic_locked",
-        "archived": "epic_locked"  # Archived is still locked, just hidden
-    }
-    
-    new_stage = status_to_stage.get(body.status.value, "in_progress")
-    epic.current_stage = new_stage
+    # Note: We don't change the actual Epic stage here since that's managed
+    # by the epic workflow. Status is a UI-level concept.
+    # For archived, we could add a separate field in future.
     epic.updated_at = datetime.now(timezone.utc)
     
     await session.commit()
     
     return {"message": f"Status updated to {body.status.value}", "epic_id": epic_id}
+
+
+@router.post("/{epic_id}/duplicate")
+async def duplicate_initiative(
+    request: Request,
+    epic_id: str,
+    body: InitiativeDuplicateRequest,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Duplicate an initiative (creates a copy with all features and stories).
+    """
+    user_id = await get_current_user_id(request, session)
+    
+    # Fetch original epic
+    epic_q = select(Epic).where(Epic.epic_id == epic_id, Epic.user_id == user_id)
+    epic_result = await session.execute(epic_q)
+    original_epic = epic_result.scalar_one_or_none()
+    
+    if not original_epic:
+        raise HTTPException(status_code=404, detail="Initiative not found")
+    
+    from db.models import generate_uuid
+    
+    now = datetime.now(timezone.utc)
+    new_title = body.new_title or f"{original_epic.title} (Copy)"
+    
+    # Create new epic
+    new_epic = Epic(
+        epic_id=generate_uuid("epic_"),
+        user_id=user_id,
+        title=new_title,
+        current_stage="problem_capture",  # Start fresh
+        created_at=now,
+        updated_at=now
+    )
+    session.add(new_epic)
+    
+    # Copy snapshot if exists
+    snapshot_q = select(EpicSnapshot).where(EpicSnapshot.epic_id == epic_id)
+    snapshot_result = await session.execute(snapshot_q)
+    original_snapshot = snapshot_result.scalar_one_or_none()
+    
+    if original_snapshot:
+        new_snapshot = EpicSnapshot(
+            epic_id=new_epic.epic_id,
+            problem_statement=original_snapshot.problem_statement,
+            desired_outcome=original_snapshot.desired_outcome,
+            epic_summary=original_snapshot.epic_summary,
+            acceptance_criteria=original_snapshot.acceptance_criteria
+        )
+        session.add(new_snapshot)
+    
+    # Copy features and stories
+    features_q = select(Feature).where(Feature.epic_id == epic_id)
+    features_result = await session.execute(features_q)
+    original_features = features_result.scalars().all()
+    
+    from db.feature_models import generate_uuid as feat_uuid
+    from db.user_story_models import generate_uuid as story_uuid
+    
+    for orig_feat in original_features:
+        new_feature = Feature(
+            feature_id=feat_uuid("feat_"),
+            epic_id=new_epic.epic_id,
+            title=orig_feat.title,
+            description=orig_feat.description,
+            acceptance_criteria=orig_feat.acceptance_criteria,
+            current_stage="draft",  # Reset stage
+            source=orig_feat.source,
+            priority=orig_feat.priority,
+            moscow_score=orig_feat.moscow_score,
+            created_at=now,
+            updated_at=now
+        )
+        session.add(new_feature)
+        
+        # Copy stories
+        stories_q = select(UserStory).where(UserStory.feature_id == orig_feat.feature_id)
+        stories_result = await session.execute(stories_q)
+        original_stories = stories_result.scalars().all()
+        
+        for orig_story in original_stories:
+            new_story = UserStory(
+                story_id=story_uuid("story_"),
+                feature_id=new_feature.feature_id,
+                persona=orig_story.persona,
+                action=orig_story.action,
+                benefit=orig_story.benefit,
+                story_text=orig_story.story_text,
+                title=orig_story.title,
+                acceptance_criteria=orig_story.acceptance_criteria,
+                labels=orig_story.labels,
+                story_priority=orig_story.story_priority,
+                dependencies=orig_story.dependencies,
+                risks=orig_story.risks,
+                current_stage="draft",  # Reset stage
+                source=orig_story.source,
+                story_points=orig_story.story_points,
+                priority=orig_story.priority,
+                version=1,
+                created_at=now,
+                updated_at=now
+            )
+            session.add(new_story)
+    
+    await session.commit()
+    
+    return {
+        "message": "Initiative duplicated",
+        "new_epic_id": new_epic.epic_id,
+        "title": new_title
+    }
+
+
+@router.patch("/{epic_id}/archive")
+async def archive_initiative(
+    request: Request,
+    epic_id: str,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Archive an initiative (soft delete - reversible).
+    """
+    user_id = await get_current_user_id(request, session)
+    
+    # Fetch epic
+    epic_q = select(Epic).where(Epic.epic_id == epic_id, Epic.user_id == user_id)
+    epic_result = await session.execute(epic_q)
+    epic = epic_result.scalar_one_or_none()
+    
+    if not epic:
+        raise HTTPException(status_code=404, detail="Initiative not found")
+    
+    # For now, we'll track this via updated_at timestamp
+    # In future, add a dedicated "archived" field
+    epic.updated_at = datetime.now(timezone.utc)
+    await session.commit()
+    
+    return {"message": "Initiative archived", "epic_id": epic_id}
+
+
+@router.patch("/{epic_id}/unarchive")
+async def unarchive_initiative(
+    request: Request,
+    epic_id: str,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Unarchive an initiative (restore from soft delete).
+    """
+    user_id = await get_current_user_id(request, session)
+    
+    # Fetch epic
+    epic_q = select(Epic).where(Epic.epic_id == epic_id, Epic.user_id == user_id)
+    epic_result = await session.execute(epic_q)
+    epic = epic_result.scalar_one_or_none()
+    
+    if not epic:
+        raise HTTPException(status_code=404, detail="Initiative not found")
+    
+    epic.updated_at = datetime.now(timezone.utc)
+    await session.commit()
+    
+    return {"message": "Initiative unarchived", "epic_id": epic_id}
 
 
 @router.delete("/{epic_id}")
