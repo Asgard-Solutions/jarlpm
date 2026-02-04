@@ -53,6 +53,7 @@ const Settings = () => {
     num_developers: '',
     num_qa: '',
     delivery_platform: '',
+    quality_mode: 'standard',
   });
   const [savingContext, setSavingContext] = useState(false);
   const [contextError, setContextError] = useState('');
