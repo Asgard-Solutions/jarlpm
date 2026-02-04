@@ -34,6 +34,8 @@ export const subscriptionAPI = {
   createCheckout: (originUrl) => api.post('/subscription/create-checkout', { origin_url: originUrl }),
   getCheckoutStatus: (sessionId) => api.get(`/subscription/checkout-status/${sessionId}`),
   getStatus: () => api.get('/subscription/status'),
+  cancel: (cancelAtPeriodEnd = true) => api.post('/subscription/cancel', { cancel_at_period_end: cancelAtPeriodEnd }),
+  reactivate: () => api.post('/subscription/reactivate'),
 };
 
 // LLM Provider API
