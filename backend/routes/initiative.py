@@ -806,7 +806,13 @@ async def generate_initiative(
     3. Planning Pass - points & sprints
     4. Critic Pass - PM reality checks & auto-fixes
     
-    Uses delivery context for personalized output.
+    Features:
+    - Strict Output: Schema validation + auto-repair (up to 2 retries)
+    - Quality Mode: Optional 2-pass with critique
+    - Guardrails: Task-specific temperature settings
+    - Weak Model Detection: Warns if model struggles
+    - Delivery Context: Every prompt is personalized
+    
     Logs all generation metrics for quality analysis.
     """
     user_id = await get_current_user_id(request, session)
@@ -832,6 +838,12 @@ async def generate_initiative(
     if not llm_config:
         raise HTTPException(status_code=400, detail="Please configure an LLM provider in Settings first")
     
+    # Initialize strict output service
+    strict_service = get_strict_output_service()
+    
+    # Check for weak model warning
+    model_warning = strict_service.get_model_warning(user_id, llm_config.provider)
+    
     # Fetch delivery context for personalization
     ctx_result = await session.execute(
         select(ProductDeliveryContext).where(ProductDeliveryContext.user_id == user_id)
@@ -840,6 +852,9 @@ async def generate_initiative(
     ctx = format_delivery_context(delivery_context)
     context_prompt = build_context_prompt(ctx)
     dod = build_dod_for_methodology(ctx['methodology'])
+    
+    # Get quality mode from delivery context (defaults to standard)
+    quality_mode = delivery_context.quality_mode if delivery_context and delivery_context.quality_mode else "standard"
     
     # Initialize analytics
     analytics = AnalyticsService(session)
@@ -854,6 +869,14 @@ async def generate_initiative(
 
     async def generate():
         try:
+            # Send model warning if detected
+            if model_warning:
+                yield f"data: {json.dumps({'type': 'warning', 'message': model_warning})}\n\n"
+            
+            # Send quality mode info
+            if quality_mode == "quality":
+                yield f"data: {json.dumps({'type': 'info', 'message': 'Quality Mode: Using 2-pass generation with critique'})}\n\n"
+            
             # ========== PASS 1: PRD ==========
             yield f"data: {json.dumps({'type': 'pass', 'pass': 1, 'message': 'Defining the problem...'})}\n\n"
             
@@ -864,7 +887,19 @@ async def generate_initiative(
             
             # Format PRD system prompt with context
             prd_system = PRD_SYSTEM.format(context=context_prompt)
-            prd_result = await run_llm_pass(llm_service, user_id, prd_system, prd_prompt, max_retries=1, pass_metrics=metrics.pass_1)
+            
+            # Use strict output with schema validation
+            prd_result = await run_llm_pass_with_validation(
+                llm_service=llm_service,
+                strict_service=strict_service,
+                user_id=user_id,
+                system=prd_system,
+                user=prd_prompt,
+                schema=Pass1PRDOutput,
+                task_type=TaskType.PRD_GENERATION,
+                pass_metrics=metrics.pass_1,
+                quality_mode=quality_mode
+            )
             
             if not prd_result:
                 metrics.error_message = "Failed to generate PRD"
