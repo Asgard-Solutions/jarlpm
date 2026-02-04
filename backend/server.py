@@ -51,6 +51,7 @@ api_router.include_router(scoring_router)
 api_router.include_router(export_router)
 api_router.include_router(poker_router)
 api_router.include_router(initiative_router)
+api_router.include_router(initiatives_router)
 
 # Health check endpoint
 @api_router.get("/")
