@@ -697,10 +697,9 @@ When an Epic is locked, users enter Feature Planning Mode:
 - None! All critical items completed.
 
 ### P1 - Upcoming
-- Test persona generation end-to-end with a completed epic
-- Test Stripe checkout flow
+- Configure Stripe webhook in Stripe Dashboard (endpoint: /api/webhook/stripe)
+- Test full subscription flow with real Stripe test keys
 - Sprint Planning (Kanban board) implementation
-- MoSCoW/RICE Scoring page implementation (page exists but may need enhancement)
 
 ### P2 - Future
 - Google OAuth authentication (nice-to-have)
