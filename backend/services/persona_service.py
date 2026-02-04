@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from db.persona_models import Persona, PersonaGenerationSettings
-from db.models import Epic
+from db.models import Epic, LLMProviderConfig
 from db.feature_models import Feature
 from db.user_story_models import UserStory
 
