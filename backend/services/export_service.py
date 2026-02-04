@@ -513,20 +513,51 @@ class ExportService:
                         lines.append(f"- {ac}")
                     lines.append("")
                 
-                # User Stories
+                # User Stories with export-ready format
                 if feature.get("user_stories"):
                     lines.append("**User Stories:**")
                     lines.append("")
                     for j, story in enumerate(feature["user_stories"], 1):
-                        lines.append(f"  {j}. {story['story_text']}")
-                        if story.get("story_points"):
-                            lines.append(f"     - Story Points: {story['story_points']}")
-                        if story.get("rice_total"):
-                            lines.append(f"     - RICE Score: {story['rice_total']:.1f}")
+                        # Title and basic info
+                        story_title = story.get('title', story['story_text'][:60])
+                        lines.append(f"#### {j}. {story_title}")
+                        lines.append("")
+                        
+                        # User story format
+                        lines.append(f"> As {story.get('persona', 'a user')}, I want to {story.get('action', '')} so that {story.get('benefit', '')}")
+                        lines.append("")
+                        
+                        # Metadata table
+                        story_priority = story.get('story_priority', 'should-have')
+                        lines.append(f"| Priority | Points | Labels |")
+                        lines.append(f"|----------|--------|--------|")
+                        labels = ", ".join(story.get('labels', [])) or "—"
+                        lines.append(f"| {story_priority} | {story.get('story_points', '—')} | {labels} |")
+                        lines.append("")
+                        
+                        # Acceptance Criteria (Gherkin)
                         if story.get("acceptance_criteria"):
-                            lines.append("     - Acceptance Criteria:")
+                            lines.append("**Acceptance Criteria:**")
                             for ac in story["acceptance_criteria"]:
-                                lines.append(f"       - {ac}")
+                                lines.append(f"- [ ] {ac}")
+                            lines.append("")
+                        
+                        # Dependencies
+                        if story.get("dependencies"):
+                            lines.append("**Dependencies:**")
+                            for dep in story["dependencies"]:
+                                lines.append(f"- {dep}")
+                            lines.append("")
+                        
+                        # Risks
+                        if story.get("risks"):
+                            lines.append("**Risks:**")
+                            for risk in story["risks"]:
+                                lines.append(f"- ⚠️ {risk}")
+                            lines.append("")
+                        
+                        lines.append("---")
+                        lines.append("")
                     lines.append("")
         
         # Bugs
