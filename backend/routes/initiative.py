@@ -1275,6 +1275,10 @@ async def generate_initiative(
             if critic_result and critic_result.get('summary'):
                 response_data['quality_summary'] = critic_result['summary']
             
+            # Add confidence assessment from critic (premium PM feature)
+            if critic_result and critic_result.get('confidence_assessment'):
+                response_data['confidence_assessment'] = critic_result['confidence_assessment']
+            
             # Add delivery context for UI personalization
             response_data['delivery_context'] = {
                 'industry': ctx['industry'],
