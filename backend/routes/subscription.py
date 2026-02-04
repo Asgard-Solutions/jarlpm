@@ -251,7 +251,8 @@ async def get_checkout_status(
         transaction.payment_status = payment_status
         transaction.updated_at = datetime.now(timezone.utc)
     
-    # If subscription created, update our records
+    # If subscription created, update our records (but webhook is source of truth)
+    # This is a fallback for immediate UI feedback before webhook arrives
     if checkout_session.subscription:
         stripe_sub = checkout_session.subscription
         if isinstance(stripe_sub, str):
@@ -265,15 +266,18 @@ async def get_checkout_status(
         subscription = sub_result.scalar_one_or_none()
         
         if subscription:
-            subscription.stripe_subscription_id = stripe_sub.id
-            subscription.status = _map_stripe_status(stripe_sub.status)
-            subscription.current_period_start = datetime.fromtimestamp(
-                stripe_sub.current_period_start, tz=timezone.utc
-            )
-            subscription.current_period_end = datetime.fromtimestamp(
-                stripe_sub.current_period_end, tz=timezone.utc
-            )
-            subscription.updated_at = datetime.now(timezone.utc)
+            # Only update if we don't already have this subscription set (webhook may have arrived first)
+            if not subscription.stripe_subscription_id or subscription.stripe_subscription_id == stripe_sub.id:
+                subscription.stripe_subscription_id = stripe_sub.id
+                subscription.status = _map_stripe_status(stripe_sub.status)
+                subscription.current_period_start = datetime.fromtimestamp(
+                    stripe_sub.current_period_start, tz=timezone.utc
+                )
+                subscription.current_period_end = datetime.fromtimestamp(
+                    stripe_sub.current_period_end, tz=timezone.utc
+                )
+                subscription.cancel_at_period_end = stripe_sub.cancel_at_period_end
+                subscription.updated_at = datetime.now(timezone.utc)
             
             if transaction:
                 transaction.payment_status = "processed"
