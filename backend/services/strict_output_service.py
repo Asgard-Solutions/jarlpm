@@ -190,7 +190,8 @@ class StrictOutputService:
             if failure_rate > 0.3:
                 rate = int(failure_rate * 100)
                 return (
-                    f"Your selected model is struggling with structured output ({rate}% failure rate). "
+                    f"Your model ({provider}/{model_name}) is struggling with structured output "
+                    f"({rate}% failure rate over {metrics.total_calls} calls). "
                     f"Consider switching to GPT-4o or Claude Sonnet for better results."
                 )
             
@@ -199,10 +200,12 @@ class StrictOutputService:
             logger.warning(f"Failed to get model warning: {e}")
             return None
     
-    async def dismiss_warning(self, user_id: str, provider: str):
-        """Dismiss the model warning for a user+provider"""
+    async def dismiss_warning(self, user_id: str, provider: str, model_name: str = None):
+        """Dismiss the model warning for a user+provider+model"""
         if not self.session:
             return
+        
+        model_name = model_name or "default"
         
         try:
             from sqlalchemy import select
@@ -211,7 +214,8 @@ class StrictOutputService:
             result = await self.session.execute(
                 select(ModelHealthMetrics).where(
                     ModelHealthMetrics.user_id == user_id,
-                    ModelHealthMetrics.provider == provider
+                    ModelHealthMetrics.provider == provider,
+                    ModelHealthMetrics.model_name == model_name
                 )
             )
             metrics = result.scalar_one_or_none()
