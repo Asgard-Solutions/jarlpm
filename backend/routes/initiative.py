@@ -1,11 +1,9 @@
 """
 Magic Moment: New Initiative Generator
-Paste a messy idea → get PRD + Epic + Features + Stories + 2-sprint plan
-
-Features:
-- Strict Pydantic schema validation
-- Retry loop for JSON repair
-- Stable IDs for all entities
+3-Pass Pipeline for higher quality output:
+  1. PRD Pass - problem, users, metrics, constraints
+  2. Decomposition Pass - features → stories with AC
+  3. Planning Pass - 2-sprint plan + story points
 """
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import StreamingResponse
@@ -33,7 +31,7 @@ router = APIRouter(prefix="/initiative", tags=["initiative"])
 
 
 # ============================================
-# Pydantic Schema for Initiative
+# Pydantic Schemas
 # ============================================
 
 def generate_id(prefix: str = "") -> str:
@@ -42,80 +40,74 @@ def generate_id(prefix: str = "") -> str:
 
 
 class StorySchema(BaseModel):
-    """User story with acceptance criteria"""
     id: str = Field(default_factory=lambda: generate_id("story_"))
     title: str
-    persona: str = Field(description="As a [user type]")
-    action: str = Field(description="I want to [action]")
-    benefit: str = Field(description="So that [benefit]")
+    persona: str
+    action: str
+    benefit: str
     acceptance_criteria: List[str] = Field(default_factory=list)
-    points: int = Field(ge=1, le=13, description="Fibonacci: 1,2,3,5,8,13")
+    points: int = Field(default=3, ge=1, le=13)
     
-    @validator('points')
+    @validator('points', pre=True, always=True)
     def validate_fibonacci(cls, v):
+        if v is None:
+            return 3
         valid = [1, 2, 3, 5, 8, 13]
+        v = int(v) if isinstance(v, (int, float, str)) else 3
         if v not in valid:
-            # Snap to nearest valid Fibonacci
             return min(valid, key=lambda x: abs(x - v))
         return v
 
 
 class FeatureSchema(BaseModel):
-    """Feature with stories"""
     id: str = Field(default_factory=lambda: generate_id("feat_"))
     name: str
     description: str
-    priority: str = Field(description="must-have, should-have, or nice-to-have")
+    priority: str = "should-have"
     stories: List[StorySchema] = Field(default_factory=list)
     
-    @validator('priority')
+    @validator('priority', pre=True, always=True)
     def validate_priority(cls, v):
-        valid = ['must-have', 'should-have', 'nice-to-have']
-        v_lower = v.lower().strip()
-        if v_lower not in valid:
-            # Default to should-have if invalid
+        if not v:
             return 'should-have'
-        return v_lower
+        valid = ['must-have', 'should-have', 'nice-to-have']
+        v_lower = str(v).lower().strip()
+        return v_lower if v_lower in valid else 'should-have'
 
 
 class PRDSchema(BaseModel):
-    """Product Requirements Document"""
-    problem_statement: str
-    target_users: str
-    desired_outcome: str
+    problem_statement: str = ""
+    target_users: str = ""
+    desired_outcome: str = ""
     key_metrics: List[str] = Field(default_factory=list)
     out_of_scope: List[str] = Field(default_factory=list)
     risks: List[str] = Field(default_factory=list)
 
 
 class EpicSchema(BaseModel):
-    """Epic definition"""
-    title: str
-    description: str
+    title: str = ""
+    description: str = ""
     vision: str = ""
 
 
 class SprintSchema(BaseModel):
-    """Sprint plan"""
-    goal: str
-    stories: List[str] = Field(default_factory=list, description="Story titles")
+    goal: str = ""
+    story_ids: List[str] = Field(default_factory=list)
     total_points: int = 0
 
 
 class SprintPlanSchema(BaseModel):
-    """2-sprint delivery plan"""
-    sprint_1: SprintSchema
-    sprint_2: SprintSchema
+    sprint_1: SprintSchema = Field(default_factory=SprintSchema)
+    sprint_2: SprintSchema = Field(default_factory=SprintSchema)
 
 
 class InitiativeSchema(BaseModel):
-    """Complete initiative - the full output schema"""
-    product_name: str
+    product_name: str = ""
     tagline: str = ""
-    prd: PRDSchema
-    epic: EpicSchema
+    prd: PRDSchema = Field(default_factory=PRDSchema)
+    epic: EpicSchema = Field(default_factory=EpicSchema)
     features: List[FeatureSchema] = Field(default_factory=list)
-    sprint_plan: SprintPlanSchema
+    sprint_plan: SprintPlanSchema = Field(default_factory=SprintPlanSchema)
     total_points: int = 0
     
     def assign_ids(self):
@@ -144,89 +136,160 @@ class NewInitiativeRequest(BaseModel):
 
 
 # ============================================
-# Schema as JSON for LLM prompt
+# Pass 1: PRD Generation
 # ============================================
 
-SCHEMA_JSON = '''{
-  "product_name": "string (short product name)",
-  "tagline": "string (one-line description)",
+PRD_SYSTEM = """You are JarlPM, an expert Product Manager. Generate a focused PRD from a raw idea.
+
+OUTPUT: Valid JSON only, no markdown or explanation.
+
+{
+  "product_name": "short name",
+  "tagline": "one-line pitch",
   "prd": {
-    "problem_statement": "string (clear problem being solved)",
-    "target_users": "string (who has this problem)",
-    "desired_outcome": "string (what success looks like)",
-    "key_metrics": ["string array of metrics"],
-    "out_of_scope": ["string array of excluded items"],
-    "risks": ["string array of risks"]
+    "problem_statement": "2-3 sentences on the core problem",
+    "target_users": "specific user persona(s)",
+    "desired_outcome": "what success looks like",
+    "key_metrics": ["metric1", "metric2", "metric3"],
+    "out_of_scope": ["excluded1", "excluded2"],
+    "risks": ["risk1", "risk2"]
   },
   "epic": {
-    "title": "string (epic title)",
-    "description": "string (epic description)",
-    "vision": "string (product vision statement)"
-  },
+    "title": "Epic title for this initiative",
+    "description": "1-2 sentence epic description",
+    "vision": "Product vision statement"
+  }
+}
+
+Be specific and actionable. Focus on the MVP."""
+
+
+PRD_USER = """Create a PRD for this idea:
+
+{idea}
+
+{name_hint}
+
+Return only valid JSON matching the schema."""
+
+
+# ============================================
+# Pass 2: Feature Decomposition
+# ============================================
+
+DECOMP_SYSTEM = """You are JarlPM. Given a PRD, decompose it into features and user stories.
+
+OUTPUT: Valid JSON only.
+
+{
   "features": [
     {
-      "name": "string (feature name)",
-      "description": "string (what this feature does)",
+      "name": "Feature name",
+      "description": "What it does",
       "priority": "must-have | should-have | nice-to-have",
       "stories": [
         {
-          "title": "string (story title)",
-          "persona": "string (As a [user type])",
-          "action": "string (I want to [action])",
-          "benefit": "string (So that [benefit])",
-          "acceptance_criteria": ["Given X, When Y, Then Z", "..."],
-          "points": "number (1, 2, 3, 5, 8, or 13)"
+          "title": "Story title",
+          "persona": "a [user type]",
+          "action": "[what they want to do]",
+          "benefit": "[why they want it]",
+          "acceptance_criteria": [
+            "Given X, When Y, Then Z",
+            "Given A, When B, Then C"
+          ]
         }
       ]
+    }
+  ]
+}
+
+RULES:
+- 3-5 features for MVP
+- 2-4 stories per feature
+- Each story has 2-4 acceptance criteria in Given/When/Then format
+- Priorities: at least 1 must-have, rest should-have or nice-to-have
+- Stories should be small enough to complete in 1-3 days"""
+
+
+DECOMP_USER = """Decompose this PRD into features and user stories:
+
+PRODUCT: {product_name}
+TAGLINE: {tagline}
+
+PROBLEM: {problem_statement}
+USERS: {target_users}
+OUTCOME: {desired_outcome}
+
+OUT OF SCOPE: {out_of_scope}
+
+Generate features with detailed user stories and acceptance criteria. Return only valid JSON."""
+
+
+# ============================================
+# Pass 3: Sprint Planning + Points
+# ============================================
+
+PLANNING_SYSTEM = """You are JarlPM. Given features and stories, assign story points and create a 2-sprint plan.
+
+OUTPUT: Valid JSON only.
+
+{
+  "estimated_stories": [
+    {
+      "story_id": "the story id",
+      "title": "story title (for reference)",
+      "points": 3
     }
   ],
   "sprint_plan": {
     "sprint_1": {
-      "goal": "string (sprint 1 goal)",
-      "stories": ["story title 1", "story title 2"],
-      "total_points": "number"
+      "goal": "Sprint 1 goal - what's delivered",
+      "story_ids": ["story_id1", "story_id2"],
+      "total_points": 13
     },
     "sprint_2": {
-      "goal": "string (sprint 2 goal)",
-      "stories": ["story title 3", "story title 4"],
-      "total_points": "number"
+      "goal": "Sprint 2 goal - what's delivered",
+      "story_ids": ["story_id3", "story_id4"],
+      "total_points": 8
     }
-  },
-  "total_points": "number (sum of all story points)"
-}'''
+  }
+}
 
-
-SYSTEM_PROMPT = f"""You are JarlPM, an expert Product Manager AI. Transform messy ideas into structured, actionable product plans.
-
-OUTPUT: Valid JSON matching this exact schema (no markdown, no explanation):
-
-{SCHEMA_JSON}
+FIBONACCI SCALE:
+- 1: Trivial (few hours)
+- 2: Small (half day)
+- 3: Medium (1-2 days)
+- 5: Large (2-3 days)
+- 8: Very Large (3-5 days)
+- 13: Huge (1 week, consider splitting)
 
 RULES:
-- Story points must be Fibonacci: 1, 2, 3, 5, 8, 13 (max 13)
-- Feature priority must be: must-have, should-have, or nice-to-have
-- Include 3-5 features with 2-4 stories each
-- Sprint plans should fit ~13-21 points per sprint
-- Be concise but thorough"""
+- Each sprint should have 13-21 points
+- Must-have stories go in Sprint 1
+- Nice-to-have stories go in Sprint 2
+- Balance the sprints reasonably"""
 
 
-REPAIR_PROMPT = """The JSON you provided failed validation. Please fix these errors and return ONLY valid JSON:
+PLANNING_USER = """Estimate story points and create a 2-sprint plan for:
 
-ERRORS:
-{errors}
+PRODUCT: {product_name}
+GOAL: {desired_outcome}
 
-ORIGINAL (partial):
-{original}
+FEATURES & STORIES:
+{stories_list}
 
-Return the complete, corrected JSON matching the schema. No explanation, just JSON."""
+Assign Fibonacci points (1,2,3,5,8,13) to each story and organize into 2 sprints. Return only valid JSON."""
 
 
 # ============================================
-# JSON Extraction & Validation
+# JSON Extraction
 # ============================================
 
 def extract_json(text: str) -> Optional[dict]:
     """Extract JSON from text, handling markdown code blocks"""
+    if not text:
+        return None
+        
     # Try markdown code block first
     json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', text)
     if json_match:
@@ -235,13 +298,11 @@ def extract_json(text: str) -> Optional[dict]:
         except json.JSONDecodeError:
             pass
     
-    # Try to find raw JSON object
-    # Find the outermost { }
+    # Find outermost { }
     start = text.find('{')
     if start == -1:
         return None
     
-    # Count braces to find matching close
     depth = 0
     end = start
     for i, char in enumerate(text[start:], start):
@@ -259,22 +320,31 @@ def extract_json(text: str) -> Optional[dict]:
         return None
 
 
-def validate_initiative(data: dict) -> tuple[Optional[InitiativeSchema], List[str]]:
-    """Validate initiative data against schema, return (model, errors)"""
-    errors = []
+async def run_llm_pass(llm_service, user_id: str, system: str, user: str, max_retries: int = 1) -> Optional[dict]:
+    """Run a single LLM pass with retry"""
+    for attempt in range(max_retries + 1):
+        full_response = ""
+        async for chunk in llm_service.generate_stream(
+            user_id=user_id,
+            system_prompt=system,
+            user_prompt=user,
+            conversation_history=None
+        ):
+            full_response += chunk
+        
+        result = extract_json(full_response)
+        if result:
+            return result
+        
+        if attempt < max_retries:
+            # Retry with a nudge
+            user = user + "\n\nIMPORTANT: Return ONLY valid JSON, no other text."
     
-    try:
-        initiative = InitiativeSchema(**data)
-        initiative.assign_ids()
-        initiative.calculate_totals()
-        return initiative, []
-    except Exception as e:
-        errors.append(str(e))
-        return None, errors
+    return None
 
 
 # ============================================
-# Endpoints
+# Main Endpoint
 # ============================================
 
 @router.post("/generate")
@@ -284,8 +354,10 @@ async def generate_initiative(
     session: AsyncSession = Depends(get_db)
 ):
     """
-    Generate a complete initiative from a messy idea.
-    Uses strict schema validation with retry for repair.
+    Generate initiative using 3-pass pipeline:
+    1. PRD Pass - problem definition
+    2. Decomposition Pass - features & stories
+    3. Planning Pass - points & sprints
     """
     user_id = await get_current_user_id(request, session)
     
@@ -309,98 +381,163 @@ async def generate_initiative(
     llm_config = await llm_service.get_user_llm_config(user_id)
     if not llm_config:
         raise HTTPException(status_code=400, detail="Please configure an LLM provider in Settings first")
-    
-    user_prompt = f"""Transform this idea into a complete product initiative:
-
-{body.idea}
-
-{f"Product name hint: {body.product_name}" if body.product_name else ""}
-
-Generate JSON matching the schema exactly. Include realistic story points and a 2-sprint plan."""
 
     async def generate():
-        yield f"data: {json.dumps({'type': 'start', 'message': 'Analyzing your idea...'})}\n\n"
-        
-        full_response = ""
-        features_started = False
-        stories_started = False
-        sprint_started = False
-        
         try:
-            yield f"data: {json.dumps({'type': 'progress', 'message': 'Generating PRD and epic...'})}\n\n"
+            # ========== PASS 1: PRD ==========
+            yield f"data: {json.dumps({'type': 'pass', 'pass': 1, 'message': 'Defining the problem...'})}\n\n"
             
-            # First attempt
-            async for chunk in llm_service.generate_stream(
-                user_id=user_id,
-                system_prompt=SYSTEM_PROMPT,
-                user_prompt=user_prompt,
-                conversation_history=None
-            ):
-                full_response += chunk
-                
-                # Progress updates
-                if '"features"' in full_response and not features_started:
-                    features_started = True
-                    yield f"data: {json.dumps({'type': 'progress', 'message': 'Breaking down features...'})}\n\n"
-                elif '"stories"' in full_response and not stories_started:
-                    stories_started = True
-                    yield f"data: {json.dumps({'type': 'progress', 'message': 'Writing user stories...'})}\n\n"
-                elif '"sprint_plan"' in full_response and not sprint_started:
-                    sprint_started = True
-                    yield f"data: {json.dumps({'type': 'progress', 'message': 'Planning sprints...'})}\n\n"
+            prd_prompt = PRD_USER.format(
+                idea=body.idea,
+                name_hint=f"Product name hint: {body.product_name}" if body.product_name else ""
+            )
             
-            yield f"data: {json.dumps({'type': 'progress', 'message': 'Validating output...'})}\n\n"
+            prd_result = await run_llm_pass(llm_service, user_id, PRD_SYSTEM, prd_prompt, max_retries=1)
             
-            # Extract and validate JSON
-            raw_data = extract_json(full_response)
-            
-            if not raw_data:
-                yield f"data: {json.dumps({'type': 'error', 'message': 'Failed to extract JSON from response. Please try again.'})}\n\n"
+            if not prd_result:
+                yield f"data: {json.dumps({'type': 'error', 'message': 'Failed to generate PRD. Please try again.'})}\n\n"
                 return
             
-            initiative, errors = validate_initiative(raw_data)
+            # Extract PRD data
+            product_name = prd_result.get('product_name', body.product_name or 'New Product')
+            tagline = prd_result.get('tagline', '')
+            prd_data = prd_result.get('prd', {})
+            epic_data = prd_result.get('epic', {})
             
-            # Retry loop for repair (max 2 attempts)
-            retry_count = 0
-            max_retries = 2
+            yield f"data: {json.dumps({'type': 'progress', 'pass': 1, 'message': f'PRD complete: {product_name}'})}\n\n"
             
-            while errors and retry_count < max_retries:
-                retry_count += 1
-                yield f"data: {json.dumps({'type': 'progress', 'message': f'Repairing output (attempt {retry_count})...'})}\n\n"
-                
-                repair_prompt = REPAIR_PROMPT.format(
-                    errors="\n".join(errors),
-                    original=json.dumps(raw_data, indent=2)[:2000]  # Truncate to avoid token limits
+            # ========== PASS 2: DECOMPOSITION ==========
+            yield f"data: {json.dumps({'type': 'pass', 'pass': 2, 'message': 'Breaking down features...'})}\n\n"
+            
+            decomp_prompt = DECOMP_USER.format(
+                product_name=product_name,
+                tagline=tagline,
+                problem_statement=prd_data.get('problem_statement', ''),
+                target_users=prd_data.get('target_users', ''),
+                desired_outcome=prd_data.get('desired_outcome', ''),
+                out_of_scope=', '.join(prd_data.get('out_of_scope', []))
+            )
+            
+            decomp_result = await run_llm_pass(llm_service, user_id, DECOMP_SYSTEM, decomp_prompt, max_retries=1)
+            
+            if not decomp_result:
+                yield f"data: {json.dumps({'type': 'error', 'message': 'Failed to decompose features. Please try again.'})}\n\n"
+                return
+            
+            # Parse features and assign IDs
+            features_raw = decomp_result.get('features', [])
+            features = []
+            all_stories = []
+            
+            for f_data in features_raw:
+                feature = FeatureSchema(
+                    name=f_data.get('name', 'Feature'),
+                    description=f_data.get('description', ''),
+                    priority=f_data.get('priority', 'should-have'),
+                    stories=[]
                 )
                 
-                repair_response = ""
-                async for chunk in llm_service.generate_stream(
-                    user_id=user_id,
-                    system_prompt=SYSTEM_PROMPT,
-                    user_prompt=repair_prompt,
-                    conversation_history=None
-                ):
-                    repair_response += chunk
+                for s_data in f_data.get('stories', []):
+                    story = StorySchema(
+                        title=s_data.get('title', 'Story'),
+                        persona=s_data.get('persona', 'a user'),
+                        action=s_data.get('action', ''),
+                        benefit=s_data.get('benefit', ''),
+                        acceptance_criteria=s_data.get('acceptance_criteria', [])
+                    )
+                    feature.stories.append(story)
+                    all_stories.append({
+                        'id': story.id,
+                        'title': story.title,
+                        'feature': feature.name,
+                        'priority': feature.priority
+                    })
                 
-                raw_data = extract_json(repair_response)
-                if raw_data:
-                    initiative, errors = validate_initiative(raw_data)
+                features.append(feature)
             
-            if errors:
-                logger.warning(f"Initiative validation failed after retries: {errors}")
-                yield f"data: {json.dumps({'type': 'error', 'message': f'Validation failed: {errors[0]}'})}\n\n"
-                return
+            story_count = sum(len(f.stories) for f in features)
+            yield f"data: {json.dumps({'type': 'progress', 'pass': 2, 'message': f'Created {len(features)} features, {story_count} stories'})}\n\n"
             
-            if not initiative:
-                yield f"data: {json.dumps({'type': 'error', 'message': 'Failed to generate valid initiative. Please try again.'})}\n\n"
-                return
+            # ========== PASS 3: PLANNING ==========
+            yield f"data: {json.dumps({'type': 'pass', 'pass': 3, 'message': 'Planning sprints...'})}\n\n"
             
-            # Success! Return validated initiative
+            # Build stories list for planning prompt
+            stories_list = ""
+            for f in features:
+                stories_list += f"\n[{f.priority.upper()}] {f.name}:\n"
+                for s in f.stories:
+                    stories_list += f"  - {s.id}: {s.title}\n"
+                    stories_list += f"    As {s.persona}, I want to {s.action}\n"
+            
+            planning_prompt = PLANNING_USER.format(
+                product_name=product_name,
+                desired_outcome=prd_data.get('desired_outcome', ''),
+                stories_list=stories_list
+            )
+            
+            planning_result = await run_llm_pass(llm_service, user_id, PLANNING_SYSTEM, planning_prompt, max_retries=1)
+            
+            # Apply estimates to stories
+            if planning_result:
+                estimates = {e['story_id']: e['points'] for e in planning_result.get('estimated_stories', [])}
+                
+                for feature in features:
+                    for story in feature.stories:
+                        if story.id in estimates:
+                            story.points = min(13, max(1, estimates[story.id]))
+                
+                # Build sprint plan
+                sp = planning_result.get('sprint_plan', {})
+                sprint_plan = SprintPlanSchema(
+                    sprint_1=SprintSchema(
+                        goal=sp.get('sprint_1', {}).get('goal', 'MVP Core'),
+                        story_ids=sp.get('sprint_1', {}).get('story_ids', []),
+                        total_points=sp.get('sprint_1', {}).get('total_points', 0)
+                    ),
+                    sprint_2=SprintSchema(
+                        goal=sp.get('sprint_2', {}).get('goal', 'Polish & Extend'),
+                        story_ids=sp.get('sprint_2', {}).get('story_ids', []),
+                        total_points=sp.get('sprint_2', {}).get('total_points', 0)
+                    )
+                )
+            else:
+                # Default planning if pass 3 fails
+                sprint_plan = SprintPlanSchema()
+                logger.warning("Planning pass failed, using default sprint plan")
+            
+            yield f"data: {json.dumps({'type': 'progress', 'pass': 3, 'message': 'Sprint plan complete'})}\n\n"
+            
+            # ========== BUILD FINAL OUTPUT ==========
+            initiative = InitiativeSchema(
+                product_name=product_name,
+                tagline=tagline,
+                prd=PRDSchema(**prd_data),
+                epic=EpicSchema(**epic_data),
+                features=features,
+                sprint_plan=sprint_plan
+            )
+            initiative.assign_ids()
+            initiative.calculate_totals()
+            
+            # Recalculate sprint totals based on actual story points
+            story_points_map = {}
+            for f in initiative.features:
+                for s in f.stories:
+                    story_points_map[s.id] = s.points
+            
+            initiative.sprint_plan.sprint_1.total_points = sum(
+                story_points_map.get(sid, 0) for sid in initiative.sprint_plan.sprint_1.story_ids
+            )
+            initiative.sprint_plan.sprint_2.total_points = sum(
+                story_points_map.get(sid, 0) for sid in initiative.sprint_plan.sprint_2.story_ids
+            )
+            
+            # Send final result
             yield f"data: {json.dumps({'type': 'initiative', 'data': initiative.model_dump()})}\n\n"
             yield f"data: {json.dumps({'type': 'done', 'message': 'Initiative generated!'})}\n\n"
             
         except Exception as e:
-            logger.error(f"Initiative generation failed: {e}")
+            logger.error(f"Initiative generation failed: {e}", exc_info=True)
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
     
     return StreamingResponse(
@@ -420,16 +557,15 @@ async def save_initiative(
     initiative: dict,
     session: AsyncSession = Depends(get_db)
 ):
-    """
-    Save a generated initiative to the database.
-    Uses the stable IDs from the validated schema.
-    """
+    """Save a generated initiative to the database."""
     user_id = await get_current_user_id(request, session)
     
-    # Validate the initiative data
-    validated, errors = validate_initiative(initiative)
-    if errors or not validated:
-        raise HTTPException(status_code=400, detail=f"Invalid initiative data: {errors}")
+    try:
+        validated = InitiativeSchema(**initiative)
+        validated.assign_ids()
+        validated.calculate_totals()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid initiative data: {e}")
     
     now = datetime.now(timezone.utc)
     
@@ -463,13 +599,12 @@ async def save_initiative(
         )
         session.add(snapshot)
         
-        # Create Features and Stories with stable IDs
-        feature_id_map = {}  # Map generated IDs to DB IDs
+        # Create Features and Stories
+        feature_id_map = {}
         story_id_map = {}
         
         for i, feat_data in enumerate(validated.features):
-            # Use the stable ID from validation, or generate new one
-            feature_db_id = feat_data.id if feat_data.id.startswith('feat_') else generate_id('feat_')
+            feature_db_id = feat_data.id
             feature_id_map[feat_data.id] = feature_db_id
             
             feature = Feature(
@@ -485,9 +620,8 @@ async def save_initiative(
             )
             session.add(feature)
             
-            # Create stories for this feature
             for j, story_data in enumerate(feat_data.stories):
-                story_db_id = story_data.id if story_data.id.startswith('story_') else generate_id('story_')
+                story_db_id = story_data.id
                 story_id_map[story_data.id] = story_db_id
                 
                 story = UserStory(
@@ -516,62 +650,23 @@ async def save_initiative(
             "stories_created": sum(len(f.stories) for f in validated.features),
             "total_points": validated.total_points,
             "feature_ids": feature_id_map,
-            "story_ids": story_id_map,
-            "message": f"Created epic with {len(validated.features)} features and {sum(len(f.stories) for f in validated.features)} stories"
+            "story_ids": story_id_map
         }
         
     except Exception as e:
         await session.rollback()
         logger.error(f"Failed to save initiative: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to save initiative: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to save: {str(e)}")
 
 
 @router.get("/schema")
 async def get_initiative_schema():
     """Return the initiative JSON schema for reference"""
     return {
-        "schema": SCHEMA_JSON,
-        "example": {
-            "product_name": "TaskFlow",
-            "tagline": "Simple task management for busy teams",
-            "prd": {
-                "problem_statement": "Teams waste time tracking tasks across multiple tools",
-                "target_users": "Small teams (2-10 people)",
-                "desired_outcome": "Single source of truth for team tasks",
-                "key_metrics": ["Weekly active users", "Tasks completed per user"],
-                "out_of_scope": ["Time tracking", "Invoicing"],
-                "risks": ["Market saturation", "Integration complexity"]
-            },
-            "epic": {
-                "title": "TaskFlow MVP",
-                "description": "Core task management features",
-                "vision": "The simplest way to keep your team aligned"
-            },
-            "features": [
-                {
-                    "id": "feat_abc12345",
-                    "name": "Task Board",
-                    "description": "Kanban-style task board",
-                    "priority": "must-have",
-                    "stories": [
-                        {
-                            "id": "story_def67890",
-                            "title": "Create Task",
-                            "persona": "a team member",
-                            "action": "create a new task",
-                            "benefit": "I can track my work",
-                            "acceptance_criteria": [
-                                "Given I'm on the board, When I click Add, Then a task form appears"
-                            ],
-                            "points": 3
-                        }
-                    ]
-                }
-            ],
-            "sprint_plan": {
-                "sprint_1": {"goal": "Basic board", "stories": ["Create Task"], "total_points": 13},
-                "sprint_2": {"goal": "Collaboration", "stories": ["Assign Task"], "total_points": 8}
-            },
-            "total_points": 21
-        }
+        "pipeline": [
+            {"pass": 1, "name": "PRD", "output": "product_name, tagline, prd, epic"},
+            {"pass": 2, "name": "Decomposition", "output": "features with stories and AC"},
+            {"pass": 3, "name": "Planning", "output": "story points and 2-sprint plan"}
+        ],
+        "schema": InitiativeSchema.model_json_schema()
     }
