@@ -11,7 +11,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Sparkles, Rocket, FileText, Layers, BookOpen, 
   Calendar, Check, ArrowRight, Loader2, Save,
-  Target, Users, AlertTriangle, BarChart3
+  Target, Users, AlertTriangle, BarChart3,
+  Shield, Lightbulb, CheckCircle2, TrendingUp
 } from 'lucide-react';
 
 const API = import.meta.env.VITE_BACKEND_URL;
@@ -361,6 +362,108 @@ and small agencies (2-5 people)."`}
                        'Reviewed'}
                     </Badge>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Confidence & Risks Panel - PM Premium Feature */}
+            {initiative.confidence_assessment && (
+              <Card className="bg-nordic-bg-secondary border-nordic-border">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-nordic-text-primary flex items-center gap-2">
+                      <Shield className="w-5 h-5 text-nordic-accent" />
+                      Confidence & Risks
+                    </h3>
+                    {initiative.confidence_assessment.confidence_score && (
+                      <div className="flex items-center gap-2">
+                        <div className={`text-2xl font-bold ${
+                          initiative.confidence_assessment.confidence_score >= 70 ? 'text-nordic-green' :
+                          initiative.confidence_assessment.confidence_score >= 50 ? 'text-amber-500' :
+                          'text-red-500'
+                        }`}>
+                          {initiative.confidence_assessment.confidence_score}%
+                        </div>
+                        <span className="text-xs text-nordic-text-muted">confidence</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Top Risks */}
+                    {initiative.confidence_assessment.top_risks?.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 text-sm font-medium text-red-400 mb-2">
+                          <AlertTriangle className="w-4 h-4" />
+                          Top Risks
+                        </div>
+                        <ul className="space-y-2">
+                          {initiative.confidence_assessment.top_risks.slice(0, 3).map((risk, i) => (
+                            <li key={i} className="text-sm text-nordic-text-muted flex items-start gap-2">
+                              <span className="text-red-400 font-mono text-xs mt-0.5">{i + 1}.</span>
+                              {risk}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {/* Key Assumptions */}
+                    {initiative.confidence_assessment.key_assumptions?.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 text-sm font-medium text-amber-400 mb-2">
+                          <Lightbulb className="w-4 h-4" />
+                          Key Assumptions
+                        </div>
+                        <ul className="space-y-2">
+                          {initiative.confidence_assessment.key_assumptions.slice(0, 3).map((assumption, i) => (
+                            <li key={i} className="text-sm text-nordic-text-muted flex items-start gap-2">
+                              <span className="text-amber-400 font-mono text-xs mt-0.5">{i + 1}.</span>
+                              {assumption}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Validate First - Most important */}
+                  {initiative.confidence_assessment.validate_first?.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-nordic-border">
+                      <div className="flex items-center gap-2 text-sm font-medium text-nordic-accent mb-2">
+                        <CheckCircle2 className="w-4 h-4" />
+                        Validate First (Before Heavy Development)
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {initiative.confidence_assessment.validate_first.slice(0, 3).map((item, i) => (
+                          <Badge 
+                            key={i} 
+                            variant="outline" 
+                            className="text-xs border-nordic-accent/50 text-nordic-accent bg-nordic-accent/5"
+                          >
+                            {i + 1}. {item}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Success Factors */}
+                  {initiative.confidence_assessment.success_factors?.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-nordic-border">
+                      <div className="flex items-center gap-2 text-sm font-medium text-nordic-green mb-2">
+                        <TrendingUp className="w-4 h-4" />
+                        Critical Success Factors
+                      </div>
+                      <ul className="flex flex-wrap gap-2">
+                        {initiative.confidence_assessment.success_factors.map((factor, i) => (
+                          <li key={i} className="text-sm text-nordic-text-muted bg-nordic-green/10 px-2 py-1 rounded">
+                            {factor}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}

@@ -505,7 +505,7 @@ Assign Fibonacci points (1,2,3,5,8,13) to each story. Organize into 2 sprints re
 CRITIC_SYSTEM = """You are a Senior PM reviewing an initiative for quality and completeness.
 {context}
 
-Review the initiative and identify issues. Then provide fixes.
+Review the initiative and identify issues. Then provide fixes AND a confidence assessment.
 
 OUTPUT: Valid JSON only.
 
@@ -525,7 +525,7 @@ OUTPUT: Valid JSON only.
       {{
         "original_story_id": "story_xxx",
         "new_stories": [
-          {
+          {{
             "title": "New smaller story 1",
             "persona": "...",
             "action": "...",
@@ -561,6 +561,28 @@ OUTPUT: Valid JSON only.
     "auto_fixed": 3,
     "scope_assessment": "on_track | at_risk | overloaded",
     "recommendation": "Brief recommendation for the PM"
+  }},
+  "confidence_assessment": {{
+    "confidence_score": 75,
+    "top_risks": [
+      "Risk 1: Brief description of biggest risk",
+      "Risk 2: Second biggest risk",
+      "Risk 3: Third risk"
+    ],
+    "key_assumptions": [
+      "Assumption 1: What we're assuming to be true",
+      "Assumption 2: Another critical assumption",
+      "Assumption 3: Third assumption"
+    ],
+    "validate_first": [
+      "What to validate first before heavy development",
+      "Second priority to validate",
+      "Third priority to validate"
+    ],
+    "success_factors": [
+      "Critical success factor 1",
+      "Critical success factor 2"
+    ]
   }}
 }}
 
@@ -724,12 +746,13 @@ async def run_llm_pass_with_validation(
         if not result.valid:
             pass_metrics.error = "; ".join(result.errors[:2])
     
-    # Track model health for weak model detection
+    # Track model health for weak model detection (persisted to DB)
     config = await llm_service.get_user_llm_config(user_id)
     if config:
-        strict_service._track_call(
+        await strict_service.track_call(
             user_id=user_id,
             provider=config.provider,
+            model_name=config.model_name or "",
             success=result.valid,
             repaired=result.repair_attempts > 0 and result.valid
         )
@@ -838,11 +861,11 @@ async def generate_initiative(
     if not llm_config:
         raise HTTPException(status_code=400, detail="Please configure an LLM provider in Settings first")
     
-    # Initialize strict output service
-    strict_service = get_strict_output_service()
+    # Initialize strict output service with DB session for persistent metrics
+    strict_service = get_strict_output_service(session)
     
-    # Check for weak model warning
-    model_warning = strict_service.get_model_warning(user_id, llm_config.provider)
+    # Check for weak model warning (async, from DB)
+    model_warning = await strict_service.get_model_warning(user_id, llm_config.provider)
     
     # Fetch delivery context for personalization
     ctx_result = await session.execute(
@@ -1251,6 +1274,10 @@ async def generate_initiative(
                 response_data['warnings'] = warnings
             if critic_result and critic_result.get('summary'):
                 response_data['quality_summary'] = critic_result['summary']
+            
+            # Add confidence assessment from critic (premium PM feature)
+            if critic_result and critic_result.get('confidence_assessment'):
+                response_data['confidence_assessment'] = critic_result['confidence_assessment']
             
             # Add delivery context for UI personalization
             response_data['delivery_context'] = {
