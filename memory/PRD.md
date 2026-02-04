@@ -46,6 +46,7 @@ JarlPM is an AI-agnostic, conversation-driven Product Management system for Prod
 - num_developers (integer)
 - num_qa (integer)
 - delivery_platform: jira | azure_devops | none | other
+- quality_mode: standard | quality (NEW - 2-pass with critique)
 - created_at, updated_at
 
 ### Subscription
