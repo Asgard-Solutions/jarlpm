@@ -124,6 +124,10 @@ MOSCOW_TO_PRIORITY = {
     "should_have": 2,  # High
     "could_have": 3,  # Medium
     "wont_have": 4,  # Low
+    # Story-level priority mapping (hyphenated format)
+    "must-have": 1,
+    "should-have": 2,
+    "nice-to-have": 3,
 }
 
 MOSCOW_TO_JIRA_PRIORITY = {
@@ -131,6 +135,10 @@ MOSCOW_TO_JIRA_PRIORITY = {
     "should_have": "High", 
     "could_have": "Medium",
     "wont_have": "Low",
+    # Story-level priority mapping (hyphenated format)
+    "must-have": "Highest",
+    "should-have": "High",
+    "nice-to-have": "Medium",
 }
 
 SEVERITY_TO_AZURE = {
