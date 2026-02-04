@@ -142,7 +142,7 @@ const Settings = () => {
   const handleSubscribe = async () => {
     setSubscribing(true);
     try {
-      const res = await subscriptionAPI.createCheckout(window.location.origin);
+      const res = await subscriptionAPI.createCheckout(window.location.origin, billingCycle);
       window.location.href = res.data.checkout_url;
     } catch (error) {
       console.error('Failed to create checkout:', error);
