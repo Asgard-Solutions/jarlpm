@@ -944,7 +944,8 @@ async def generate_initiative(
                 schema=Pass1PRDOutput,
                 task_type=TaskType.PRD_GENERATION,
                 pass_metrics=metrics.pass_1,
-                quality_mode=quality_mode
+                quality_mode=quality_mode,
+                pass_name="Pass1-PRD"
             )
             
             if not prd_result:
