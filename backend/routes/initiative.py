@@ -282,6 +282,102 @@ Assign Fibonacci points (1,2,3,5,8,13) to each story and organize into 2 sprints
 
 
 # ============================================
+# Pass 4: PM Reality Check (Critic)
+# ============================================
+
+CRITIC_SYSTEM = """You are a Senior PM reviewing an initiative for quality and completeness.
+
+Review the initiative and identify issues. Then provide fixes.
+
+OUTPUT: Valid JSON only.
+
+{
+  "issues": [
+    {
+      "type": "metric_not_measurable | ac_not_testable | story_too_large | missing_nfr | scope_risk | other",
+      "severity": "error | warning",
+      "location": "where the issue is (e.g., 'Story: User Login', 'Metric: User satisfaction')",
+      "problem": "what's wrong",
+      "fix": "suggested fix or null if just a warning"
+    }
+  ],
+  "fixes": {
+    "metrics": ["list of improved/added metrics if any were unclear"],
+    "split_stories": [
+      {
+        "original_story_id": "story_xxx",
+        "new_stories": [
+          {
+            "title": "New smaller story 1",
+            "persona": "...",
+            "action": "...",
+            "benefit": "...",
+            "acceptance_criteria": ["..."],
+            "points": 3
+          }
+        ]
+      }
+    ],
+    "added_nfr_stories": [
+      {
+        "title": "NFR story title",
+        "persona": "a developer",
+        "action": "...",
+        "benefit": "...",
+        "acceptance_criteria": ["..."],
+        "points": 2,
+        "nfr_type": "security | performance | accessibility | reliability"
+      }
+    ],
+    "improved_acceptance_criteria": [
+      {
+        "story_id": "story_xxx",
+        "improved_criteria": ["Given X, When Y, Then Z (measurable)"]
+      }
+    ]
+  },
+  "summary": {
+    "total_issues": 5,
+    "errors": 1,
+    "warnings": 4,
+    "auto_fixed": 3,
+    "scope_assessment": "on_track | at_risk | overloaded",
+    "recommendation": "Brief recommendation for the PM"
+  }
+}
+
+CHECKS TO PERFORM:
+1. METRICS: Are they specific and measurable? (bad: "user satisfaction", good: "NPS score > 40")
+2. ACCEPTANCE CRITERIA: Are they testable? Must be Given/When/Then with observable outcomes
+3. STORY SIZE: Flag stories > 8 points - suggest splits into smaller stories
+4. NFRs: Check for missing security, performance, accessibility, error handling stories
+5. SCOPE: Is total points realistic for 2 sprints (26-42 points ideal)?
+
+Be constructive. Auto-fix what you can, warn about the rest."""
+
+
+CRITIC_USER = """Review this initiative for PM quality issues:
+
+PRODUCT: {product_name}
+PROBLEM: {problem_statement}
+TARGET USERS: {target_users}
+
+METRICS:
+{metrics}
+
+FEATURES & STORIES:
+{stories_detail}
+
+SPRINT PLAN:
+- Sprint 1: {sprint1_points} points
+- Sprint 2: {sprint2_points} points
+- Total: {total_points} points
+
+Review for: measurable metrics, testable ACs, story sizing (split if >8), missing NFRs, scope sanity.
+Return only valid JSON with issues and fixes."""
+
+
+# ============================================
 # JSON Extraction
 # ============================================
 
