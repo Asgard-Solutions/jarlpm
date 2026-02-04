@@ -294,7 +294,10 @@ async def get_subscription_status(
     request: Request,
     session: AsyncSession = Depends(get_db)
 ):
-    """Get current subscription status"""
+    """
+    Get current subscription status.
+    Acts as fallback sync - if webhook was missed, this syncs from Stripe.
+    """
     user_id = await get_current_user_id(request, session)
     
     result = await session.execute(
@@ -305,47 +308,54 @@ async def get_subscription_status(
     if not subscription:
         return SubscriptionStatusResponse(status="inactive")
     
-    status_value = subscription.status if isinstance(subscription.status, str) else subscription.status.value
-    
-    # If we have a Stripe subscription, sync status from Stripe
+    # If we have a Stripe subscription, sync ALL fields from Stripe (fallback for missed webhooks)
     if subscription.stripe_subscription_id:
         try:
             stripe_client = get_stripe_client()
             stripe_sub = stripe_client.Subscription.retrieve(subscription.stripe_subscription_id)
             
-            # Update local record with Stripe data
+            # Always sync from Stripe - this is our fallback if webhooks missed
             new_status = _map_stripe_status(stripe_sub.status)
-            if new_status != subscription.status:
+            new_period_start = datetime.fromtimestamp(stripe_sub.current_period_start, tz=timezone.utc)
+            new_period_end = datetime.fromtimestamp(stripe_sub.current_period_end, tz=timezone.utc)
+            new_cancel_at_period_end = stripe_sub.cancel_at_period_end
+            
+            # Check if anything changed
+            if (subscription.status != new_status or
+                subscription.current_period_start != new_period_start or
+                subscription.current_period_end != new_period_end or
+                subscription.cancel_at_period_end != new_cancel_at_period_end):
+                
                 subscription.status = new_status
-                subscription.current_period_start = datetime.fromtimestamp(
-                    stripe_sub.current_period_start, tz=timezone.utc
-                )
-                subscription.current_period_end = datetime.fromtimestamp(
-                    stripe_sub.current_period_end, tz=timezone.utc
-                )
+                subscription.current_period_start = new_period_start
+                subscription.current_period_end = new_period_end
+                subscription.cancel_at_period_end = new_cancel_at_period_end
                 subscription.updated_at = datetime.now(timezone.utc)
                 await session.commit()
+                logger.info(f"Synced subscription {subscription.stripe_subscription_id} from Stripe (fallback)")
             
             return SubscriptionStatusResponse(
                 status=new_status,
                 stripe_subscription_id=subscription.stripe_subscription_id,
-                current_period_end=datetime.fromtimestamp(
-                    stripe_sub.current_period_end, tz=timezone.utc
-                ),
-                cancel_at_period_end=stripe_sub.cancel_at_period_end
+                current_period_end=new_period_end,
+                cancel_at_period_end=new_cancel_at_period_end
             )
         except stripe.error.StripeError as e:
-            logger.warning(f"Failed to sync Stripe subscription: {e}")
+            logger.warning(f"Failed to sync from Stripe, using local data: {e}")
             # Fall through to return local data
     
-    # Check if subscription is expired (for legacy records)
+    # Return local data (no Stripe sub or Stripe API failed)
+    status_value = subscription.status if isinstance(subscription.status, str) else subscription.status.value
+    
+    # Check if subscription is expired (for legacy records without Stripe)
     if subscription.current_period_end and subscription.current_period_end < datetime.now(timezone.utc):
         status_value = "expired"
     
     return SubscriptionStatusResponse(
         status=status_value,
         stripe_subscription_id=subscription.stripe_subscription_id,
-        current_period_end=subscription.current_period_end
+        current_period_end=subscription.current_period_end,
+        cancel_at_period_end=subscription.cancel_at_period_end
     )
 
 
