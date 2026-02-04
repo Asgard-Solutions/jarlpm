@@ -257,14 +257,15 @@ class ExportService:
     # ============================================
     
     def export_to_jira_csv(self, epic_data: Dict[str, Any], bugs: List[Dict[str, Any]]) -> str:
-        """Export to Jira-compatible CSV format"""
+        """Export to Jira-compatible CSV format with export-ready story fields"""
         output = io.StringIO()
         writer = csv.writer(output)
         
-        # Jira CSV headers
+        # Jira CSV headers - enhanced for export-ready stories
         headers = [
             "Issue Type", "Summary", "Description", "Priority", 
-            "Acceptance Criteria", "Story Points", "Parent", "Labels"
+            "Acceptance Criteria", "Story Points", "Parent", "Labels",
+            "Dependencies", "Risks"
         ]
         writer.writerow(headers)
         
@@ -277,7 +278,9 @@ class ExportService:
             "\n".join(epic_data.get("acceptance_criteria") or []),
             "",
             "",
-            "jarlpm-export"
+            "jarlpm-export",
+            "",
+            ""
         ]
         writer.writerow(epic_row)
         
@@ -291,21 +294,41 @@ class ExportService:
                 "\n".join(feature.get("acceptance_criteria") or []),
                 str(feature.get("rice_total", "")) if feature.get("rice_total") else "",
                 epic_data["title"],  # Parent epic
-                "jarlpm-export,feature"
+                "jarlpm-export,feature",
+                "",
+                ""
             ]
             writer.writerow(feature_row)
             
-            # Export User Stories as Sub-tasks
+            # Export User Stories as Sub-tasks with full export-ready format
             for story in feature.get("user_stories") or []:
+                # Build structured description
+                description_parts = [
+                    f"**Title:** {story.get('title', '')}",
+                    "",
+                    f"**User Story:**",
+                    f"As {story.get('persona', '')}, I want to {story.get('action', '')} so that {story.get('benefit', '')}",
+                ]
+                
+                story_labels = story.get("labels", [])
+                story_priority = story.get("story_priority", "should-have")
+                story_deps = story.get("dependencies", [])
+                story_risks = story.get("risks", [])
+                
+                # All labels including jarlpm markers
+                all_labels = ["jarlpm-export", "user-story", story_priority] + story_labels
+                
                 story_row = [
                     "Sub-task",
-                    story["story_text"],
-                    f"Persona: {story.get('persona') or ''}\nAction: {story.get('action') or ''}\nBenefit: {story.get('benefit') or ''}",
-                    "Medium",
+                    story.get('title', story["story_text"][:80]),  # Use title if available
+                    "\n".join(description_parts),
+                    MOSCOW_TO_JIRA_PRIORITY.get(story_priority, "Medium"),
                     "\n".join(story.get("acceptance_criteria") or []),
                     str(story.get("story_points", "")) if story.get("story_points") else "",
                     feature["title"],  # Parent story/feature
-                    "jarlpm-export,user-story"
+                    ",".join(all_labels),
+                    "\n".join(story_deps) if story_deps else "",
+                    "\n".join(story_risks) if story_risks else ""
                 ]
                 writer.writerow(story_row)
         
@@ -319,7 +342,9 @@ class ExportService:
                 "",
                 "",
                 "",
-                "jarlpm-export,bug"
+                "jarlpm-export,bug",
+                "",
+                ""
             ]
             writer.writerow(bug_row)
         
