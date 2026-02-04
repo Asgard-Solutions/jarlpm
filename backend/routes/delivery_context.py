@@ -131,7 +131,8 @@ async def update_delivery_context(
             sprint_start_date=datetime.combine(body.sprint_start_date, datetime.min.time()).replace(tzinfo=timezone.utc) if body.sprint_start_date else None,
             num_developers=body.num_developers,
             num_qa=body.num_qa,
-            delivery_platform=platform
+            delivery_platform=platform,
+            quality_mode=body.quality_mode or "standard"
         )
         session.add(context)
     else:
@@ -143,6 +144,7 @@ async def update_delivery_context(
         context.num_developers = body.num_developers
         context.num_qa = body.num_qa
         context.delivery_platform = platform
+        context.quality_mode = body.quality_mode or "standard"
         context.updated_at = datetime.now(timezone.utc)
     
     await session.commit()
