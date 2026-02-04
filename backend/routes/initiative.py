@@ -822,7 +822,7 @@ async def generate_initiative(
                 stories_list=stories_list
             )
             
-            planning_result = await run_llm_pass(llm_service, user_id, planning_system, planning_prompt, max_retries=1)
+            planning_result = await run_llm_pass(llm_service, user_id, planning_system, planning_prompt, max_retries=1, pass_metrics=metrics.pass_3)
             
             # Apply estimates to stories
             if planning_result:
