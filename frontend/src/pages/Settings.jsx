@@ -523,23 +523,6 @@ const Settings = () => {
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    {!isActive && (
-                      <Button
-                        onClick={handleSubscribe}
-                        disabled={subscribing || checkingPayment}
-                        className="bg-nordic-accent hover:bg-nordic-accent/90 text-white"
-                        data-testid="subscribe-button"
-                      >
-                        {subscribing || checkingPayment ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            {checkingPayment ? 'Verifying...' : 'Processing...'}
-                          </>
-                        ) : (
-                          <>Subscribe - $45/month</>
-                        )}
-                      </Button>
-                    )}
                     {isActive && subscription?.cancel_at_period_end && (
                       <Button
                         onClick={handleReactivateSubscription}
@@ -569,6 +552,78 @@ const Settings = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Pricing Options - Show when not subscribed */}
+                {!isActive && (
+                  <div className="border-t border-nordic-border pt-6">
+                    <h4 className="font-medium text-nordic-text-primary mb-4">Choose Your Plan</h4>
+                    
+                    {/* Billing Toggle */}
+                    <div className="flex items-center justify-center gap-4 mb-6">
+                      <button
+                        onClick={() => setBillingCycle('monthly')}
+                        className={`px-4 py-2 rounded-lg transition-all ${
+                          billingCycle === 'monthly' 
+                            ? 'bg-nordic-accent text-white' 
+                            : 'bg-nordic-bg-primary text-nordic-text-muted hover:text-nordic-text-primary'
+                        }`}
+                      >
+                        Monthly
+                      </button>
+                      <button
+                        onClick={() => setBillingCycle('annual')}
+                        className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
+                          billingCycle === 'annual' 
+                            ? 'bg-nordic-accent text-white' 
+                            : 'bg-nordic-bg-primary text-nordic-text-muted hover:text-nordic-text-primary'
+                        }`}
+                      >
+                        Annual
+                        <Badge className="bg-nordic-green text-white text-xs">Save $108</Badge>
+                      </button>
+                    </div>
+
+                    {/* Pricing Card */}
+                    <div className={`p-6 rounded-xl border-2 transition-all ${
+                      billingCycle === 'annual' 
+                        ? 'border-nordic-green bg-nordic-green/5' 
+                        : 'border-nordic-border bg-nordic-bg-primary'
+                    }`}>
+                      <div className="text-center mb-4">
+                        {billingCycle === 'annual' ? (
+                          <>
+                            <div className="text-4xl font-bold text-nordic-text-primary">
+                              $432<span className="text-lg font-normal text-nordic-text-muted">/year</span>
+                            </div>
+                            <div className="text-nordic-green text-sm mt-1">
+                              $36/month · 2 months free
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-4xl font-bold text-nordic-text-primary">
+                            $45<span className="text-lg font-normal text-nordic-text-muted">/month</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <Button
+                        onClick={handleSubscribe}
+                        disabled={subscribing || checkingPayment}
+                        className="w-full bg-nordic-accent hover:bg-nordic-accent/90 text-white py-6 text-lg"
+                        data-testid="subscribe-button"
+                      >
+                        {subscribing || checkingPayment ? (
+                          <>
+                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                            {checkingPayment ? 'Verifying...' : 'Processing...'}
+                          </>
+                        ) : (
+                          <>Get Started</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="border-t border-nordic-border pt-6">
                   <h4 className="font-medium text-nordic-text-primary mb-4">Included Features</h4>
