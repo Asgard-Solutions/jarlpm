@@ -529,7 +529,8 @@ async def delete_initiative(
     session: AsyncSession = Depends(get_db)
 ):
     """
-    Delete an initiative and all associated data.
+    Permanently delete an initiative and all associated data.
+    Use archive for reversible soft-delete instead.
     """
     user_id = await get_current_user_id(request, session)
     
@@ -546,6 +547,51 @@ async def delete_initiative(
     await session.commit()
     
     return {"message": "Initiative deleted", "epic_id": epic_id}
+
+
+@router.get("/stats/summary")
+async def get_initiatives_summary(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Get summary statistics for user's initiatives.
+    """
+    user_id = await get_current_user_id(request, session)
+    
+    # Count by stage
+    total_q = select(func.count(Epic.id)).where(Epic.user_id == user_id)
+    total_result = await session.execute(total_q)
+    total = total_result.scalar() or 0
+    
+    draft_stages = ["problem_capture", "problem_confirmed", "outcome_capture", "outcome_confirmed"]
+    draft_q = select(func.count(Epic.id)).where(
+        Epic.user_id == user_id,
+        Epic.current_stage.in_(draft_stages)
+    )
+    draft_result = await session.execute(draft_q)
+    draft_count = draft_result.scalar() or 0
+    
+    active_q = select(func.count(Epic.id)).where(
+        Epic.user_id == user_id,
+        Epic.current_stage == "epic_drafted"
+    )
+    active_result = await session.execute(active_q)
+    active_count = active_result.scalar() or 0
+    
+    completed_q = select(func.count(Epic.id)).where(
+        Epic.user_id == user_id,
+        Epic.current_stage == "epic_locked"
+    )
+    completed_result = await session.execute(completed_q)
+    completed_count = completed_result.scalar() or 0
+    
+    return {
+        "total": total,
+        "draft": draft_count,
+        "active": active_count,
+        "completed": completed_count
+    }
 
 
 @router.get("/{epic_id}/features/{feature_id}/regenerate")
