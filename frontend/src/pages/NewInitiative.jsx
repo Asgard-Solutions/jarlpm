@@ -143,7 +143,7 @@ const NewInitiative = () => {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-nordic-accent/10 rounded-full text-nordic-accent mb-4">
             <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-medium">Magic Moment</span>
+            <span className="text-sm font-medium">Turn idea into plan</span>
           </div>
           <h1 className="text-4xl font-bold text-nordic-text-primary mb-3">
             New Initiative
