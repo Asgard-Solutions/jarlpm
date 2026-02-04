@@ -689,6 +689,22 @@ When an Epic is locked, users enter Feature Planning Mode:
   - Proration handled automatically
   - No manual period tracking needed
 
+### 2026-02-04: Magic Moment - New Initiative Wizard (COMPLETE)
+- **One-click PRD + Epic + Features + Stories + Sprint Plan generation**
+- **New route:** `/new` - Single input box for messy ideas
+- **Backend:** `/api/initiative/generate` (streaming) + `/api/initiative/save`
+- **What it generates:**
+  - Clean PRD (problem, target users, outcome, metrics, risks, out-of-scope)
+  - Epic with vision statement
+  - Features with priority (must-have/should-have/nice-to-have)
+  - User stories with acceptance criteria and story points
+  - 2-sprint delivery plan with goals and point totals
+- **UX:**
+  - Progress indicators while AI generates
+  - Beautiful results display with summary stats
+  - One-click "Save & Start Working" to create everything in DB
+- **Sidebar:** New prominent "New Initiative" button with Sparkles icon
+
 ---
 
 ## Backlog
