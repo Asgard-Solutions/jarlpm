@@ -295,17 +295,18 @@ Return only valid JSON matching the schema."""
 # ============================================
 
 DECOMP_SYSTEM = """You are JarlPM. Given a PRD, decompose it into features and user stories.
+{context}
 
 OUTPUT: Valid JSON only.
 
-{
+{{
   "features": [
-    {
+    {{
       "name": "Feature name",
       "description": "What it does",
       "priority": "must-have | should-have | nice-to-have",
       "stories": [
-        {
+        {{
           "title": "Story title",
           "persona": "a [user type]",
           "action": "[what they want to do]",
@@ -314,9 +315,9 @@ OUTPUT: Valid JSON only.
             "Given X, When Y, Then Z",
             "Given A, When B, Then C"
           ]
-        }
+        }}
       ]
-    }
+    }}
   ]
 }
 
