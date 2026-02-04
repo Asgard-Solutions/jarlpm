@@ -45,7 +45,7 @@ const PokerPlanning = () => {
   const loadEpics = async () => {
     try {
       const response = await epicAPI.list();
-      setEpics(response.data || []);
+      setEpics(response.data?.epics || []);
     } catch (error) {
       console.error('Failed to load epics:', error);
     } finally {
