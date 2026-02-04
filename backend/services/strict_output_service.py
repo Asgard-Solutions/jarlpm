@@ -104,35 +104,110 @@ class StrictOutputService:
         """Get the recommended temperature for a task type"""
         return TASK_TEMPERATURE.get(task_type, 0.5)
     
-    def _get_model_key(self, user_id: str, provider: str) -> str:
-        """Generate a key for tracking model health"""
-        return f"{user_id}:{provider}"
-    
-    def _track_call(self, user_id: str, provider: str, success: bool, repaired: bool = False):
-        """Track a call for model health metrics"""
-        key = self._get_model_key(user_id, provider)
-        if key not in self._model_health:
-            self._model_health[key] = ModelHealthMetrics()
+    async def track_call(self, user_id: str, provider: str, model_name: str, success: bool, repaired: bool = False):
+        """Track a call for model health metrics (persisted to DB)"""
+        if not self.session:
+            return
         
-        metrics = self._model_health[key]
-        metrics.total_calls += 1
-        if not success:
-            metrics.validation_failures += 1
-        if repaired:
-            metrics.repair_successes += 1
-    
-    def get_model_warning(self, user_id: str, provider: str) -> Optional[str]:
-        """Check if the model needs a warning"""
-        key = self._get_model_key(user_id, provider)
-        metrics = self._model_health.get(key)
-        
-        if metrics and metrics.needs_warning:
-            rate = int(metrics.failure_rate * 100)
-            return (
-                f"Your selected model is struggling with structured output ({rate}% failure rate). "
-                f"Consider switching to GPT-4o or Claude Sonnet for better results."
+        try:
+            from sqlalchemy import select, update
+            from db.analytics_models import ModelHealthMetrics
+            
+            # Try to find existing record
+            result = await self.session.execute(
+                select(ModelHealthMetrics).where(
+                    ModelHealthMetrics.user_id == user_id,
+                    ModelHealthMetrics.provider == provider
+                )
             )
-        return None
+            metrics = result.scalar_one_or_none()
+            
+            if metrics:
+                # Update existing
+                metrics.total_calls += 1
+                if not success:
+                    metrics.validation_failures += 1
+                if repaired:
+                    metrics.repair_successes += 1
+            else:
+                # Create new
+                metrics = ModelHealthMetrics(
+                    user_id=user_id,
+                    provider=provider,
+                    model_name=model_name,
+                    total_calls=1,
+                    validation_failures=0 if success else 1,
+                    repair_successes=1 if repaired else 0
+                )
+                self.session.add(metrics)
+            
+            await self.session.commit()
+        except Exception as e:
+            logger.warning(f"Failed to track model health: {e}")
+    
+    async def get_model_warning(self, user_id: str, provider: str) -> Optional[str]:
+        """Check if the model needs a warning (from persisted metrics)"""
+        if not self.session:
+            return None
+        
+        try:
+            from sqlalchemy import select
+            from db.analytics_models import ModelHealthMetrics
+            
+            result = await self.session.execute(
+                select(ModelHealthMetrics).where(
+                    ModelHealthMetrics.user_id == user_id,
+                    ModelHealthMetrics.provider == provider
+                )
+            )
+            metrics = result.scalar_one_or_none()
+            
+            if not metrics:
+                return None
+            
+            # Check if warning was dismissed
+            if metrics.warning_dismissed:
+                return None
+            
+            # Calculate failure rate
+            if metrics.total_calls < 3:
+                return None
+            
+            failure_rate = metrics.validation_failures / metrics.total_calls
+            if failure_rate > 0.3:
+                rate = int(failure_rate * 100)
+                return (
+                    f"Your selected model is struggling with structured output ({rate}% failure rate). "
+                    f"Consider switching to GPT-4o or Claude Sonnet for better results."
+                )
+            
+            return None
+        except Exception as e:
+            logger.warning(f"Failed to get model warning: {e}")
+            return None
+    
+    async def dismiss_warning(self, user_id: str, provider: str):
+        """Dismiss the model warning for a user+provider"""
+        if not self.session:
+            return
+        
+        try:
+            from sqlalchemy import select
+            from db.analytics_models import ModelHealthMetrics
+            
+            result = await self.session.execute(
+                select(ModelHealthMetrics).where(
+                    ModelHealthMetrics.user_id == user_id,
+                    ModelHealthMetrics.provider == provider
+                )
+            )
+            metrics = result.scalar_one_or_none()
+            
+            if metrics:
+                metrics.warning_dismissed = True
+                await self.session.commit()
+        except Exception as e:
+            logger.warning(f"Failed to dismiss warning: {e}")
     
     def extract_json(self, text: str) -> Optional[Dict[str, Any]]:
         """
