@@ -727,7 +727,11 @@ async def generate_initiative(
                         persona=s_data.get('persona', 'a user'),
                         action=s_data.get('action', ''),
                         benefit=s_data.get('benefit', ''),
-                        acceptance_criteria=s_data.get('acceptance_criteria', [])
+                        acceptance_criteria=s_data.get('acceptance_criteria', []),
+                        labels=s_data.get('labels', []),
+                        priority=s_data.get('priority', feature.priority),  # Inherit from feature
+                        dependencies=s_data.get('dependencies', []),
+                        risks=s_data.get('risks', [])
                     )
                     feature.stories.append(story)
                     all_stories.append({
