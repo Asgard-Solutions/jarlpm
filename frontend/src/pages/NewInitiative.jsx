@@ -243,7 +243,26 @@ and small agencies (2-5 people)."`}
               )}
 
               {generating && (
-                <div className="space-y-3">
+                <div className="space-y-4">
+                  {/* 3-Pass Pipeline Indicator */}
+                  <div className="flex items-center justify-between text-xs text-nordic-text-muted mb-2">
+                    <div className={`flex items-center gap-1 ${progressPercent >= 25 ? 'text-nordic-accent' : ''}`}>
+                      <div className={`w-2 h-2 rounded-full ${progressPercent >= 25 ? 'bg-nordic-accent' : 'bg-nordic-text-muted/30'}`} />
+                      PRD
+                    </div>
+                    <div className={`flex items-center gap-1 ${progressPercent >= 50 ? 'text-nordic-accent' : ''}`}>
+                      <div className={`w-2 h-2 rounded-full ${progressPercent >= 50 ? 'bg-nordic-accent' : 'bg-nordic-text-muted/30'}`} />
+                      Features
+                    </div>
+                    <div className={`flex items-center gap-1 ${progressPercent >= 75 ? 'text-nordic-accent' : ''}`}>
+                      <div className={`w-2 h-2 rounded-full ${progressPercent >= 75 ? 'bg-nordic-accent' : 'bg-nordic-text-muted/30'}`} />
+                      Planning
+                    </div>
+                    <div className={`flex items-center gap-1 ${progressPercent >= 100 ? 'text-nordic-green' : ''}`}>
+                      <div className={`w-2 h-2 rounded-full ${progressPercent >= 100 ? 'bg-nordic-green' : 'bg-nordic-text-muted/30'}`} />
+                      Done
+                    </div>
+                  </div>
                   <Progress value={progressPercent} className="h-2" />
                   <div className="flex items-center justify-center gap-2 text-nordic-accent">
                     <Loader2 className="w-4 h-4 animate-spin" />
