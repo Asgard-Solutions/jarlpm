@@ -724,12 +724,13 @@ async def run_llm_pass_with_validation(
         if not result.valid:
             pass_metrics.error = "; ".join(result.errors[:2])
     
-    # Track model health for weak model detection
+    # Track model health for weak model detection (persisted to DB)
     config = await llm_service.get_user_llm_config(user_id)
     if config:
-        strict_service._track_call(
+        await strict_service.track_call(
             user_id=user_id,
             provider=config.provider,
+            model_name=config.model_name or "",
             success=result.valid,
             repaired=result.repair_attempts > 0 and result.valid
         )
