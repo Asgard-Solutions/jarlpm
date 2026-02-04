@@ -628,6 +628,53 @@ and small agencies (2-5 people)."`}
                     </CardContent>
                   </Card>
                 )}
+
+                {/* Delivery Context - shows personalization */}
+                {initiative.delivery_context && (
+                  <Card className="bg-nordic-bg-secondary border-nordic-border">
+                    <CardContent className="p-4">
+                      <h4 className="text-sm font-medium text-nordic-text-primary mb-3 flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Tailored For Your Team
+                      </h4>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-nordic-text-muted">Industry</span>
+                          <span className="text-nordic-text-primary capitalize">{initiative.delivery_context.industry}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-nordic-text-muted">Methodology</span>
+                          <span className="text-nordic-text-primary capitalize">{initiative.delivery_context.methodology}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-nordic-text-muted">Sprint Length</span>
+                          <span className="text-nordic-text-primary">{initiative.delivery_context.sprint_length} days</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-nordic-text-muted">Team Velocity</span>
+                          <span className="text-nordic-text-primary">~{initiative.delivery_context.team_velocity} pts/sprint</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-nordic-text-muted">Platform</span>
+                          <span className="text-nordic-text-primary capitalize">{initiative.delivery_context.platform?.replace('_', ' ')}</span>
+                        </div>
+                      </div>
+                      {initiative.delivery_context.definition_of_done?.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-nordic-border">
+                          <h5 className="text-xs font-medium text-nordic-text-muted mb-2">Definition of Done</h5>
+                          <ul className="space-y-1">
+                            {initiative.delivery_context.definition_of_done.slice(0, 4).map((d, i) => (
+                              <li key={i} className="text-xs text-nordic-text-muted flex items-start gap-1">
+                                <Check className="w-3 h-3 mt-0.5 text-nordic-green flex-shrink-0" />
+                                {d}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </div>
           </div>
