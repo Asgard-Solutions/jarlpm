@@ -445,13 +445,6 @@ class StrictOutputService:
         return result
 
 
-# Singleton instance
-_strict_output_service: Optional[StrictOutputService] = None
-
-
-def get_strict_output_service() -> StrictOutputService:
-    """Get or create the strict output service singleton"""
-    global _strict_output_service
-    if _strict_output_service is None:
-        _strict_output_service = StrictOutputService()
-    return _strict_output_service
+def get_strict_output_service(session=None) -> StrictOutputService:
+    """Get strict output service with optional DB session for persistent metrics"""
+    return StrictOutputService(session=session)
