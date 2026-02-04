@@ -92,7 +92,7 @@ async def get_db():
 
 
 async def init_db():
-    """Initialize database - create all tables"""
+    """Initialize database - create tables if they don't exist (safe for production)"""
     if not engine:
         logger.error("Database engine not initialized. Check DATABASE_URL.")
         return
@@ -101,37 +101,14 @@ async def init_db():
     from .feature_models import Feature, FeatureConversationEvent  # Import to register models
     from .user_story_models import UserStory, UserStoryConversationEvent  # Import to register models
     from .persona_models import Persona, PersonaGenerationSettings  # Import to register models
+    from .analytics_models import InitiativeGenerationLog, InitiativeEditLog, PromptVersionRegistry, ModelHealthMetrics  # Import analytics models
     
     async with engine.begin() as conn:
-        # Drop all existing tables and types for clean start (development only)
-        await conn.execute(text("DROP TABLE IF EXISTS user_story_conversation_events CASCADE"))
-        await conn.execute(text("DROP TABLE IF EXISTS user_stories CASCADE"))
-        await conn.execute(text("DROP TABLE IF EXISTS feature_conversation_events CASCADE"))
-        await conn.execute(text("DROP TABLE IF EXISTS features CASCADE"))
-        await conn.execute(text("DROP TABLE IF EXISTS product_delivery_contexts CASCADE"))
-        await conn.execute(text("DROP TABLE IF EXISTS epic_artifacts CASCADE"))
-        await conn.execute(text("DROP TABLE IF EXISTS epic_decisions CASCADE"))
-        await conn.execute(text("DROP TABLE IF EXISTS epic_transcript_events CASCADE"))
-        await conn.execute(text("DROP TABLE IF EXISTS epic_snapshots CASCADE"))
-        await conn.execute(text("DROP TABLE IF EXISTS epics CASCADE"))
-        await conn.execute(text("DROP TABLE IF EXISTS llm_provider_configs CASCADE"))
-        await conn.execute(text("DROP TABLE IF EXISTS subscriptions CASCADE"))
-        await conn.execute(text("DROP TABLE IF EXISTS user_sessions CASCADE"))
-        await conn.execute(text("DROP TABLE IF EXISTS payment_transactions CASCADE"))
-        await conn.execute(text("DROP TABLE IF EXISTS prompt_templates CASCADE"))
-        await conn.execute(text("DROP TABLE IF EXISTS users CASCADE"))
-        
-        # Drop existing enums
-        await conn.execute(text("DROP TYPE IF EXISTS epicstage CASCADE"))
-        await conn.execute(text("DROP TYPE IF EXISTS subscriptionstatus CASCADE"))
-        await conn.execute(text("DROP TYPE IF EXISTS llmprovider CASCADE"))
-        await conn.execute(text("DROP TYPE IF EXISTS artifacttype CASCADE"))
-        await conn.execute(text("DROP TYPE IF EXISTS paymentstatus CASCADE"))
-        
-        # Create all tables
+        # Create tables only if they don't exist (safe for production)
+        # Does NOT drop existing tables or data
         await conn.run_sync(Base.metadata.create_all)
         
-        # Create append-only trigger function
+        # Create append-only trigger function (safe to re-run)
         await conn.execute(text("""
             CREATE OR REPLACE FUNCTION prevent_update_delete()
             RETURNS TRIGGER AS $$
