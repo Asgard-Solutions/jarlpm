@@ -80,13 +80,13 @@ const NewInitiative = () => {
               
               switch (data.type) {
                 case 'pass':
-                  // New pass starting
+                  // New pass starting (4 passes: 20%, 40%, 60%, 80%)
                   setProgress(data.message);
-                  setProgressPercent(data.pass * 25); // 25%, 50%, 75%
+                  setProgressPercent(data.pass * 20);
                   break;
                 case 'progress':
                   setProgress(data.message);
-                  setProgressPercent(prev => Math.min(prev + 8, 95));
+                  setProgressPercent(prev => Math.min(prev + 5, 95));
                   break;
                 case 'initiative':
                   setInitiative(data.data);
