@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import '@/App.css';
 import { useThemeStore } from '@/store';
 
+// Layout
+import AppLayout from '@/components/AppLayout';
+
 // Pages
 import Landing from '@/pages/Landing';
 import Login from '@/pages/Login';
@@ -21,6 +24,11 @@ import Bugs from '@/pages/Bugs';
 import Stories from '@/pages/Stories';
 import Personas from '@/pages/Personas';
 import Export from '@/pages/Export';
+import Scoring from '@/pages/Scoring';
+import Sprints from '@/pages/Sprints';
+import PRDGenerator from '@/pages/PRDGenerator';
+import LeanCanvas from '@/pages/LeanCanvas';
+import PokerPlanning from '@/pages/PokerPlanning';
 
 // Theme initializer component
 const ThemeInitializer = ({ children }) => {
@@ -33,6 +41,15 @@ const ThemeInitializer = ({ children }) => {
 
   return children;
 };
+
+// Protected route with AppLayout wrapper
+const ProtectedPage = ({ children }) => (
+  <ProtectedRoute>
+    <AppLayout>
+      {children}
+    </AppLayout>
+  </ProtectedRoute>
+);
 
 // Route handler that checks for session_id in URL hash
 const AppRouter = () => {
@@ -53,60 +70,21 @@ const AppRouter = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       
-      {/* Protected routes */}
-      <Route path="/dashboard" element={
-        <ProtectedRoute>
-          <Dashboard />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/settings" element={
-        <ProtectedRoute>
-          <Settings />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/epic/:epicId" element={
-        <ProtectedRoute>
-          <Epic />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/feature/:featureId/stories" element={
-        <ProtectedRoute>
-          <StoryPlanning />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/epic/:epicId/review" element={
-        <ProtectedRoute>
-          <CompletedEpic />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/bugs" element={
-        <ProtectedRoute>
-          <Bugs />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/stories" element={
-        <ProtectedRoute>
-          <Stories />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/personas" element={
-        <ProtectedRoute>
-          <Personas />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/export" element={
-        <ProtectedRoute>
-          <Export />
-        </ProtectedRoute>
-      } />
+      {/* Protected routes with sidebar layout */}
+      <Route path="/dashboard" element={<ProtectedPage><Dashboard /></ProtectedPage>} />
+      <Route path="/settings" element={<ProtectedPage><Settings /></ProtectedPage>} />
+      <Route path="/epic/:epicId" element={<ProtectedPage><Epic /></ProtectedPage>} />
+      <Route path="/feature/:featureId/stories" element={<ProtectedPage><StoryPlanning /></ProtectedPage>} />
+      <Route path="/epic/:epicId/review" element={<ProtectedPage><CompletedEpic /></ProtectedPage>} />
+      <Route path="/bugs" element={<ProtectedPage><Bugs /></ProtectedPage>} />
+      <Route path="/stories" element={<ProtectedPage><Stories /></ProtectedPage>} />
+      <Route path="/personas" element={<ProtectedPage><Personas /></ProtectedPage>} />
+      <Route path="/export" element={<ProtectedPage><Export /></ProtectedPage>} />
+      <Route path="/scoring" element={<ProtectedPage><Scoring /></ProtectedPage>} />
+      <Route path="/sprints" element={<ProtectedPage><Sprints /></ProtectedPage>} />
+      <Route path="/prd" element={<ProtectedPage><PRDGenerator /></ProtectedPage>} />
+      <Route path="/lean-canvas" element={<ProtectedPage><LeanCanvas /></ProtectedPage>} />
+      <Route path="/poker" element={<ProtectedPage><PokerPlanning /></ProtectedPage>} />
       
       {/* Catch-all redirect to landing */}
       <Route path="*" element={<Landing />} />

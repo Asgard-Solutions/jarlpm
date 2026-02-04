@@ -138,86 +138,22 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <img 
-                src={logoSrc} 
-                alt="JarlPM" 
-                className="h-9 w-auto"
-              />
-              <span className="text-xl font-bold text-foreground">JarlPM</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/personas')}
-                className="text-violet-400 border-violet-500/30 hover:bg-violet-500/10"
-                data-testid="personas-nav-btn"
-              >
-                <Users className="w-4 h-4 mr-2" />
-                Personas
-              </Button>
-              <Button 
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/stories')}
-                className="text-primary border-primary/30 hover:bg-primary/10"
-                data-testid="stories-nav-btn"
-              >
-                <BookOpen className="w-4 h-4 mr-2" />
-                Stories
-              </Button>
-              <Button 
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/bugs')}
-                className="text-red-400 border-red-500/30 hover:bg-red-500/10"
-                data-testid="bugs-nav-btn"
-              >
-                <Bug className="w-4 h-4 mr-2" />
-                Bugs
-              </Button>
-              <Button 
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/export')}
-                className="text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10"
-                data-testid="export-nav-btn"
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Export
-              </Button>
-              <span className="text-sm text-muted-foreground">{user?.name || user?.email}</span>
-              <ThemeToggle />
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => navigate('/settings')}
-                className="text-muted-foreground hover:text-foreground"
-                data-testid="settings-btn"
-              >
-                <Settings className="w-5 h-5" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-foreground"
-                data-testid="logout-btn"
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Epics</h1>
+          <p className="text-muted-foreground mt-1">Manage your product epics</p>
         </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Button
+          onClick={() => setShowNewEpicDialog(true)}
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          data-testid="create-epic-btn"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          New Epic
+        </Button>
+      </div>
         {/* Alerts */}
         {!isActive && (
           <Card className="bg-warning/10 border-warning/30 mb-6">
@@ -257,21 +193,6 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         )}
-
-        {/* Title & Actions */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Your Epics</h1>
-            <p className="text-muted-foreground mt-1">Create and manage product epics</p>
-          </div>
-          <Button 
-            onClick={() => setShowNewEpicDialog(true)}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground"
-            data-testid="new-epic-btn"
-          >
-            <Plus className="w-4 h-4 mr-2" /> New Epic
-          </Button>
-        </div>
 
         {/* Epics Grid */}
         {loading ? (
@@ -348,7 +269,6 @@ const Dashboard = () => {
             })}
           </div>
         )}
-      </main>
 
       {/* New Epic Dialog */}
       <Dialog open={showNewEpicDialog} onOpenChange={setShowNewEpicDialog}>

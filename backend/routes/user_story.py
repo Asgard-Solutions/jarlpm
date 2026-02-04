@@ -333,6 +333,25 @@ Respond ONLY with the JSON array, no other text."""
 
 
 # ============================================
+# ALL STORIES ENDPOINT
+# ============================================
+
+@router.get("/all", response_model=List[UserStoryResponse])
+async def list_all_stories(
+    request: Request,
+    stage: Optional[str] = None,
+    session: AsyncSession = Depends(get_db)
+):
+    """List all user stories (both feature-based and standalone) for the current user"""
+    user_id = await get_current_user_id(request, session)
+    
+    story_service = UserStoryService(session)
+    stories = await story_service.get_all_stories_for_user(user_id, standalone_only=False, stage=stage)
+    
+    return [story_to_response(s) for s in stories]
+
+
+# ============================================
 # STANDALONE STORY ENDPOINTS
 # (Must be before /{story_id} routes to avoid path conflicts)
 # ============================================

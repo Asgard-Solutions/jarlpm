@@ -110,6 +110,14 @@ export const featureAPI = {
   },
 };
 
+// Story API (all stories - feature-based and standalone)
+export const storyAPI = {
+  getAllStories: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return api.get(`/stories/all${query ? `?${query}` : ''}`);
+  },
+};
+
 // User Story API (lifecycle-based stories from features)
 export const userStoryAPI = {
   // Feature-level operations
@@ -288,6 +296,37 @@ export const scoringAPI = {
   updateBugRICE: (bugId, data) => api.put(`/scoring/bug/${bugId}/rice`, data),
   suggestBugRICE: (bugId) => {
     return fetch(`${API}/scoring/bug/${bugId}/suggest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+  },
+};
+
+// AI Poker Planning API
+export const pokerAPI = {
+  // Get AI personas
+  getPersonas: () => api.get('/poker/personas'),
+  
+  // Estimate a story by ID
+  estimateStory: (storyId) => {
+    return fetch(`${API}/poker/estimate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ story_id: storyId }),
+      credentials: 'include',
+    });
+  },
+  
+  // Estimate custom story text
+  estimateCustom: (title, description, acceptanceCriteria = []) => {
+    const params = new URLSearchParams({
+      story_title: title,
+      story_description: description,
+    });
+    acceptanceCriteria.forEach(c => params.append('acceptance_criteria', c));
+    
+    return fetch(`${API}/poker/estimate-custom?${params.toString()}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
