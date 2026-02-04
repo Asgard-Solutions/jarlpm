@@ -11,41 +11,72 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Layers,
+  Target,
+  BarChart3,
+  Calendar,
+  Gauge,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
 
-const navItems = [
+const navSections = [
   {
-    title: 'Dashboard',
-    icon: LayoutDashboard,
-    href: '/dashboard',
-    description: 'Manage your epics',
+    title: 'Planning',
+    items: [
+      {
+        title: 'Dashboard',
+        icon: LayoutDashboard,
+        href: '/dashboard',
+        description: 'Manage your epics',
+      },
+      {
+        title: 'Stories',
+        icon: FileText,
+        href: '/stories',
+        description: 'User stories',
+      },
+      {
+        title: 'Bugs',
+        icon: Bug,
+        href: '/bugs',
+        description: 'Bug tracking',
+      },
+    ],
   },
   {
-    title: 'Personas',
-    icon: Users,
-    href: '/personas',
-    description: 'User personas',
+    title: 'Analysis',
+    items: [
+      {
+        title: 'Personas',
+        icon: Users,
+        href: '/personas',
+        description: 'User personas',
+      },
+      {
+        title: 'Scoring',
+        icon: Gauge,
+        href: '/scoring',
+        description: 'MoSCoW & RICE',
+      },
+    ],
   },
   {
-    title: 'Stories',
-    icon: FileText,
-    href: '/stories',
-    description: 'User stories',
-  },
-  {
-    title: 'Bugs',
-    icon: Bug,
-    href: '/bugs',
-    description: 'Bug tracking',
-  },
-  {
-    title: 'Export',
-    icon: Download,
-    href: '/export',
-    description: 'Export data',
+    title: 'Delivery',
+    items: [
+      {
+        title: 'Sprints',
+        icon: Calendar,
+        href: '/sprints',
+        description: 'Sprint planning',
+      },
+      {
+        title: 'Export',
+        icon: Download,
+        href: '/export',
+        description: 'Export data',
+      },
+    ],
   },
 ];
 
@@ -68,13 +99,13 @@ const Sidebar = ({ collapsed, onToggle }) => {
       <NavLink
         to={item.href}
         className={cn(
-          'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
+          'flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200',
           'hover:bg-accent hover:text-accent-foreground',
-          isActive && 'bg-primary/10 text-primary border-l-2 border-primary',
+          isActive && 'bg-primary/10 text-primary',
           collapsed && 'justify-center px-2'
         )}
       >
-        <item.icon className={cn('h-5 w-5 flex-shrink-0', isActive && 'text-primary')} />
+        <item.icon className={cn('h-4 w-4 flex-shrink-0', isActive && 'text-primary')} />
         {!collapsed && (
           <span className={cn('text-sm font-medium', isActive && 'text-primary')}>
             {item.title}
@@ -99,6 +130,13 @@ const Sidebar = ({ collapsed, onToggle }) => {
     return content;
   };
 
+  const isItemActive = (href) => {
+    if (href === '/dashboard') {
+      return location.pathname === '/dashboard' || location.pathname.startsWith('/epic/');
+    }
+    return location.pathname === href || location.pathname.startsWith(href + '/');
+  };
+
   return (
     <aside
       className={cn(
@@ -119,14 +157,27 @@ const Sidebar = ({ collapsed, onToggle }) => {
         </div>
 
         {/* Main Navigation */}
-        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => (
-            <NavItem
-              key={item.href}
-              item={item}
-              isActive={location.pathname === item.href || 
-                (item.href === '/dashboard' && location.pathname.startsWith('/epic/'))}
-            />
+        <nav className="flex-1 px-2 py-4 overflow-y-auto">
+          {navSections.map((section, sectionIndex) => (
+            <div key={section.title} className="mb-4">
+              {!collapsed && (
+                <h3 className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {section.title}
+                </h3>
+              )}
+              <div className="space-y-1">
+                {section.items.map((item) => (
+                  <NavItem
+                    key={item.href}
+                    item={item}
+                    isActive={isItemActive(item.href)}
+                  />
+                ))}
+              </div>
+              {sectionIndex < navSections.length - 1 && collapsed && (
+                <Separator className="my-3" />
+              )}
+            </div>
           ))}
         </nav>
 
@@ -146,16 +197,16 @@ const Sidebar = ({ collapsed, onToggle }) => {
             size="sm"
             onClick={onToggle}
             className={cn(
-              'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg',
+              'w-full flex items-center gap-3 px-3 py-2 rounded-lg',
               'hover:bg-accent hover:text-accent-foreground',
               collapsed && 'justify-center px-2'
             )}
           >
             {collapsed ? (
-              <ChevronRight className="h-5 w-5" />
+              <ChevronRight className="h-4 w-4" />
             ) : (
               <>
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-4 w-4" />
                 <span className="text-sm font-medium">Collapse</span>
               </>
             )}
