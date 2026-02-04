@@ -574,7 +574,10 @@ async def _handle_subscription_created(subscription_obj):
 
 
 async def _handle_subscription_updated(subscription_obj):
-    """Handle subscription updates (renewals, status changes, etc.)"""
+    """
+    Handle subscription updates (renewals, status changes, cancellation scheduling, etc.)
+    THIS IS THE SOURCE OF TRUTH - webhooks set the canonical state
+    """
     from db.database import AsyncSessionLocal
     
     async with AsyncSessionLocal() as session:
@@ -589,6 +592,7 @@ async def _handle_subscription_updated(subscription_obj):
             logger.warning(f"Subscription not found for update: {subscription_obj.id}")
             return
         
+        # Update ALL fields from Stripe - webhook is source of truth
         subscription.status = _map_stripe_status(subscription_obj.status)
         subscription.current_period_start = datetime.fromtimestamp(
             subscription_obj.current_period_start, tz=timezone.utc
@@ -596,10 +600,11 @@ async def _handle_subscription_updated(subscription_obj):
         subscription.current_period_end = datetime.fromtimestamp(
             subscription_obj.current_period_end, tz=timezone.utc
         )
+        subscription.cancel_at_period_end = subscription_obj.cancel_at_period_end
         subscription.updated_at = datetime.now(timezone.utc)
         
         await session.commit()
-        logger.info(f"Subscription updated: {subscription_obj.id} -> {subscription_obj.status}")
+        logger.info(f"Subscription updated via webhook: {subscription_obj.id} -> status={subscription_obj.status}, cancel_at_period_end={subscription_obj.cancel_at_period_end}")
 
 
 async def _handle_subscription_deleted(subscription_obj):
