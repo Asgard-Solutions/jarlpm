@@ -895,7 +895,15 @@ async def get_initiative_schema():
         "pipeline": [
             {"pass": 1, "name": "PRD", "output": "product_name, tagline, prd, epic"},
             {"pass": 2, "name": "Decomposition", "output": "features with stories and AC"},
-            {"pass": 3, "name": "Planning", "output": "story points and 2-sprint plan"}
+            {"pass": 3, "name": "Planning", "output": "story points and 2-sprint plan"},
+            {"pass": 4, "name": "Critic", "output": "quality checks, auto-fixes, warnings"}
+        ],
+        "quality_checks": [
+            "Metrics are specific and measurable",
+            "Acceptance criteria are testable (Given/When/Then)",
+            "Stories ≤ 8 points (auto-split if larger)",
+            "NFRs included (security, performance, accessibility)",
+            "Scope is realistic for 2 sprints (26-42 points)"
         ],
         "schema": InitiativeSchema.model_json_schema()
     }
