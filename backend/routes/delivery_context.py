@@ -96,12 +96,14 @@ async def get_delivery_context(
         num_developers=context.num_developers,
         num_qa=context.num_qa,
         delivery_platform=context.delivery_platform,
+        quality_mode=context.quality_mode or "standard",
         created_at=context.created_at,
         updated_at=context.updated_at
     )
 
 
 @router.put("", response_model=DeliveryContextResponse)
+async def update_delivery_context(
 async def update_delivery_context(
     request: Request,
     body: DeliveryContextCreate,
