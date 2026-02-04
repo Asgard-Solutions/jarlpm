@@ -11,7 +11,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Sparkles, Rocket, FileText, Layers, BookOpen, 
   Calendar, Check, ArrowRight, Loader2, Save,
-  Target, Users, AlertTriangle, BarChart3
+  Target, Users, AlertTriangle, BarChart3,
+  Shield, Lightbulb, CheckCircle2, TrendingUp
 } from 'lucide-react';
 
 const API = import.meta.env.VITE_BACKEND_URL;
