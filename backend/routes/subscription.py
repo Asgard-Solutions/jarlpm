@@ -103,11 +103,15 @@ async def get_or_create_stripe_customer(
     return customer.id
 
 
-async def get_or_create_price(stripe_client) -> str:
-    """Get existing price or create a new one"""
+async def get_or_create_price(stripe_client, billing_cycle: str = "monthly") -> str:
+    """Get existing price or create a new one for the specified billing cycle"""
+    is_annual = billing_cycle == "annual"
+    
     # If price ID is configured, use it
-    if STRIPE_PRICE_ID:
-        return STRIPE_PRICE_ID
+    if is_annual and STRIPE_ANNUAL_PRICE_ID:
+        return STRIPE_ANNUAL_PRICE_ID
+    if not is_annual and STRIPE_MONTHLY_PRICE_ID:
+        return STRIPE_MONTHLY_PRICE_ID
     
     # Check for existing JarlPM product
     products = stripe_client.Product.list(limit=10)
@@ -122,7 +126,7 @@ async def get_or_create_price(stripe_client) -> str:
     if not jarlpm_product:
         jarlpm_product = stripe_client.Product.create(
             name="JarlPM Pro",
-            description="AI-agnostic Product Management subscription - $45/month",
+            description="AI-agnostic Product Management - Turn ideas into plans",
             metadata={"app": "jarlpm"}
         )
         logger.info(f"Created Stripe product: {jarlpm_product.id}")
@@ -130,21 +134,24 @@ async def get_or_create_price(stripe_client) -> str:
     # Check for existing price on this product
     prices = stripe_client.Price.list(product=jarlpm_product.id, active=True, limit=10)
     
+    target_amount = int(ANNUAL_PRICE * 100) if is_annual else int(MONTHLY_PRICE * 100)
+    target_interval = "year" if is_annual else "month"
+    
     for price in prices.data:
         if (price.recurring and 
-            price.recurring.interval == "month" and 
-            price.unit_amount == int(SUBSCRIPTION_PRICE * 100)):
+            price.recurring.interval == target_interval and 
+            price.unit_amount == target_amount):
             return price.id
     
     # Create new recurring price
     price = stripe_client.Price.create(
         product=jarlpm_product.id,
-        unit_amount=int(SUBSCRIPTION_PRICE * 100),
+        unit_amount=target_amount,
         currency=SUBSCRIPTION_CURRENCY,
-        recurring={"interval": "month"},
-        metadata={"app": "jarlpm"}
+        recurring={"interval": target_interval},
+        metadata={"app": "jarlpm", "billing_cycle": billing_cycle}
     )
-    logger.info(f"Created Stripe price: {price.id}")
+    logger.info(f"Created Stripe {billing_cycle} price: {price.id}")
     
     return price.id
 
