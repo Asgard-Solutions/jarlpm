@@ -143,32 +143,142 @@ class NewInitiativeRequest(BaseModel):
 
 
 # ============================================
+# Delivery Context Formatting
+# ============================================
+
+def format_delivery_context(context: Optional[ProductDeliveryContext]) -> dict:
+    """Format delivery context into usable values for prompts"""
+    if not context:
+        return {
+            "industry": "general",
+            "methodology": "scrum",
+            "sprint_length": 14,
+            "team_size": 5,
+            "velocity": 21,  # Default velocity estimate
+            "platform": "jira",
+            "has_context": False
+        }
+    
+    # Calculate team velocity estimate (story points per sprint)
+    devs = context.num_developers or 3
+    qas = context.num_qa or 1
+    sprint_days = context.sprint_cycle_length or 14
+    # Rough estimate: each dev can do ~5-8 points per 2-week sprint
+    velocity = int((devs * 6 + qas * 2) * (sprint_days / 14))
+    
+    return {
+        "industry": context.industry or "general",
+        "methodology": (context.delivery_methodology or "scrum").lower(),
+        "sprint_length": context.sprint_cycle_length or 14,
+        "team_size": devs + qas,
+        "num_devs": devs,
+        "num_qa": qas,
+        "velocity": velocity,
+        "platform": (context.delivery_platform or "jira").lower(),
+        "has_context": True
+    }
+
+
+def build_context_prompt(ctx: dict) -> str:
+    """Build a context section for prompts based on user's delivery context"""
+    if not ctx.get("has_context"):
+        return ""
+    
+    platform_guidance = {
+        "jira": "Use Jira-style story format. Include story type labels (Story, Task, Bug).",
+        "azure_devops": "Use Azure DevOps work item format. Include Area Path suggestions.",
+        "linear": "Use Linear-style concise format. Include project/team labels.",
+        "github": "Use GitHub Issues format. Include labels and milestone suggestions.",
+    }
+    
+    methodology_guidance = {
+        "scrum": "Follow Scrum practices. Include Definition of Done, sprint goals.",
+        "kanban": "Follow Kanban flow. Focus on WIP limits and cycle time.",
+        "hybrid": "Blend Scrum ceremonies with Kanban flow principles.",
+    }
+    
+    industry_metrics = {
+        "fintech": ["transaction success rate", "fraud detection rate", "API latency p99"],
+        "healthcare": ["patient satisfaction", "appointment completion rate", "HIPAA compliance"],
+        "e-commerce": ["conversion rate", "cart abandonment rate", "average order value"],
+        "saas": ["monthly active users", "churn rate", "NPS score", "time to value"],
+        "education": ["course completion rate", "learner engagement", "assessment scores"],
+    }
+    
+    context_parts = [
+        f"\nORGANIZATION CONTEXT:",
+        f"- Industry: {ctx['industry'].title()}",
+        f"- Methodology: {ctx['methodology'].title()}",
+        f"- Sprint Length: {ctx['sprint_length']} days",
+        f"- Team: {ctx.get('num_devs', 3)} devs, {ctx.get('num_qa', 1)} QA",
+        f"- Estimated Velocity: {ctx['velocity']} points/sprint",
+        f"- Platform: {ctx['platform'].replace('_', ' ').title()}",
+        "",
+        platform_guidance.get(ctx['platform'], ""),
+        methodology_guidance.get(ctx['methodology'], ""),
+    ]
+    
+    # Add industry-specific metric suggestions
+    industry_key = ctx['industry'].lower()
+    if industry_key in industry_metrics:
+        context_parts.append(f"Suggested metrics for {ctx['industry']}: {', '.join(industry_metrics[industry_key])}")
+    
+    return "\n".join(context_parts)
+
+
+def build_dod_for_methodology(methodology: str) -> List[str]:
+    """Build Definition of Done based on methodology"""
+    base_dod = [
+        "Code reviewed and approved",
+        "Unit tests passing (>80% coverage)",
+        "Acceptance criteria verified",
+        "Documentation updated",
+    ]
+    
+    if methodology == "scrum":
+        base_dod.extend([
+            "Demo-ready for sprint review",
+            "No critical bugs",
+            "Product Owner sign-off"
+        ])
+    elif methodology == "kanban":
+        base_dod.extend([
+            "Deployed to staging",
+            "Monitoring alerts configured",
+            "Ready for production deploy"
+        ])
+    
+    return base_dod
+
+
+# ============================================
 # Pass 1: PRD Generation
 # ============================================
 
 PRD_SYSTEM = """You are JarlPM, an expert Product Manager. Generate a focused PRD from a raw idea.
+{context}
 
 OUTPUT: Valid JSON only, no markdown or explanation.
 
-{
+{{
   "product_name": "short name",
   "tagline": "one-line pitch",
-  "prd": {
+  "prd": {{
     "problem_statement": "2-3 sentences on the core problem",
     "target_users": "specific user persona(s)",
     "desired_outcome": "what success looks like",
     "key_metrics": ["metric1", "metric2", "metric3"],
     "out_of_scope": ["excluded1", "excluded2"],
     "risks": ["risk1", "risk2"]
-  },
-  "epic": {
+  }},
+  "epic": {{
     "title": "Epic title for this initiative",
     "description": "1-2 sentence epic description",
     "vision": "Product vision statement"
-  }
-}
+  }}
+}}
 
-Be specific and actionable. Focus on the MVP."""
+Use industry-appropriate language and metrics. Be specific and actionable. Focus on the MVP."""
 
 
 PRD_USER = """Create a PRD for this idea:
