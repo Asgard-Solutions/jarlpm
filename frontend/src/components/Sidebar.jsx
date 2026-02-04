@@ -11,10 +11,11 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Target,
-  BarChart3,
-  Calendar,
   Gauge,
+  Calendar,
+  FileEdit,
+  LayoutGrid,
+  Users2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -54,6 +55,12 @@ const navSections = [
         description: 'User personas',
       },
       {
+        title: 'Lean Canvas',
+        icon: LayoutGrid,
+        href: '/lean-canvas',
+        description: 'Business model',
+      },
+      {
         title: 'Scoring',
         icon: Gauge,
         href: '/scoring',
@@ -69,6 +76,18 @@ const navSections = [
         icon: Calendar,
         href: '/sprints',
         description: 'Sprint planning',
+      },
+      {
+        title: 'Poker',
+        icon: Users2,
+        href: '/poker',
+        description: 'Story estimation',
+      },
+      {
+        title: 'PRD',
+        icon: FileEdit,
+        href: '/prd',
+        description: 'Generate PRD',
       },
       {
         title: 'Export',
