@@ -326,7 +326,8 @@ RULES:
 - 2-4 stories per feature
 - Each story has 2-4 acceptance criteria in Given/When/Then format
 - Priorities: at least 1 must-have, rest should-have or nice-to-have
-- Stories should be small enough to complete in 1-3 days"""
+- Stories should be small enough to complete in 1-3 days
+- Use platform-appropriate story format"""
 
 
 DECOMP_USER = """Decompose this PRD into features and user stories:
