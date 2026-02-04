@@ -281,18 +281,34 @@ Generate {count} personas that represent the key user types for this product. Re
     async def generate_portrait_image(
         self,
         portrait_prompt: str,
-        settings: PersonaGenerationSettings
+        settings: PersonaGenerationSettings,
+        user_id: str = None
     ) -> Optional[str]:
-        """Generate a portrait image for a persona using OpenAI gpt-image-1"""
+        """Generate a portrait image for a persona using user's configured OpenAI API key"""
         try:
             from openai import AsyncOpenAI
+            from services.encryption import get_encryption_service
             
-            api_key = os.environ.get("OPENAI_API_KEY")
-            if not api_key or api_key == "your-openai-api-key-here":
-                logger.warning("No valid OPENAI_API_KEY found for image generation")
+            # Get user's OpenAI API key from their LLM provider config
+            api_key = None
+            if user_id:
+                result = await self.session.execute(
+                    select(LLMProviderConfig).where(
+                        LLMProviderConfig.user_id == user_id,
+                        LLMProviderConfig.provider == "openai",
+                        LLMProviderConfig.is_active == True
+                    )
+                )
+                config = result.scalar_one_or_none()
+                if config:
+                    encryption_service = get_encryption_service()
+                    api_key = encryption_service.decrypt(config.encrypted_api_key)
+            
+            if not api_key:
+                logger.warning(f"No OpenAI API key configured for user {user_id}. Please add your OpenAI key in Settings.")
                 return None
             
-            # Initialize async OpenAI client
+            # Initialize async OpenAI client with user's key
             client = AsyncOpenAI(api_key=api_key)
             
             # Enhance prompt for professional portrait
