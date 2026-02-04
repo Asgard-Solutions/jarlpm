@@ -177,7 +177,8 @@ class LLMService:
         model: str,
         system_prompt: str,
         user_prompt: str,
-        conversation_history: list[dict] = None
+        conversation_history: list[dict] = None,
+        temperature: float = None
     ) -> AsyncGenerator[str, None]:
         """Stream from local/custom HTTP endpoint (OpenAI-compatible)"""
         if not base_url:
@@ -192,16 +193,20 @@ class LLMService:
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
         
+        request_body = {
+            "model": model or "default",
+            "messages": messages,
+            "stream": True
+        }
+        if temperature is not None:
+            request_body["temperature"] = temperature
+        
         async with httpx.AsyncClient() as client:
             async with client.stream(
                 "POST",
                 f"{base_url.rstrip('/')}/v1/chat/completions",
                 headers=headers,
-                json={
-                    "model": model or "default",
-                    "messages": messages,
-                    "stream": True
-                },
+                json=request_body,
                 timeout=120.0
             ) as response:
                 if response.status_code != 200:
