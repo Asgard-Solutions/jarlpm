@@ -542,6 +542,10 @@ async def delete_initiative(
     if not epic:
         raise HTTPException(status_code=404, detail="Initiative not found")
     
+    # Set the session variable to allow cascade deletes through append-only triggers
+    from sqlalchemy import text
+    await session.execute(text("SET LOCAL jarlpm.allow_cascade_delete = 'true'"))
+    
     # Delete (cascade will handle related records)
     await session.delete(epic)
     await session.commit()
