@@ -591,8 +591,18 @@ def extract_json(text: str) -> Optional[dict]:
         return None
 
 
-async def run_llm_pass(llm_service, user_id: str, system: str, user: str, max_retries: int = 1) -> Optional[dict]:
-    """Run a single LLM pass with retry"""
+async def run_llm_pass(
+    llm_service,
+    user_id: str,
+    system: str,
+    user: str,
+    max_retries: int = 1,
+    pass_metrics: Optional[PassMetrics] = None
+) -> Optional[dict]:
+    """Run a single LLM pass with retry, tracking metrics"""
+    start_time = time.time()
+    retries = 0
+    
     for attempt in range(max_retries + 1):
         full_response = ""
         async for chunk in llm_service.generate_stream(
@@ -605,11 +615,28 @@ async def run_llm_pass(llm_service, user_id: str, system: str, user: str, max_re
         
         result = extract_json(full_response)
         if result:
+            # Update metrics if provided
+            if pass_metrics:
+                pass_metrics.tokens_in = len(system + user) // 4  # Rough estimate
+                pass_metrics.tokens_out = len(full_response) // 4
+                pass_metrics.retries = retries
+                pass_metrics.duration_ms = int((time.time() - start_time) * 1000)
+                pass_metrics.success = True
             return result
         
+        retries += 1
         if attempt < max_retries:
             # Retry with a nudge
             user = user + "\n\nIMPORTANT: Return ONLY valid JSON, no other text."
+    
+    # Failed all attempts
+    if pass_metrics:
+        pass_metrics.tokens_in = len(system + user) // 4
+        pass_metrics.tokens_out = len(full_response) // 4 if full_response else 0
+        pass_metrics.retries = retries
+        pass_metrics.duration_ms = int((time.time() - start_time) * 1000)
+        pass_metrics.success = False
+        pass_metrics.error = "JSON parse failed"
     
     return None
 
