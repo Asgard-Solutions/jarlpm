@@ -117,7 +117,8 @@ class LLMService:
         model: str,
         system_prompt: str,
         user_prompt: str,
-        conversation_history: list[dict] = None
+        conversation_history: list[dict] = None,
+        temperature: float = None
     ) -> AsyncGenerator[str, None]:
         """Stream from Anthropic API"""
         model = model or "claude-sonnet-4-20250514"
@@ -131,6 +132,16 @@ class LLMService:
                 })
         messages.append({"role": "user", "content": user_prompt})
         
+        request_body = {
+            "model": model,
+            "max_tokens": 4096,
+            "system": system_prompt,
+            "messages": messages,
+            "stream": True
+        }
+        if temperature is not None:
+            request_body["temperature"] = temperature
+        
         async with httpx.AsyncClient() as client:
             async with client.stream(
                 "POST",
@@ -140,13 +151,7 @@ class LLMService:
                     "anthropic-version": "2023-06-01",
                     "Content-Type": "application/json"
                 },
-                json={
-                    "model": model,
-                    "max_tokens": 4096,
-                    "system": system_prompt,
-                    "messages": messages,
-                    "stream": True
-                },
+                json=request_body,
                 timeout=120.0
             ) as response:
                 if response.status_code != 200:
