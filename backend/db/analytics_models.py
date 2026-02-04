@@ -179,3 +179,36 @@ class PromptVersionRegistry(Base):
         Index('idx_prompt_registry_version', 'version'),
         Index('idx_prompt_registry_active', 'is_active'),
     )
+
+
+class ModelHealthMetrics(Base):
+    """
+    Persisted model health metrics per user+provider+model.
+    Tracks validation success/failure rates for weak model detection.
+    """
+    __tablename__ = "model_health_metrics"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    provider: Mapped[str] = mapped_column(String(50), nullable=False)  # openai, anthropic, local
+    model_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    
+    # Counters (updated atomically)
+    total_calls: Mapped[int] = mapped_column(Integer, default=0)
+    validation_failures: Mapped[int] = mapped_column(Integer, default=0)
+    repair_successes: Mapped[int] = mapped_column(Integer, default=0)
+    
+    # Derived metrics (computed on read)
+    # failure_rate = validation_failures / total_calls
+    
+    # Warning state
+    warning_shown: Mapped[bool] = mapped_column(Boolean, default=False)
+    warning_dismissed: Mapped[bool] = mapped_column(Boolean, default=False)
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    __table_args__ = (
+        Index('idx_model_health_user_provider', 'user_id', 'provider'),
+        Index('idx_model_health_user', 'user_id'),
+    )
