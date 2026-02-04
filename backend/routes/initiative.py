@@ -1022,6 +1022,12 @@ async def generate_initiative(
                 story_points_map.get(sid, 0) for sid in initiative.sprint_plan.sprint_2.story_ids
             )
             
+            # Update metrics for successful generation
+            metrics.success = True
+            metrics.features_generated = len(initiative.features)
+            metrics.stories_generated = sum(len(f.stories) for f in initiative.features)
+            metrics.total_points = initiative.total_points
+            
             # Build final response with warnings and context
             response_data = initiative.model_dump()
             if warnings:
@@ -1040,12 +1046,25 @@ async def generate_initiative(
                 'definition_of_done': dod
             }
             
+            # Save analytics (fire and forget - don't block response)
+            try:
+                log_id = await analytics.save_generation_log(metrics)
+                response_data['_analytics'] = {'log_id': log_id}
+            except Exception as e:
+                logger.warning(f"Failed to save analytics: {e}")
+            
             # Send final result
             yield f"data: {json.dumps({'type': 'initiative', 'data': response_data})}\n\n"
             yield f"data: {json.dumps({'type': 'done', 'message': 'Initiative generated!'})}\n\n"
             
         except Exception as e:
             logger.error(f"Initiative generation failed: {e}", exc_info=True)
+            # Save failed generation metrics
+            try:
+                metrics.error_message = str(e)
+                await analytics.save_generation_log(metrics)
+            except Exception:
+                pass
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
     
     return StreamingResponse(
