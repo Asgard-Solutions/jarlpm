@@ -551,6 +551,7 @@ async def _handle_subscription_created(subscription_obj):
             subscription.current_period_end = datetime.fromtimestamp(
                 subscription_obj.current_period_end, tz=timezone.utc
             )
+            subscription.cancel_at_period_end = subscription_obj.cancel_at_period_end
             subscription.updated_at = now
         else:
             subscription = Subscription(
@@ -563,7 +564,8 @@ async def _handle_subscription_created(subscription_obj):
                 ),
                 current_period_end=datetime.fromtimestamp(
                     subscription_obj.current_period_end, tz=timezone.utc
-                )
+                ),
+                cancel_at_period_end=subscription_obj.cancel_at_period_end
             )
             session.add(subscription)
         
