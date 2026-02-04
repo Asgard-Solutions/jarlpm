@@ -4,6 +4,7 @@ Uses real Stripe subscriptions with recurring billing
 """
 from fastapi import APIRouter, HTTPException, Request, Depends
 from pydantic import BaseModel
+from typing import Literal
 from datetime import datetime, timezone
 import os
 import logging
@@ -20,17 +21,19 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/subscription", tags=["subscription"])
 
-# Subscription configuration
-SUBSCRIPTION_PRICE = 45.00
+# Subscription pricing configuration
+MONTHLY_PRICE = 45.00  # $45/month
+ANNUAL_PRICE = 432.00  # $432/year ($36/mo, 2 months free)
 SUBSCRIPTION_CURRENCY = "usd"
 
-# Stripe Price ID - set in .env or create dynamically
-# This should be a recurring price created in Stripe Dashboard
-STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID")
+# Stripe Price IDs - set in .env or create dynamically
+STRIPE_MONTHLY_PRICE_ID = os.environ.get("STRIPE_MONTHLY_PRICE_ID")
+STRIPE_ANNUAL_PRICE_ID = os.environ.get("STRIPE_ANNUAL_PRICE_ID")
 
 
 class CreateCheckoutRequest(BaseModel):
     origin_url: str
+    billing_cycle: Literal["monthly", "annual"] = "monthly"
 
 
 class SubscriptionStatusResponse(BaseModel):
@@ -38,6 +41,7 @@ class SubscriptionStatusResponse(BaseModel):
     stripe_subscription_id: str | None = None
     current_period_end: datetime | None = None
     cancel_at_period_end: bool = False
+    billing_cycle: str | None = None
 
 
 class CancelSubscriptionRequest(BaseModel):
