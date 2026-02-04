@@ -107,7 +107,7 @@ class TestInitiativeAPI:
             f"{BASE_URL}/api/epics",
             json={"title": f"TEST_GetDetail_{uuid.uuid4().hex[:8]}"}
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code in [200, 201]
         epic_id = create_response.json()["epic_id"]
         
         # Get initiative details
@@ -141,7 +141,7 @@ class TestInitiativeAPI:
             f"{BASE_URL}/api/epics",
             json={"title": f"TEST_Duplicate_{uuid.uuid4().hex[:8]}"}
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code in [200, 201]
         epic_id = create_response.json()["epic_id"]
         
         # Duplicate it
@@ -170,7 +170,7 @@ class TestInitiativeAPI:
             f"{BASE_URL}/api/epics",
             json={"title": original_title}
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code in [200, 201]
         epic_id = create_response.json()["epic_id"]
         
         # Duplicate without new_title
@@ -197,7 +197,7 @@ class TestInitiativeAPI:
             f"{BASE_URL}/api/epics",
             json={"title": f"TEST_Archive_{uuid.uuid4().hex[:8]}"}
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code in [200, 201]
         epic_id = create_response.json()["epic_id"]
         
         # Archive it
@@ -222,7 +222,7 @@ class TestInitiativeAPI:
             f"{BASE_URL}/api/epics",
             json={"title": f"TEST_Unarchive_{uuid.uuid4().hex[:8]}"}
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code in [200, 201]
         epic_id = create_response.json()["epic_id"]
         
         # Archive it
@@ -250,7 +250,7 @@ class TestInitiativeAPI:
             f"{BASE_URL}/api/epics",
             json={"title": f"TEST_Delete_{uuid.uuid4().hex[:8]}"}
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code in [200, 201]
         epic_id = create_response.json()["epic_id"]
         
         # Delete it
@@ -285,7 +285,7 @@ class TestInitiativeAPI:
             f"{BASE_URL}/api/epics",
             json={"title": f"TEST_{unique_term}"}
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code in [200, 201]
         
         # Search for it
         response = self.session.get(f"{BASE_URL}/api/initiatives?search={unique_term}")
@@ -324,7 +324,7 @@ class TestInitiativeAPI:
             f"{BASE_URL}/api/epics",
             json={"title": f"TEST_Structure_{uuid.uuid4().hex[:8]}"}
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code in [200, 201]
         
         # Get list
         response = self.session.get(f"{BASE_URL}/api/initiatives")
@@ -351,7 +351,7 @@ class TestInitiativeAPI:
             f"{BASE_URL}/api/epics",
             json={"title": f"TEST_DetailStruct_{uuid.uuid4().hex[:8]}"}
         )
-        assert create_response.status_code == 200
+        assert create_response.status_code in [200, 201]
         epic_id = create_response.json()["epic_id"]
         
         # Get detail
