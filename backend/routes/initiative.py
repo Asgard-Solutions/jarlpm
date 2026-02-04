@@ -720,13 +720,24 @@ async def generate_initiative(
                     stories_list += f"  - {s.id}: {s.title}\n"
                     stories_list += f"    As {s.persona}, I want to {s.action}\n"
             
+            # Format planning system with context
+            planning_system = PLANNING_SYSTEM.format(
+                context=context_prompt,
+                velocity=ctx['velocity'],
+                sprint_length=ctx['sprint_length']
+            )
+            
             planning_prompt = PLANNING_USER.format(
                 product_name=product_name,
                 desired_outcome=prd_data.get('desired_outcome', ''),
+                sprint_length=ctx['sprint_length'],
+                velocity=ctx['velocity'],
+                num_devs=ctx.get('num_devs', 3),
+                num_qa=ctx.get('num_qa', 1),
                 stories_list=stories_list
             )
             
-            planning_result = await run_llm_pass(llm_service, user_id, PLANNING_SYSTEM, planning_prompt, max_retries=1)
+            planning_result = await run_llm_pass(llm_service, user_id, planning_system, planning_prompt, max_retries=1)
             
             # Apply estimates to stories
             if planning_result:
