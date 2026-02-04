@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from enum import Enum
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_, and_, desc
+from sqlalchemy import select, func, or_, and_, desc, asc
 
 from db import get_db
 from db.models import Epic, EpicSnapshot
@@ -27,21 +27,22 @@ router = APIRouter(prefix="/initiatives", tags=["initiatives"])
 
 
 class InitiativeStatus(str, Enum):
-    DRAFT = "draft"
-    ACTIVE = "active"
-    COMPLETE = "complete"
-    ARCHIVED = "archived"
+    """Initiative statuses for V1"""
+    DRAFT = "draft"        # New initiatives start here
+    ACTIVE = "active"      # Work in progress
+    COMPLETED = "completed"  # Finished
+    ARCHIVED = "archived"  # Reversible soft-delete
 
 
 class InitiativeSummary(BaseModel):
-    """Summary view of an initiative for list display"""
+    """Summary view of an initiative for list display (table row)"""
     epic_id: str
     title: str
     tagline: Optional[str] = None
     status: str
     problem_statement: Optional[str] = None
     
-    # Metrics
+    # Metrics (optional columns)
     features_count: int = 0
     stories_count: int = 0
     total_points: int = 0
@@ -68,6 +69,11 @@ class InitiativeStatusUpdate(BaseModel):
     status: InitiativeStatus
 
 
+class InitiativeDuplicateRequest(BaseModel):
+    """Request to duplicate an initiative"""
+    new_title: Optional[str] = None
+
+
 class InitiativeDetail(BaseModel):
     """Full initiative detail view"""
     epic_id: str
@@ -75,14 +81,11 @@ class InitiativeDetail(BaseModel):
     tagline: Optional[str] = None
     status: str
     
-    # PRD content
+    # PRD content (from EpicSnapshot)
     problem_statement: Optional[str] = None
     desired_outcome: Optional[str] = None
-    target_users: Optional[str] = None
-    vision: Optional[str] = None
-    out_of_scope: Optional[List[str]] = None
-    risks: Optional[List[str]] = None
-    success_metrics: Optional[List[str]] = None
+    epic_summary: Optional[str] = None
+    acceptance_criteria: Optional[List[str]] = None
     
     # Metrics
     features_count: int = 0
