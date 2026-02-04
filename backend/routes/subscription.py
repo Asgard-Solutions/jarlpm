@@ -223,12 +223,34 @@ async def create_checkout_session(
         currency=SUBSCRIPTION_CURRENCY,
         payment_status="pending",
         transaction_type="subscription",
-        payment_metadata={"type": "subscription", "mode": "subscription"}
+        payment_metadata={"type": "subscription", "mode": "subscription", "billing_cycle": body.billing_cycle}
     )
     session.add(transaction)
     await session.commit()
     
     return {"checkout_url": checkout_session.url, "session_id": checkout_session.id}
+
+
+@router.get("/pricing")
+async def get_pricing():
+    """Get subscription pricing options"""
+    return {
+        "monthly": {
+            "price": MONTHLY_PRICE,
+            "currency": SUBSCRIPTION_CURRENCY,
+            "interval": "month",
+            "display": f"${int(MONTHLY_PRICE)}/month"
+        },
+        "annual": {
+            "price": ANNUAL_PRICE,
+            "currency": SUBSCRIPTION_CURRENCY,
+            "interval": "year",
+            "monthly_equivalent": ANNUAL_PRICE / 12,
+            "display": f"${int(ANNUAL_PRICE)}/year",
+            "savings": int(MONTHLY_PRICE * 12 - ANNUAL_PRICE),
+            "savings_months": 2
+        }
+    }
 
 
 @router.get("/checkout-status/{session_id}")
