@@ -1,6 +1,10 @@
 """
 JarlPM Database Configuration
 PostgreSQL via Neon - SQLAlchemy 2.0 Async
+
+Environment Variables:
+- DATABASE_URL: PostgreSQL connection string (required)
+- DB_RESET_ON_STARTUP: If "true", drops all tables on startup (DANGEROUS - dev only)
 """
 import os
 import ssl
@@ -14,6 +18,9 @@ logger = logging.getLogger(__name__)
 
 # Get DATABASE_URL from environment
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
+
+# DANGER: Only set to "true" in development to reset DB on each restart
+DB_RESET_ON_STARTUP = os.environ.get('DB_RESET_ON_STARTUP', 'false').lower() == 'true'
 
 def convert_url_for_asyncpg(url: str) -> str:
     """Convert standard PostgreSQL URL to asyncpg-compatible format"""
