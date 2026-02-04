@@ -779,7 +779,8 @@ async def generate_initiative(
                 for s in f.stories:
                     stories_detail += f"  • {s.id}: {s.title} ({s.points} pts)\n"
                     stories_detail += f"    As {s.persona}, I want to {s.action} so that {s.benefit}\n"
-                    stories_detail += f"    AC: {'; '.join(s.acceptance_criteria[:3])}\n"
+                    ac_preview = '; '.join(s.acceptance_criteria[:3]) if s.acceptance_criteria else 'None'
+                    stories_detail += f"    AC: {ac_preview}\n"
             
             # Calculate totals for critic
             sprint1_points = sum(
@@ -791,19 +792,31 @@ async def generate_initiative(
                 for sid in (sprint_plan.sprint_2.story_ids if planning_result else [])
             )
             total_points = sum(s.points for f in features for s in f.stories)
+            target_points = ctx['velocity'] * 2  # 2 sprints
+            
+            # Format critic system with context
+            critic_system = CRITIC_SYSTEM.format(
+                context=context_prompt,
+                velocity=ctx['velocity']
+            )
             
             critic_prompt = CRITIC_USER.format(
                 product_name=product_name,
+                industry=ctx['industry'],
                 problem_statement=prd_data.get('problem_statement', ''),
                 target_users=prd_data.get('target_users', ''),
                 metrics=', '.join(prd_data.get('key_metrics', [])),
                 stories_detail=stories_detail,
+                methodology=ctx['methodology'],
+                sprint_length=ctx['sprint_length'],
+                velocity=ctx['velocity'],
                 sprint1_points=sprint1_points,
                 sprint2_points=sprint2_points,
-                total_points=total_points
+                total_points=total_points,
+                target_points=target_points
             )
             
-            critic_result = await run_llm_pass(llm_service, user_id, CRITIC_SYSTEM, critic_prompt, max_retries=1)
+            critic_result = await run_llm_pass(llm_service, user_id, critic_system, critic_prompt, max_retries=1)
             
             # Apply critic fixes
             warnings = []
