@@ -1,0 +1,403 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { 
+  Loader2, LayoutGrid, Save, Download, Plus, Trash2, 
+  Users, Lightbulb, DollarSign, Target, Gift, BarChart3,
+  Zap, TrendingUp, ShieldCheck
+} from 'lucide-react';
+import { epicAPI } from '@/api';
+
+const CANVAS_SECTIONS = [
+  { 
+    id: 'problem', 
+    title: 'Problem', 
+    icon: Target,
+    placeholder: 'Top 3 problems you are solving',
+    color: 'text-red-500',
+    bgColor: 'bg-red-500/10'
+  },
+  { 
+    id: 'solution', 
+    title: 'Solution', 
+    icon: Lightbulb,
+    placeholder: 'Top 3 features that solve the problems',
+    color: 'text-green-500',
+    bgColor: 'bg-green-500/10'
+  },
+  { 
+    id: 'unique_value', 
+    title: 'Unique Value Proposition', 
+    icon: Gift,
+    placeholder: 'Single, clear, compelling message that states why you are different',
+    color: 'text-purple-500',
+    bgColor: 'bg-purple-500/10'
+  },
+  { 
+    id: 'unfair_advantage', 
+    title: 'Unfair Advantage', 
+    icon: ShieldCheck,
+    placeholder: 'Something that cannot be easily copied or bought',
+    color: 'text-orange-500',
+    bgColor: 'bg-orange-500/10'
+  },
+  { 
+    id: 'customer_segments', 
+    title: 'Customer Segments', 
+    icon: Users,
+    placeholder: 'Target customers and users',
+    color: 'text-blue-500',
+    bgColor: 'bg-blue-500/10'
+  },
+  { 
+    id: 'key_metrics', 
+    title: 'Key Metrics', 
+    icon: BarChart3,
+    placeholder: 'Key activities you measure',
+    color: 'text-cyan-500',
+    bgColor: 'bg-cyan-500/10'
+  },
+  { 
+    id: 'channels', 
+    title: 'Channels', 
+    icon: Zap,
+    placeholder: 'Path to customers',
+    color: 'text-yellow-500',
+    bgColor: 'bg-yellow-500/10'
+  },
+  { 
+    id: 'cost_structure', 
+    title: 'Cost Structure', 
+    icon: DollarSign,
+    placeholder: 'Customer acquisition costs, distribution costs, hosting, people, etc.',
+    color: 'text-pink-500',
+    bgColor: 'bg-pink-500/10'
+  },
+  { 
+    id: 'revenue_streams', 
+    title: 'Revenue Streams', 
+    icon: TrendingUp,
+    placeholder: 'Revenue model, lifetime value, revenue, gross margin',
+    color: 'text-emerald-500',
+    bgColor: 'bg-emerald-500/10'
+  },
+];
+
+const LeanCanvas = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [epics, setEpics] = useState([]);
+  const [selectedEpic, setSelectedEpic] = useState('');
+  const [canvas, setCanvas] = useState({});
+  const [canvasList, setCanvasList] = useState([]);
+
+  useEffect(() => {
+    loadEpics();
+    loadSavedCanvases();
+  }, []);
+
+  useEffect(() => {
+    if (selectedEpic) {
+      loadCanvasForEpic();
+    }
+  }, [selectedEpic]);
+
+  const loadEpics = async () => {
+    try {
+      const response = await epicAPI.getEpics();
+      setEpics(response.data || []);
+    } catch (error) {
+      console.error('Failed to load epics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadSavedCanvases = () => {
+    try {
+      const saved = localStorage.getItem('jarlpm_lean_canvases');
+      if (saved) {
+        setCanvasList(JSON.parse(saved));
+      }
+    } catch (error) {
+      console.error('Failed to load saved canvases:', error);
+    }
+  };
+
+  const loadCanvasForEpic = () => {
+    const savedCanvas = canvasList.find(c => c.epicId === selectedEpic);
+    if (savedCanvas) {
+      setCanvas(savedCanvas.data || {});
+    } else {
+      // Pre-populate from epic data
+      const epic = epics.find(e => e.epic_id === selectedEpic);
+      if (epic) {
+        setCanvas({
+          problem: epic.problem_statement || '',
+          solution: epic.vision || '',
+          unique_value: epic.desired_outcome || '',
+          customer_segments: epic.target_users || '',
+          key_metrics: epic.success_metrics || '',
+        });
+      } else {
+        setCanvas({});
+      }
+    }
+  };
+
+  const handleSectionChange = (sectionId, value) => {
+    setCanvas(prev => ({
+      ...prev,
+      [sectionId]: value
+    }));
+  };
+
+  const handleSave = () => {
+    if (!selectedEpic) return;
+    
+    setSaving(true);
+    try {
+      const existingIndex = canvasList.findIndex(c => c.epicId === selectedEpic);
+      const epic = epics.find(e => e.epic_id === selectedEpic);
+      
+      const newCanvas = {
+        epicId: selectedEpic,
+        epicTitle: epic?.title || 'Untitled',
+        data: canvas,
+        updatedAt: new Date().toISOString()
+      };
+      
+      let updatedList;
+      if (existingIndex >= 0) {
+        updatedList = [...canvasList];
+        updatedList[existingIndex] = newCanvas;
+      } else {
+        updatedList = [...canvasList, newCanvas];
+      }
+      
+      setCanvasList(updatedList);
+      localStorage.setItem('jarlpm_lean_canvases', JSON.stringify(updatedList));
+    } catch (error) {
+      console.error('Failed to save canvas:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleExport = () => {
+    const epic = epics.find(e => e.epic_id === selectedEpic);
+    const content = CANVAS_SECTIONS.map(section => 
+      `## ${section.title}\n${canvas[section.id] || '_Not defined_'}\n`
+    ).join('\n');
+    
+    const fullContent = `# Lean Canvas: ${epic?.title || 'Untitled'}\n\n${content}\n\n---\n*Generated by JarlPM*`;
+    
+    const blob = new Blob([fullContent], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `LeanCanvas_${epic?.title?.replace(/\s+/g, '_') || 'canvas'}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Lean Canvas</h1>
+          <p className="text-muted-foreground mt-1">Build your business model canvas</p>
+        </div>
+      </div>
+
+      {/* Epic Selector & Actions */}
+      <Card className="bg-card border-border">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex-1">
+              <Select value={selectedEpic} onValueChange={setSelectedEpic}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select an epic for this canvas" />
+                </SelectTrigger>
+                <SelectContent>
+                  {epics.map((epic) => (
+                    <SelectItem key={epic.epic_id} value={epic.epic_id}>
+                      {epic.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {selectedEpic && (
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleExport}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  Save
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Canvas Grid */}
+      {selectedEpic ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Row 1: Problem, Solution, UVP, Unfair Advantage, Customer Segments */}
+          <div className="lg:col-span-2 lg:row-span-2 space-y-4">
+            {/* Problem */}
+            <CanvasSection
+              section={CANVAS_SECTIONS[0]}
+              value={canvas.problem || ''}
+              onChange={(v) => handleSectionChange('problem', v)}
+            />
+            {/* Solution */}
+            <CanvasSection
+              section={CANVAS_SECTIONS[1]}
+              value={canvas.solution || ''}
+              onChange={(v) => handleSectionChange('solution', v)}
+            />
+          </div>
+          
+          {/* UVP - Center */}
+          <div className="lg:row-span-2">
+            <CanvasSection
+              section={CANVAS_SECTIONS[2]}
+              value={canvas.unique_value || ''}
+              onChange={(v) => handleSectionChange('unique_value', v)}
+              tall
+            />
+          </div>
+          
+          <div className="lg:col-span-2 lg:row-span-2 space-y-4">
+            {/* Unfair Advantage */}
+            <CanvasSection
+              section={CANVAS_SECTIONS[3]}
+              value={canvas.unfair_advantage || ''}
+              onChange={(v) => handleSectionChange('unfair_advantage', v)}
+            />
+            {/* Customer Segments */}
+            <CanvasSection
+              section={CANVAS_SECTIONS[4]}
+              value={canvas.customer_segments || ''}
+              onChange={(v) => handleSectionChange('customer_segments', v)}
+            />
+          </div>
+
+          {/* Row 2: Key Metrics, Channels */}
+          <div className="lg:col-span-2">
+            <CanvasSection
+              section={CANVAS_SECTIONS[5]}
+              value={canvas.key_metrics || ''}
+              onChange={(v) => handleSectionChange('key_metrics', v)}
+            />
+          </div>
+          
+          <div className="lg:col-span-1">
+            {/* Spacer for layout */}
+          </div>
+          
+          <div className="lg:col-span-2">
+            <CanvasSection
+              section={CANVAS_SECTIONS[6]}
+              value={canvas.channels || ''}
+              onChange={(v) => handleSectionChange('channels', v)}
+            />
+          </div>
+
+          {/* Row 3: Cost Structure, Revenue Streams */}
+          <div className="lg:col-span-2">
+            <CanvasSection
+              section={CANVAS_SECTIONS[7]}
+              value={canvas.cost_structure || ''}
+              onChange={(v) => handleSectionChange('cost_structure', v)}
+            />
+          </div>
+          
+          <div className="lg:col-span-1">
+            {/* Spacer */}
+          </div>
+          
+          <div className="lg:col-span-2">
+            <CanvasSection
+              section={CANVAS_SECTIONS[8]}
+              value={canvas.revenue_streams || ''}
+              onChange={(v) => handleSectionChange('revenue_streams', v)}
+            />
+          </div>
+        </div>
+      ) : (
+        <Card className="bg-card border-border">
+          <CardContent className="p-12 text-center">
+            <LayoutGrid className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-xl font-medium text-foreground mb-2">
+              Select an Epic to Start
+            </h3>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              Choose an epic from the dropdown above to create or edit its Lean Canvas.
+            </p>
+            {epics.length === 0 && (
+              <Button onClick={() => navigate('/dashboard')}>
+                Create Your First Epic
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+const CanvasSection = ({ section, value, onChange, tall = false }) => {
+  const Icon = section.icon;
+  
+  return (
+    <Card className={`bg-card border-border ${tall ? 'h-full' : ''}`}>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <div className={`p-1.5 rounded ${section.bgColor}`}>
+            <Icon className={`h-3.5 w-3.5 ${section.color}`} />
+          </div>
+          {section.title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={section.placeholder}
+          className={`bg-background border-border text-sm resize-none ${tall ? 'min-h-[200px]' : 'min-h-[100px]'}`}
+        />
+      </CardContent>
+    </Card>
+  );
+};
+
+export default LeanCanvas;
