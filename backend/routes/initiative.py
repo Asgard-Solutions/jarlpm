@@ -60,6 +60,48 @@ def generate_id(prefix: str = "") -> str:
     return f"{prefix}{uuid.uuid4().hex[:8]}"
 
 
+# --- Pass 1: PRD Output Schema ---
+class Pass1PRDOutput(BaseModel):
+    """Schema for Pass 1 (PRD) output validation"""
+    product_name: str
+    tagline: str = ""
+    prd: dict  # Will contain problem_statement, target_users, etc.
+    epic: dict = Field(default_factory=dict)
+    
+    class Config:
+        extra = "allow"
+
+
+# --- Pass 2: Decomposition Output Schema ---
+class Pass2DecompOutput(BaseModel):
+    """Schema for Pass 2 (Decomposition) output validation"""
+    features: List[dict]
+    
+    class Config:
+        extra = "allow"
+
+
+# --- Pass 3: Planning Output Schema ---
+class Pass3PlanningOutput(BaseModel):
+    """Schema for Pass 3 (Planning) output validation"""
+    estimated_stories: List[dict] = Field(default_factory=list)
+    sprint_plan: dict = Field(default_factory=dict)
+    
+    class Config:
+        extra = "allow"
+
+
+# --- Pass 4: Critic Output Schema ---
+class Pass4CriticOutput(BaseModel):
+    """Schema for Pass 4 (Critic) output validation"""
+    issues: List[dict] = Field(default_factory=list)
+    fixes: dict = Field(default_factory=dict)
+    summary: dict = Field(default_factory=dict)
+    
+    class Config:
+        extra = "allow"
+
+
 class StorySchema(BaseModel):
     """Export-ready user story schema with all fields needed for Jira/Azure DevOps/Linear export"""
     id: str = Field(default_factory=lambda: generate_id("story_"))
