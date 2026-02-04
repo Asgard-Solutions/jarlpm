@@ -5,6 +5,12 @@ Magic Moment: New Initiative Generator
   2. Decomposition Pass - features → stories with AC
   3. Planning Pass - 2-sprint plan + story points
   4. Critic Pass - PM reality checks + auto-fixes
+
+Uses delivery context for personalized output:
+  - Industry-specific language and metrics
+  - Team capacity-aware sprint planning
+  - Platform-appropriate story formats (Jira/Linear/Azure DevOps)
+  - Methodology-aligned processes (Scrum/Kanban/Hybrid)
 """
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import StreamingResponse
@@ -20,7 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from db import get_db
-from db.models import Epic, EpicSnapshot, Subscription, SubscriptionStatus
+from db.models import Epic, EpicSnapshot, Subscription, SubscriptionStatus, ProductDeliveryContext
 from db.feature_models import Feature
 from db.user_story_models import UserStory
 from services.llm_service import LLMService
