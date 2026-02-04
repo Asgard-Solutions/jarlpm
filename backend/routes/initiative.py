@@ -932,12 +932,23 @@ async def generate_initiative(
                 story_points_map.get(sid, 0) for sid in initiative.sprint_plan.sprint_2.story_ids
             )
             
-            # Build final response with warnings
+            # Build final response with warnings and context
             response_data = initiative.model_dump()
             if warnings:
                 response_data['warnings'] = warnings
             if critic_result and critic_result.get('summary'):
                 response_data['quality_summary'] = critic_result['summary']
+            
+            # Add delivery context for UI personalization
+            response_data['delivery_context'] = {
+                'industry': ctx['industry'],
+                'methodology': ctx['methodology'],
+                'sprint_length': ctx['sprint_length'],
+                'team_velocity': ctx['velocity'],
+                'team_size': ctx['team_size'],
+                'platform': ctx['platform'],
+                'definition_of_done': dod
+            }
             
             # Send final result
             yield f"data: {json.dumps({'type': 'initiative', 'data': response_data})}\n\n"
