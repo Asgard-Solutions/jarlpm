@@ -34,7 +34,8 @@ class LLMService:
         user_id: str,
         system_prompt: str,
         user_prompt: str,
-        conversation_history: list[dict] = None
+        conversation_history: list[dict] = None,
+        temperature: float = None  # None = use model default
     ) -> AsyncGenerator[str, None]:
         """Generate text using the user's configured LLM provider (streaming)"""
         
@@ -46,13 +47,13 @@ class LLMService:
         
         # Compare with string values since provider is now stored as string
         if config.provider == LLMProvider.OPENAI.value:
-            async for chunk in self._openai_stream(api_key, config.model_name, system_prompt, user_prompt, conversation_history):
+            async for chunk in self._openai_stream(api_key, config.model_name, system_prompt, user_prompt, conversation_history, temperature):
                 yield chunk
         elif config.provider == LLMProvider.ANTHROPIC.value:
-            async for chunk in self._anthropic_stream(api_key, config.model_name, system_prompt, user_prompt, conversation_history):
+            async for chunk in self._anthropic_stream(api_key, config.model_name, system_prompt, user_prompt, conversation_history, temperature):
                 yield chunk
         elif config.provider == LLMProvider.LOCAL.value:
-            async for chunk in self._local_stream(api_key, config.base_url, config.model_name, system_prompt, user_prompt, conversation_history):
+            async for chunk in self._local_stream(api_key, config.base_url, config.model_name, system_prompt, user_prompt, conversation_history, temperature):
                 yield chunk
         else:
             raise ValueError(f"Unsupported LLM provider: {config.provider}")
