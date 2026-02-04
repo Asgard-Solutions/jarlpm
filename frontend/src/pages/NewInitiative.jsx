@@ -196,8 +196,44 @@ and small agencies (2-5 people)."`}
               </div>
 
               {error && (
-                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-                  {error}
+                <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                  {error === 'subscription_required' ? (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-red-400">Active subscription required</p>
+                        <p className="text-sm text-nordic-text-muted mt-1">
+                          Upgrade to JarlPM Pro to use AI-powered features.
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => navigate('/settings?tab=subscription')}
+                        className="bg-nordic-accent hover:bg-nordic-accent/90 text-white shrink-0"
+                        data-testid="upgrade-cta"
+                      >
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Upgrade Now
+                      </Button>
+                    </div>
+                  ) : error === 'llm_not_configured' ? (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-red-400">No LLM provider configured</p>
+                        <p className="text-sm text-nordic-text-muted mt-1">
+                          Add your OpenAI or Anthropic API key to enable AI features.
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => navigate('/settings?tab=llm')}
+                        variant="outline"
+                        className="border-nordic-accent text-nordic-accent hover:bg-nordic-accent/10 shrink-0"
+                        data-testid="configure-llm-cta"
+                      >
+                        Configure LLM
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-red-400 text-sm">{error}</p>
+                  )}
                 </div>
               )}
 
