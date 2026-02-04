@@ -386,21 +386,27 @@ FIBONACCI SCALE:
 - 13: Huge (1 week, consider splitting)
 
 RULES:
-- Each sprint should have 13-21 points
+- Respect team velocity: target {velocity} points per sprint
+- Sprint length: {sprint_length} days
 - Must-have stories go in Sprint 1
 - Nice-to-have stories go in Sprint 2
-- Balance the sprints reasonably"""
+- Balance the sprints for sustainable pace"""
 
 
-PLANNING_USER = """Estimate story points and create a 2-sprint plan for:
+PLANNING_USER = """Estimate story points and create a sprint plan for:
 
 PRODUCT: {product_name}
 GOAL: {desired_outcome}
 
+TEAM CAPACITY:
+- Sprint Length: {sprint_length} days
+- Team Velocity: ~{velocity} points/sprint
+- Team: {num_devs} developers, {num_qa} QA
+
 FEATURES & STORIES:
 {stories_list}
 
-Assign Fibonacci points (1,2,3,5,8,13) to each story and organize into 2 sprints. Return only valid JSON."""
+Assign Fibonacci points (1,2,3,5,8,13) to each story. Organize into 2 sprints respecting team capacity. Return only valid JSON."""
 
 
 # ============================================
@@ -408,25 +414,26 @@ Assign Fibonacci points (1,2,3,5,8,13) to each story and organize into 2 sprints
 # ============================================
 
 CRITIC_SYSTEM = """You are a Senior PM reviewing an initiative for quality and completeness.
+{context}
 
 Review the initiative and identify issues. Then provide fixes.
 
 OUTPUT: Valid JSON only.
 
-{
+{{
   "issues": [
-    {
+    {{
       "type": "metric_not_measurable | ac_not_testable | story_too_large | missing_nfr | scope_risk | other",
       "severity": "error | warning",
       "location": "where the issue is (e.g., 'Story: User Login', 'Metric: User satisfaction')",
       "problem": "what's wrong",
       "fix": "suggested fix or null if just a warning"
-    }
+    }}
   ],
-  "fixes": {
+  "fixes": {{
     "metrics": ["list of improved/added metrics if any were unclear"],
     "split_stories": [
-      {
+      {{
         "original_story_id": "story_xxx",
         "new_stories": [
           {
