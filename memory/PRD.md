@@ -755,3 +755,26 @@ When an Epic is locked, users enter Feature Planning Mode:
   - Labels as small badges
   - Dependencies and risks in collapsible section
 - **Tests:** Backend compiles, frontend builds successfully
+
+### 2026-02-04: AI Generation Observability (COMPLETE)
+- **Generation Analytics:** Private logging of all initiative generation attempts
+  - Tracks prompt version, model/provider, token usage
+  - Estimates cost based on provider pricing
+  - Monitors parse/validation success rates per pass
+  - Records timing for each pipeline pass
+  - Logs critic findings (issues found, auto-fixed)
+- **Database Tables:**
+  - `initiative_generation_logs`: Full generation metrics (tokens, retries, duration, success)
+  - `initiative_edit_logs`: Tracks what users edit after generation
+  - `prompt_version_registry`: Tracks prompt versions and their performance
+- **Analytics Service (`services/analytics_service.py`):**
+  - `create_metrics()` - Initialize metrics tracker
+  - `save_generation_log()` - Persist generation metrics
+  - `log_edit()` - Track user edits with change classification
+  - `get_generation_stats()` - Aggregated stats (success rate, tokens, cost)
+  - `get_edit_patterns()` - Most edited fields, edit types
+- **API Endpoints:**
+  - `GET /api/initiative/analytics/stats` - Generation statistics (last N days)
+  - `GET /api/initiative/analytics/edit-patterns` - User edit patterns
+- **Token Pricing:** Estimates based on OpenAI, Anthropic, local models
+- **Prompt Versioning:** Current version `v1.1`, tracked in `CURRENT_PROMPT_VERSION`
