@@ -194,21 +194,6 @@ const Dashboard = () => {
           </Card>
         )}
 
-        {/* Title & Actions */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Your Epics</h1>
-            <p className="text-muted-foreground mt-1">Create and manage product epics</p>
-          </div>
-          <Button 
-            onClick={() => setShowNewEpicDialog(true)}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground"
-            data-testid="new-epic-btn"
-          >
-            <Plus className="w-4 h-4 mr-2" /> New Epic
-          </Button>
-        </div>
-
         {/* Epics Grid */}
         {loading ? (
           <div className="flex justify-center py-20">
