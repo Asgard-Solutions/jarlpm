@@ -6,11 +6,12 @@ Magic Moment: New Initiative Generator
   3. Planning Pass - 2-sprint plan + story points
   4. Critic Pass - PM reality checks + auto-fixes
 
-Uses delivery context for personalized output:
-  - Industry-specific language and metrics
-  - Team capacity-aware sprint planning
-  - Platform-appropriate story formats (Jira/Linear/Azure DevOps)
-  - Methodology-aligned processes (Scrum/Kanban/Hybrid)
+Key Features:
+  - Strict Output Layer: Schema validation + auto-repair (1-2 retries)
+  - Quality Mode Toggle: Standard (1-pass) vs Quality (2-pass with critique)
+  - Guardrail Defaults: Temperature tuning per task type
+  - Weak Model Detection: Warns if model struggles with structured output
+  - Delivery Context Injection: Every prompt personalized to team context
 
 Observability:
   - Logs all generations with token usage, cost, and timing
@@ -20,7 +21,7 @@ Observability:
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, validator
-from typing import Optional, List
+from typing import Optional, List, Type, TypeVar
 import json
 import logging
 import uuid
@@ -37,11 +38,17 @@ from db.feature_models import Feature
 from db.user_story_models import UserStory
 from services.llm_service import LLMService
 from services.analytics_service import AnalyticsService, GenerationMetrics, PassMetrics, CURRENT_PROMPT_VERSION
+from services.strict_output_service import (
+    StrictOutputService, get_strict_output_service,
+    TaskType, QualityMode, TASK_TEMPERATURE
+)
 from routes.auth import get_current_user_id
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/initiative", tags=["initiative"])
+
+T = TypeVar('T', bound=BaseModel)
 
 
 # ============================================
