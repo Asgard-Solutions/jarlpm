@@ -1,225 +1,139 @@
-<analysis>original_problem_statement:
+<analysis>**original_problem_statement:**
 The user wants to build **JarlPM**, an AI-agnostic, conversation-driven Product Management system.
 
-The most recent user requests are:
-1.  Remove all branding, libraries, and integrations related to Emergent.
-2.  Implement a standard email/password authentication system (signup and login) to replace the previous Test Login and Emergent OAuth flows.
-3.  Use placeholders for OpenAI and Stripe API keys, which the user will provide later.
-
-**PRODUCT REQUIREMENTS (Authoritative):**
-
-1.  **Core Product:** A tool for Product Managers to create and refine Epics, Features, User Stories, and Bugs.
-2.  **LLM Architecture:** AI-Agnostic.
-3.  **Subscription Model:** A 0/month subscription is required for AI features, managed via Stripe.
-4.  **Epic Lifecycle (Monotonic State Machine):** An Epic must progress through defined stages without regression.
-5.  **Sacred Invariants:** Confirmed decisions, conversation history, and user intent are immutable.
-6.  **Database Migration (MongoDB to PostgreSQL):** COMPLETED.
-7.  **Data Model (PostgreSQL):** Includes tables for , , , , , , etc.
-8.  **Frontend Requirements:** An Epic Page, a Story Planning Page, a Bugs Page, a Completed Epic view, and settings.
-9.  **UI/Branding (Nordic Theme):** A muted, professional, calm Nordic color palette, supporting both light and dark modes, with custom logos.
-10. **State-Driven Locking Model:** Implement a decision-discipline locking model across Epics, Features, and User Stories.
-11. **Bug Tracking System:** A first-class bug tracking system that supports standalone bugs and contextual linking.
-12. **Standalone User Stories:** Ability to create user stories that are not tied to a specific feature.
-13. **AI-Assisted User Personas:** Generate multiple user personas with images based on a completed Epic's content.
-14. **Prioritization Scoring:** Implement **MoSCoW** and **RICE** scoring frameworks.
-15. **Data Export:** Export to Jira, Azure DevOps (CSV), JSON, and Markdown.
-16. **Deletion:** Implement hard-delete for Epics with full cascade to child entities.
+The most recent user requests from this session were to significantly enhance the application's core value by:
+1.  Implementing an AI-powered Poker Planning feature using multiple AI personas for estimation.
+2.  Overhauling the one-time payment system to a full-fledged Stripe subscription model () with robust webhook handling.
+3.  Adding an annual pricing tier to the subscription options to improve conversion.
+4.  Creating a magic moment onboarding flow: a single New Initiative wizard that takes a user's raw idea and generates a complete, structured product plan.
+5.  Making the New Initiative generation highly robust and valuable through a multi-pass pipeline:
+    *   **Pass 1: PRD:** Generate the core product requirements document.
+    *   **Pass 2: Decomposition:** Break the PRD down into features and user stories.
+    *   **Pass 3: Planning:** Create a two-sprint plan with Fibonacci story points.
+    *   **Pass 4: Critic:** Add a PM reality check pass to automatically critique and fix issues like unmeasurable metrics, oversized stories, and missing non-functional requirements.
+6.  Personalizing the AI output by injecting the user's saved Delivery Context (e.g., team size, industry, methodology) into the generation prompts.
+7.  Improving developer experience by creating a comprehensive  and example environment files.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack app with a FastAPI backend, React frontend, and PostgreSQL database. It has end-to-end workflows for managing Epics, Features, User Stories, and Bugs. Key features like RICE/MoSCoW scoring, contextual bug linking, and data export (Jira, Azure DevOps, etc.) are implemented and tested. A Stripe subscription flow and a bug fix for AI User Persona generation were also completed. The agent was in the middle of a major refactor to remove all Emergent dependencies and implement a standard email/password authentication system.
+The application is a feature-rich, full-stack platform with a FastAPI backend, a Vite/React frontend, and a PostgreSQL database. It features a complete JWT authentication system, Microsoft Graph for email, and SDK-based integrations for Stripe and OpenAI that use user-provided API keys.
+
+The core functionalities implemented are:
+- **Real Subscription Billing:** A robust Stripe subscription system supporting both monthly (5/mo) and annual (32/yr) plans, with full webhook integration for lifecycle management (creation, updates, cancellations).
+- **AI-Powered Planning Suite:**
+    - **New Initiative Wizard:** A sophisticated 4-pass AI pipeline that transforms a simple user prompt into a complete, validated, and personalized product plan, including a PRD, epics, features, stories, and a sprint-by-sprint breakdown.
+    - **AI Poker Planning:** A tool where users can get story point estimates from a panel of AI personas (Sr. Developer, QA, etc.).
+    - **PRD Generator & Lean Canvas:** Functional pages for generating PRDs and creating Lean Canvases.
+- **Enhanced UX & DX:** The UI includes a collapsible navigation sidebar, actionable error messages with direct links (e.g., Upgrade Now), and linkable tabs in the settings page. The repository now includes a detailed  and  files.
+- **Robust Backend:** The AI generation process includes strict Pydantic schema validation, automatic JSON repair loops, and stable ID generation for all created entities. Server-Sent Events (SSE) are used for streaming progress to the frontend.
 
 **Last working item**:
-    - Last item agent was working on: The agent was implementing a standard email/password authentication system. It installed the necessary dependencies (, , ) and overwrote the existing  with a new structure for registration and token-based login. The immediate next step is to modify the User model to support password hashing.
-    - Status: IN PROGRESS
-    - Agent Testing Done: N
-    - Which testing method agent to use? both
-    - User Testing Done: N
+- Last item agent was working on: Personalizing the New Initiative AI pipeline. The agent successfully injected the user's saved Delivery Context (industry, methodology, team size) into all four passes of the AI generation process. This involved updating the backend prompts in  to accept the context and modifying the frontend in  to display which context was used in the final report.
+- Status: FINISHED
+- Agent Testing Done: Y (Verified backend compilation, frontend build, and successful API responses.)
+- Which testing method agent to use? both (A full end-to-end test via the testing agent is recommended to verify the personalization and the entire wizard flow.)
+- User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1:  Authenticated Screenshot Failures (Priority: P2)
-  
+  - Issue 1: Authenticated Screenshot Failures (Priority: P2)
+
   Issues Detail:
-  - Issue 1: Authenticated Screenshot Failures
+  - Issue 1:
      - Attempted fixes: None in this session.
-     - Next debug checklist: The screenshot tool fails on authenticated pages because the session cookie is set for , but the tool navigates to the preview domain. The fix likely involves configuring the screenshot tool to use cookies for the correct domain.
-     - Why fix this issue and what will be achieved with the fix? Solving this will enable visual verification of authenticated frontend pages, improving testing efficiency after the new authentication is in place.
+     - Next debug checklist: The screenshot tool fails on authenticated pages, likely due to a mismatch between the cookie domain () and the preview URL domain. The fix would involve configuring the screenshot tool or browser context to handle cookies correctly for the preview domain.
+     - Why fix this issue and what will be achieved with the fix? This will enable automated visual verification of authenticated frontend pages, which is currently a manual and blocking process for UI validation.
      - Status:  NOT STARTED
      - Is recurring issue? Y
      - Should Test frontend/backend/both after fix? frontend
-     - Blocked on other issue: Blocked on the completion of the new email/password authentication system.
+     - Blocked on other issue: None
 
 **In progress Task List**:
-  - Task 1:  Implement Email/Password Authentication (Priority: P0)
-     - Where to resume: 
-        1.  **Backend:** Add a  field to the  model in . Ensure the new  is complete and functional. Create placeholders for JWT secrets in .
-        2.  **Frontend:** Create new pages/components for user signup and login. Remove the Test Login button and the Emergent OAuth redirect from . Update the application's auth flow to use JWT tokens.
-     - What will be achieved with this? This will complete the user's request to remove Emergent dependencies and establish a self-contained authentication system.
-     - Status:  IN PROGRESS
-     - Should Test frontend/backend/both after fix? both
-     - Blocked on something: None
-  - Task 2:  Replace Emergent Integrations with Direct SDKs (Priority: P1)
-     - Where to resume: 
-        1.  After email/password auth is working, search the codebase for any remaining uses of  or .
-        2.  Replace the persona image generation in  with a direct call to the OpenAI SDK (using a placeholder key).
-        3.  Replace the Stripe checkout logic in  with the official Stripe Python SDK (using a placeholder key).
-        4.  Update  with placeholders for  and .
-     - What will be achieved with this? The application will be fully decoupled from Emergent's backend services, as requested by the user.
-     - Status:  NOT STARTED
-     - Should Test frontend/backend/both after fix? both
-     - Blocked on something: Task 1: Implement Email/Password Authentication.
+- None.
 
 **Upcoming and Future Tasks**
     Upcoming Tasks:
-    - **P1: Verify User Persona Generation Fix:** Although the agent fixed a critical bug ( typo) and tests passed, it should be manually verified once the new auth is in place and a test epic can be completed.
-    - **P2: Full E2E Workflow Test:** After all refactoring is done, perform a comprehensive end-to-end test of all major features.
+    - **P0: User Verification of New Features:** A large number of critical features were built. The user needs to test the end-to-end flow of:
+        1.  The New Initiative wizard.
+        2.  The monthly and annual Stripe subscription and cancellation flows.
+    - **P1: Sprint Planning (Kanban Board):** The New Initiative wizard generates a sprint *plan*. The next step is to build an interactive Kanban board UI where users can manage these sprints, drag-and-drop stories, and track progress.
 
     Future Tasks:
-    - **P2: Google OAuth:** The user marked this as a nice-to-have for later.
-    - **P2: Team Collaboration:** Introduce features for multiple users to collaborate on the same epic.
+    - **P2: MoSCoW/RICE Scoring:** Implement a dedicated page for these prioritization frameworks.
+    - **P2: Google OAuth:** Add a social login option.
+    - **P2: Team Collaboration:** Introduce features for multiple users to collaborate on projects.
 
 **Completed work in this session**
-- **RICE & MoSCoW Scoring (DONE):** Full-stack implementation for scoring Epics, Features, User Stories, and Bugs, with AI assistance. Verified by the testing agent.
-- **User Persona Generation Bug Fix (DONE):** Fixed a critical backend bug caused by a field name typo ( vs. ). Verified by the testing agent.
-- **Stripe Subscription (DONE, but being replaced):** Implemented Stripe checkout and webhook handling using the  library. This is now being replaced with direct SDK calls.
-- **Epic Hard Delete (DONE):** Implemented a cascading hard-delete for Epics, ensuring all child entities (Features, Stories, Personas, etc.) are removed from the database. Verified by the testing agent.
-- **Export to Jira/Azure DevOps (DONE):** Implemented a comprehensive export feature with API integrations for Jira/Azure DevOps and file exports for CSV, JSON, and Markdown. Verified by the testing agent.
-- **Contextual Bug Linking (DONE):** Added UI components to view and link bugs directly from Epic, Feature, and User Story pages. Verified by the testing agent.
-- **Started Authentication Refactor (IN PROGRESS):** Began removing Emergent dependencies and started implementing a new email/password authentication system.
+- **Stripe Subscription System:** Migrated from one-time payments to a full subscription model with monthly/annual tiers, webhook handling, and cancel/reactivate functionality (, ).
+- **New Initiative Wizard:** Implemented a 4-pass, personalized AI pipeline with Pydantic validation, a critic pass, and SSE streaming for progress (, ).
+- **AI Poker Planning:** Created the backend and frontend for AI-powered story estimation (, ).
+- **UX & Robustness Fixes:** Added actionable error guardrails, linkable settings tabs, improved SSE parsing, and fixed several bugs in the AI generation logic.
+- **Documentation:** Created a comprehensive  and  files for both frontend and backend.
+- **PRD Updates:** The  file was consistently updated to reflect completed work and the evolving backlog.
 
 **Earlier issues found/mentioned but not fixed**
-   - Issue 1: Authenticated Screenshot Failures
-     - Debug checklist: See All Pending/In progress Issue list.
-     - Why to solve this issue and what will be achieved with this? Enable visual testing of authenticated pages.
-     - Should Test frontend/backend/both after fix: frontend
-     - Is recurring issue? Y
+   - Issue 1: Authenticated Screenshot Failures (See All Pending/In progress Issue list).
 
 **Known issue recurrence from previous fork**
-  - **Authenticated Screenshot Failures:** This issue persists from previous sessions.
+  - **Authenticated Screenshot Failures:** This is a known, persistent issue that blocks automated UI testing on pages requiring login.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Backend:** FastAPI, PostgreSQL, SQLAlchemy
-- **Frontend:** React, Tailwind CSS, Zustand
-- **Authentication (New):** JWT-based using , , and .
-- **Integrations (New):** Moving from  to direct SDKs for OpenAI and Stripe.
+- **Backend:** FastAPI, Pydantic (for strict schema validation, repair loops), SQLAlchemy, Server-Sent Events (SSE).
+- **Frontend:** React, Vite,  API with  for consuming SSE from the backend.
+- **AI/LLM:** A multi-pass pipeline architecture (PRD -> Decompose -> Plan -> Critic) for high-quality, coherent AI generation with dynamic context injection for personalization.
+- **Integrations:** Stripe Subscriptions and Webhooks.
 
 **key DB schema**
-  - **User:** will be updated with a  column.
-  - **PaymentTransaction:** uid=0(root) gid=0(root) groups=0(root), , , , , , 
-
-**changes in tech stack**
-  - **Added:** , ,  for the new authentication system.
-  - **To be removed:**  library.
-  - **To be added:** Official usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
-              [-o ORGANIZATION] [-t {openai,azure}]
-              [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
-              [--azure-ad-token AZURE_AD_TOKEN] [-V]
-              {api,tools,migrate,grit} ...
-
-positional arguments:
-  {api,tools,migrate,grit}
-    api                 Direct API calls
-    tools               Client side tools for convenience
-
-options:
-  -h, --help            show this help message and exit
-  -v, --verbose         Set verbosity.
-  -b API_BASE, --api-base API_BASE
-                        What API base url to use.
-  -k API_KEY, --api-key API_KEY
-                        What API key to use.
-  -p PROXY [PROXY ...], --proxy PROXY [PROXY ...]
-                        What proxy to use.
-  -o ORGANIZATION, --organization ORGANIZATION
-                        Which organization to run as (will use your default
-                        organization if not specified)
-  -t {openai,azure}, --api-type {openai,azure}
-                        The backend API to call, must be `openai` or `azure`
-  --api-version API_VERSION
-                        The Azure API version, e.g.
-                        'https://learn.microsoft.com/en-us/azure/ai-
-                        services/openai/reference#rest-api-versioning'
-  --azure-endpoint AZURE_ENDPOINT
-                        The Azure endpoint, e.g.
-                        'https://endpoint.openai.azure.com'
-  --azure-ad-token AZURE_AD_TOKEN
-                        A token from Azure Active Directory,
-                        https://www.microsoft.com/en-
-                        us/security/business/identity-access/microsoft-entra-
-                        id
-  -V, --version         show program's version number and exit and  Python SDKs.
+  - **Subscription:** Added  to track subscriptions pending cancellation.
 
 **All files of reference**
-- **Auth (In Progress):**
-    -  (Overwritten)
-    -  (To be modified)
-    -  (Updated with auth packages)
-- **Scoring:**
-    - 
-    - , 
-    - 
-- **Export:**
-    - , 
-    - 
-- **Bug Linking:**
-    - 
-    - , ,  (All updated)
-- **Hard Delete:**
-    - , ,  (Updated with relationships and cascade rules)
-
-**Areas that need refactoring**:
-- The entire authentication and authorization flow is currently being refactored.
--  and  must be refactored to remove the  library and use direct SDKs for OpenAI and Stripe, respectively.
+- : The core logic for the 4-pass New Initiative AI pipeline.
+- : Manages Stripe subscriptions, pricing plans, and webhooks.
+- : The frontend wizard for generating a new initiative.
+- : The UI for managing subscription plans and billing.
+- : New, essential documentation for running and developing the application.
 
 **key api endpoints**
-- **Auth (New):**
-  -  (POST): For new user signup.
-  -  (POST): For user login, returns JWT.
-- **Scoring:**
-  - : GET scoring labels.
-  - , : GET/PUT scores.
-- **Export:**
-  - : GET a preview of the data to be exported.
-  - : POST to generate and download an export file.
-- **Bug Linking:**
-  - : GET bugs linked to a specific entity.
+- : (SSE) Streams the output of the 4-pass AI wizard.
+- : Saves the generated initiative to the database.
+- : Returns available monthly and annual pricing plans.
+- : Creates a Stripe session for a new subscription.
+- : The endpoint for handling all Stripe subscription events.
+- : Syncs subscription status from Stripe and returns it to the client.
+- : (SSE) Streams AI persona estimates for a user story.
 
 **Critical Info for New Agent**
-1.  **Immediate Priority:** Your main task is to complete the **Email/Password Authentication** implementation. This involves modifying the  model, finishing the backend routes, and building the frontend login/signup UI. All Emergent-related auth code must be removed.
-2.  **Use Placeholders:** The user has instructed to use placeholders for API keys (, ) and JWT secrets in the  file. Do not ask the user for these keys again.
-3.  **Next Task:** After auth is complete, refactor the  and  to replace all calls to the  library with direct SDK calls to OpenAI and Stripe.
-4.  **Verification:** The AI Persona Generation bug fix seems solid but was never verified by the user due to the parked status. It's a low-risk check to perform after the application is stable with the new auth system.
+1.  **Top Priority is User Feedback & Next Feature:** The New Initiative wizard and subscription system are major new features. Your first step should be to ask the user to verify them. After confirmation, the next logical feature to build is the **Sprint Planning Kanban Board** to manage the plans generated by the wizard.
+2.  **Understand the AI Pipeline:** The core value of the app now lies in . This file contains the sophisticated 4-pass AI pipeline. Before making any changes to the generation logic, study this file to understand its structure, Pydantic validation models, and multi-step prompting.
+3.  **Stripe Webhook Testing:** The new subscription system is dependent on webhooks. To test or debug it, you will need to use the Stripe CLI to forward events to your local instance, as detailed in the new . You will also need to set the required Stripe environment variables (, ).
 
 **documents and test reports created in this job**
--  (updated multiple times)
--  (Scoring)
--  (Persona Fix & Stripe)
--  (Cascade Delete)
--  (Export Feature)
--  (Contextual Bug Linking)
+-  (updated throughout the session)
+- 
+- 
+- 
+- 
 
-**Last 10 User Messages and any pending HUMAN messages** 
-1.  **User:** Remove anything related to Emergent. Let me know about credentials. (Request)
-2.  **Agent:** Identified Emergent credentials (, ) and code references. Asked for user-provided keys and confirmation to remove OAuth.
-3.  **User:** Yes, remove OAuth and replace with email/password auth. Yes, replace  library. (Confirmation)
-4.  **Agent:** Asked for credentials to proceed.
-5.  **User:** Implement email/pass auth now. Do the SDK replacement later. Use placeholders in the  file for credentials. (Clarification & Prioritization)
-6.  **Agent:** Acknowledged plan to implement auth first with placeholders.
-7.  **(Agent completes several features: delete, export, bug linking)**
-8.  **User:** now we need to remove anything that has to do with Emergent... (Reiteration of original request)
-9.  **Agent:** Acknowledged and began work on removing Emergent dependencies.
-10. **User:** 1. yes we need to have a signup and login that uses email/username and password. 2. yes (Confirming details of auth change).
+**Last 10 User Messages and any pending HUMAN messages**
+1.  User requested PM reality checks (a critic pass) for the AI output. (Implemented)
+2.  User suggested injecting user context to personalize AI output. (Implemented)
+3.  User requested making AI output machine-usable with schema validation and retries. (Implemented)
+4.  User suggested a 3-pass pipeline for better coherence. (Implemented and expanded to 4 passes)
+5.  User suggested adding UX guardrails for subscription/LLM errors on the New Initiative page. (Implemented)
+6.  User requested changing the Magic Moment label to Turn idea into plan. (Implemented)
+7.  User requested adding an annual billing option. (Implemented)
+8.  User pointed out three potential issues: a brittle  check, SSE parsing fragility, and subscription status source of truth. (All three were investigated and fixed/verified).
+**All user messages from this session have been addressed.**
 
 **Project Health Check:**
-- **Broken:** The entire authentication system is non-functional as it is in the middle of a major refactor. The application is not usable until this is complete.
-- **Mocked:** OpenAI and Stripe integrations will rely on placeholder API keys in the  file until the user provides real ones.
+- **Functional:** Core features, including the new AI wizard and subscription system, are fully implemented.
+- **Mocked:** The Sprint Planning Kanban board and MoSCoW/RICE scoring features are still just items on the backlog.
 
 **3rd Party Integrations**
-- **OpenAI GPT/DALL-E:** Currently uses , will be replaced by direct usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
+- **OpenAI GPT/DALL-E:** Uses usage: openai [-h] [-v] [-b API_BASE] [-k API_KEY] [-p PROXY [PROXY ...]]
               [-o ORGANIZATION] [-t {openai,azure}]
               [--api-version API_VERSION] [--azure-endpoint AZURE_ENDPOINT]
               [--azure-ad-token AZURE_AD_TOKEN] [-V]
@@ -256,22 +170,22 @@ options:
                         https://www.microsoft.com/en-
                         us/security/business/identity-access/microsoft-entra-
                         id
-  -V, --version         show program's version number and exit SDK. Requires user API Key.
-- **Stripe:** Currently uses , will be replaced by direct  SDK. Requires user API Key.
-- **Jira / Azure DevOps:** Integrated for data export. Requires user credentials provided on the export page.
-- **Authentication:** In the process of implementing a custom JWT-based system using , , .
+  -V, --version         show program's version number and exit SDK, requires User API Key.
+- **Stripe:** Uses  SDK for Subscriptions, requires User API Key, Price IDs, and Webhook Secret.
+- **Microsoft Graph:** Uses , requires app credentials in backend .
+- **Jira / Azure DevOps:** Integrated for data export, requires user credentials on the export page.
 
 **Testing status**
-  - Testing agent used after significant changes: YES (Used for every major feature completed in the session).
+  - Testing agent used after significant changes: YES
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: Testing agent created temporary test files during its runs, which are not persisted. Test reports are in .
-  - Known regressions: None, but the entire app is currently in a broken state due to the auth refactor.
+  - Test files created: None.
+  - Known regressions: None.
 
 **Credentials to test flow:**
-The Test Login is being deprecated. Once the new auth system is complete, the flow will be:
-1.  Sign up with a new email/password.
-2.  Log in to receive a JWT.
-3.  Use the JWT in the  header for all subsequent API requests.
+1.  Sign up for a new account.
+2.  Log in to get a session.
+3.  For AI features, configure a valid OpenAI API key in **Settings -> LLM Providers**.
+4.  For the full subscription flow, add , , , and  to . Use the Stripe CLI to forward webhook events as described in .
 
 **What agent forgot to execute**
-The agent correctly followed the user's latest instructions. The implementation of the new authentication system was started but not finished. The immediate next step, adding  to the  model, was identified but not executed.</analysis>
+The agent successfully implemented all user requests from the session. It did not forget any requested tasks. The remaining unimplemented features (Kanban board, Scoring) were part of the original, larger problem statement and are correctly tracked as future tasks.</analysis>
