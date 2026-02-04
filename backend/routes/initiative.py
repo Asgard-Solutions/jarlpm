@@ -598,15 +598,113 @@ def extract_json(text: str) -> Optional[dict]:
         return None
 
 
+async def run_llm_pass_with_validation(
+    llm_service: LLMService,
+    strict_service: StrictOutputService,
+    user_id: str,
+    system: str,
+    user: str,
+    schema: Type[T],
+    task_type: TaskType,
+    pass_metrics: Optional[PassMetrics] = None,
+    quality_mode: str = "standard"
+) -> Optional[dict]:
+    """
+    Run a single LLM pass with strict output validation and auto-repair.
+    
+    Features:
+    - Uses task-specific temperature for guardrails
+    - Validates against Pydantic schema
+    - Auto-repairs invalid JSON (up to 2 retries)
+    - Optionally runs quality pass for 2-pass mode
+    - Tracks all metrics for analytics
+    """
+    start_time = time.time()
+    temperature = strict_service.get_temperature(task_type)
+    
+    # Collect full response
+    full_response = ""
+    async for chunk in llm_service.generate_stream(
+        user_id=user_id,
+        system_prompt=system,
+        user_prompt=user,
+        conversation_history=None,
+        temperature=temperature
+    ):
+        full_response += chunk
+    
+    # Define repair callback
+    async def repair_callback(repair_prompt: str) -> str:
+        repair_response = ""
+        async for chunk in llm_service.generate_stream(
+            user_id=user_id,
+            system_prompt=system,
+            user_prompt=repair_prompt,
+            conversation_history=None,
+            temperature=0.1  # Very low temp for repairs
+        ):
+            repair_response += chunk
+        return repair_response
+    
+    # Validate and repair
+    result = await strict_service.validate_and_repair(
+        raw_response=full_response,
+        schema=schema,
+        repair_callback=repair_callback,
+        max_repairs=2,
+        original_prompt=user
+    )
+    
+    # Quality mode: 2-pass with critique
+    if result.valid and quality_mode == "quality" and result.data:
+        quality_prompt = strict_service.build_quality_prompt(result.data)
+        quality_response = ""
+        async for chunk in llm_service.generate_stream(
+            user_id=user_id,
+            system_prompt="You are a quality reviewer. Improve the output while keeping the same JSON structure.",
+            user_prompt=quality_prompt,
+            conversation_history=None,
+            temperature=0.3
+        ):
+            quality_response += chunk
+        
+        improved_data = strict_service.extract_json(quality_response)
+        if improved_data:
+            result.data = improved_data
+    
+    # Update metrics
+    if pass_metrics:
+        pass_metrics.tokens_in = len(system + user) // 4
+        pass_metrics.tokens_out = len(full_response) // 4
+        pass_metrics.retries = result.repair_attempts
+        pass_metrics.duration_ms = int((time.time() - start_time) * 1000)
+        pass_metrics.success = result.valid
+        if not result.valid:
+            pass_metrics.error = "; ".join(result.errors[:2])
+    
+    # Track model health for weak model detection
+    config = await llm_service.get_user_llm_config(user_id)
+    if config:
+        strict_service._track_call(
+            user_id=user_id,
+            provider=config.provider,
+            success=result.valid,
+            repaired=result.repair_attempts > 0 and result.valid
+        )
+    
+    return result.data if result.valid else None
+
+
 async def run_llm_pass(
     llm_service,
     user_id: str,
     system: str,
     user: str,
     max_retries: int = 1,
-    pass_metrics: Optional[PassMetrics] = None
+    pass_metrics: Optional[PassMetrics] = None,
+    temperature: float = None
 ) -> Optional[dict]:
-    """Run a single LLM pass with retry, tracking metrics"""
+    """Run a single LLM pass with retry, tracking metrics (legacy fallback)"""
     start_time = time.time()
     retries = 0
     
@@ -616,7 +714,8 @@ async def run_llm_pass(
             user_id=user_id,
             system_prompt=system,
             user_prompt=user,
-            conversation_history=None
+            conversation_history=None,
+            temperature=temperature
         ):
             full_response += chunk
         
