@@ -105,19 +105,25 @@ class StrictOutputService:
         return TASK_TEMPERATURE.get(task_type, 0.5)
     
     async def track_call(self, user_id: str, provider: str, model_name: str, success: bool, repaired: bool = False):
-        """Track a call for model health metrics (persisted to DB)"""
+        """
+        Track a call for model health metrics (persisted to DB).
+        Keyed by user_id + provider + model_name for granular tracking.
+        """
         if not self.session:
             return
         
+        model_name = model_name or "default"
+        
         try:
-            from sqlalchemy import select, update
+            from sqlalchemy import select
             from db.analytics_models import ModelHealthMetrics
             
-            # Try to find existing record
+            # Try to find existing record (keyed by user + provider + model)
             result = await self.session.execute(
                 select(ModelHealthMetrics).where(
                     ModelHealthMetrics.user_id == user_id,
-                    ModelHealthMetrics.provider == provider
+                    ModelHealthMetrics.provider == provider,
+                    ModelHealthMetrics.model_name == model_name
                 )
             )
             metrics = result.scalar_one_or_none()
@@ -142,13 +148,19 @@ class StrictOutputService:
                 self.session.add(metrics)
             
             await self.session.commit()
+            logger.debug(f"Model health tracked: {provider}/{model_name} success={success} repaired={repaired}")
         except Exception as e:
             logger.warning(f"Failed to track model health: {e}")
     
-    async def get_model_warning(self, user_id: str, provider: str) -> Optional[str]:
-        """Check if the model needs a warning (from persisted metrics)"""
+    async def get_model_warning(self, user_id: str, provider: str, model_name: str = None) -> Optional[str]:
+        """
+        Check if the model needs a warning (from persisted metrics).
+        Keyed by user_id + provider + model_name.
+        """
         if not self.session:
             return None
+        
+        model_name = model_name or "default"
         
         try:
             from sqlalchemy import select
@@ -157,7 +169,8 @@ class StrictOutputService:
             result = await self.session.execute(
                 select(ModelHealthMetrics).where(
                     ModelHealthMetrics.user_id == user_id,
-                    ModelHealthMetrics.provider == provider
+                    ModelHealthMetrics.provider == provider,
+                    ModelHealthMetrics.model_name == model_name
                 )
             )
             metrics = result.scalar_one_or_none()
@@ -177,7 +190,8 @@ class StrictOutputService:
             if failure_rate > 0.3:
                 rate = int(failure_rate * 100)
                 return (
-                    f"Your selected model is struggling with structured output ({rate}% failure rate). "
+                    f"Your model ({provider}/{model_name}) is struggling with structured output "
+                    f"({rate}% failure rate over {metrics.total_calls} calls). "
                     f"Consider switching to GPT-4o or Claude Sonnet for better results."
                 )
             
@@ -186,10 +200,12 @@ class StrictOutputService:
             logger.warning(f"Failed to get model warning: {e}")
             return None
     
-    async def dismiss_warning(self, user_id: str, provider: str):
-        """Dismiss the model warning for a user+provider"""
+    async def dismiss_warning(self, user_id: str, provider: str, model_name: str = None):
+        """Dismiss the model warning for a user+provider+model"""
         if not self.session:
             return
+        
+        model_name = model_name or "default"
         
         try:
             from sqlalchemy import select
@@ -198,7 +214,8 @@ class StrictOutputService:
             result = await self.session.execute(
                 select(ModelHealthMetrics).where(
                     ModelHealthMetrics.user_id == user_id,
-                    ModelHealthMetrics.provider == provider
+                    ModelHealthMetrics.provider == provider,
+                    ModelHealthMetrics.model_name == model_name
                 )
             )
             metrics = result.scalar_one_or_none()

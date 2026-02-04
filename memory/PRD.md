@@ -844,3 +844,33 @@ When an Epic is locked, users enter Feature Planning Mode:
   - "Validate First" badges (high visibility)
   - Critical Success Factors
 - PMs love this - helps prioritize discovery work
+
+### 2026-02-04: Database Safety & Migration Infrastructure (COMPLETE)
+**1. DB_RESET_ON_STARTUP Guard**
+- New env var `DB_RESET_ON_STARTUP` (default: `false`)
+- When `true`: DROPS ALL TABLES on startup (dev only - logs warning)
+- When `false`: Safe mode - only creates missing tables via `create_all`
+- Documented in `.env.example`
+
+**2. Alembic Migration Flow**
+- Installed Alembic 1.18.0
+- Configured `alembic/env.py` for async PostgreSQL
+- Created initial schema migration
+- Usage:
+  - `alembic revision --autogenerate -m "description"` - Generate migration
+  - `alembic upgrade head` - Apply migrations
+  - `alembic downgrade -1` - Rollback one migration
+
+**3. Model Health Keying (user + provider + model)**
+- Model health now keyed by `user_id + provider + model_name`
+- Granular tracking per model (e.g., gpt-4o vs gpt-3.5-turbo)
+- Warning message includes model name for clarity
+- Updated index: `idx_model_health_user_provider_model`
+
+**4. Strict Validation Logging**
+- All 4 passes now use `run_llm_pass_with_validation()` with `pass_name`
+- Consistent logging format:
+  - `[Pass1-PRD] Starting with temp=0.8, schema=Pass1PRDOutput`
+  - `[Pass1-PRD] ✓ Valid after 1 repair(s)` or `[Pass1-PRD] ✗ Failed validation`
+- Repair attempts logged: `[Pass2-Decomp] Attempting repair...`
+- Quality pass logged: `[Pass3-Planning] Running quality pass (2-pass mode)`

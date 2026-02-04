@@ -1,6 +1,10 @@
 """
 JarlPM Database Configuration
 PostgreSQL via Neon - SQLAlchemy 2.0 Async
+
+Environment Variables:
+- DATABASE_URL: PostgreSQL connection string (required)
+- DB_RESET_ON_STARTUP: If "true", drops all tables on startup (DANGEROUS - dev only)
 """
 import os
 import ssl
@@ -14,6 +18,9 @@ logger = logging.getLogger(__name__)
 
 # Get DATABASE_URL from environment
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
+
+# DANGER: Only set to "true" in development to reset DB on each restart
+DB_RESET_ON_STARTUP = os.environ.get('DB_RESET_ON_STARTUP', 'false').lower() == 'true'
 
 def convert_url_for_asyncpg(url: str) -> str:
     """Convert standard PostgreSQL URL to asyncpg-compatible format"""
@@ -92,21 +99,33 @@ async def get_db():
 
 
 async def init_db():
-    """Initialize database - create tables if they don't exist (safe for production)"""
+    """
+    Initialize database - create tables if they don't exist.
+    
+    If DB_RESET_ON_STARTUP=true (DANGEROUS), drops all tables first.
+    Default behavior is safe for production - only creates missing tables.
+    """
     if not engine:
         logger.error("Database engine not initialized. Check DATABASE_URL.")
         return
     
     from .models import Base
-    from .feature_models import Feature, FeatureConversationEvent  # Import to register models
-    from .user_story_models import UserStory, UserStoryConversationEvent  # Import to register models
-    from .persona_models import Persona, PersonaGenerationSettings  # Import to register models
-    from .analytics_models import InitiativeGenerationLog, InitiativeEditLog, PromptVersionRegistry, ModelHealthMetrics  # Import analytics models
+    from .feature_models import Feature, FeatureConversationEvent
+    from .user_story_models import UserStory, UserStoryConversationEvent
+    from .persona_models import Persona, PersonaGenerationSettings
+    from .analytics_models import InitiativeGenerationLog, InitiativeEditLog, PromptVersionRegistry, ModelHealthMetrics
     
     async with engine.begin() as conn:
+        # DANGER: Only reset DB if explicitly enabled (dev only)
+        if DB_RESET_ON_STARTUP:
+            logger.warning("⚠️  DB_RESET_ON_STARTUP=true - DROPPING ALL TABLES!")
+            await conn.execute(text("DROP SCHEMA public CASCADE"))
+            await conn.execute(text("CREATE SCHEMA public"))
+            logger.warning("⚠️  All tables dropped. Recreating...")
+        
         # Create tables only if they don't exist (safe for production)
-        # Does NOT drop existing tables or data
         await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database tables initialized (create_all - safe mode)")
         
         # Create append-only trigger function (safe to re-run)
         await conn.execute(text("""
