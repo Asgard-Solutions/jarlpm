@@ -1092,7 +1092,7 @@ async def save_initiative(
                     story_priority=story_data.priority,
                     dependencies=story_data.dependencies,
                     risks=story_data.risks,
-                    status="draft",
+                    current_stage="draft",
                     story_points=story_data.points,
                     order_index=j,
                     created_at=now,
