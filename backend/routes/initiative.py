@@ -864,8 +864,12 @@ async def generate_initiative(
     # Initialize strict output service with DB session for persistent metrics
     strict_service = get_strict_output_service(session)
     
-    # Check for weak model warning (async, from DB)
-    model_warning = await strict_service.get_model_warning(user_id, llm_config.provider)
+    # Check for weak model warning (async, from DB - keyed by user+provider+model)
+    model_warning = await strict_service.get_model_warning(
+        user_id, 
+        llm_config.provider, 
+        llm_config.model_name
+    )
     
     # Fetch delivery context for personalization
     ctx_result = await session.execute(
