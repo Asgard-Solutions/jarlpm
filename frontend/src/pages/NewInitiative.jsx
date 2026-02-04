@@ -61,13 +61,17 @@ const NewInitiative = () => {
       
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
+      let buffer = ''; // SSE buffer for handling split chunks
       
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        
+        // Keep the last incomplete line in the buffer
+        buffer = lines.pop() || '';
         
         for (const line of lines) {
           if (line.startsWith('data: ')) {
@@ -95,7 +99,7 @@ const NewInitiative = () => {
                   break;
               }
             } catch (e) {
-              // Ignore parse errors
+              // Ignore parse errors - incomplete JSON will be caught next iteration
             }
           }
         }
