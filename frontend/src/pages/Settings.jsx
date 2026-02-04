@@ -138,6 +138,34 @@ const Settings = () => {
     }
   };
 
+  const handleCancelSubscription = async () => {
+    if (!confirm('Are you sure you want to cancel your subscription? You will retain access until the end of your billing period.')) {
+      return;
+    }
+    
+    setCanceling(true);
+    try {
+      await subscriptionAPI.cancel(true); // Cancel at period end
+      await loadData();
+    } catch (error) {
+      console.error('Failed to cancel subscription:', error);
+    } finally {
+      setCanceling(false);
+    }
+  };
+
+  const handleReactivateSubscription = async () => {
+    setReactivating(true);
+    try {
+      await subscriptionAPI.reactivate();
+      await loadData();
+    } catch (error) {
+      console.error('Failed to reactivate subscription:', error);
+    } finally {
+      setReactivating(false);
+    }
+  };
+
   const handleSaveProvider = async () => {
     if (!apiKey.trim()) {
       setKeyError('API key is required');
