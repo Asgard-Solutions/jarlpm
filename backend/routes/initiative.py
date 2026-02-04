@@ -901,7 +901,7 @@ async def generate_initiative(
                 target_points=target_points
             )
             
-            critic_result = await run_llm_pass(llm_service, user_id, critic_system, critic_prompt, max_retries=1)
+            critic_result = await run_llm_pass(llm_service, user_id, critic_system, critic_prompt, max_retries=1, pass_metrics=metrics.pass_4)
             
             # Apply critic fixes
             warnings = []
@@ -909,6 +909,11 @@ async def generate_initiative(
                 fixes = critic_result.get('fixes', {})
                 issues = critic_result.get('issues', [])
                 summary = critic_result.get('summary', {})
+                
+                # Track critic metrics
+                metrics.critic_issues_found = summary.get('total_issues', len(issues))
+                metrics.critic_auto_fixed = summary.get('auto_fixed', 0)
+                metrics.scope_assessment = summary.get('scope_assessment')
                 
                 # Collect warnings for UI
                 for issue in issues:
