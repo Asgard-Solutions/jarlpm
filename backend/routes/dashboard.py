@@ -245,8 +245,16 @@ async def get_dashboard(
     # Build recent activity (from epics and scope plans)
     recent_activity = []
     
-    # Recent epic events (created, archived, locked)
-    for epic in epics[:10]:
+    # Query ALL epics (including archived) for activity events - ordered by most recent update
+    all_epics_for_activity_q = select(Epic).where(
+        Epic.user_id == user_id
+    ).order_by(Epic.updated_at.desc()).limit(20)
+    
+    all_epics_result = await session.execute(all_epics_for_activity_q)
+    all_epics_for_activity = all_epics_result.scalars().all()
+    
+    # Recent epic events (created, archived, restored, locked)
+    for epic in all_epics_for_activity:
         # Add creation event
         recent_activity.append(ActivityEvent(
             event_type="created",
@@ -263,6 +271,27 @@ async def get_dashboard(
                 epic_id=epic.epic_id,
                 title=epic.title,
                 timestamp=epic.locked_at,
+                details=None
+            ))
+        
+        # Add archived event if applicable
+        if epic.is_archived and epic.archived_at:
+            recent_activity.append(ActivityEvent(
+                event_type="archived",
+                epic_id=epic.epic_id,
+                title=epic.title,
+                timestamp=epic.archived_at,
+                details=None
+            ))
+        
+        # Add restored event (inferred: was archived but now isn't, and updated_at > archived_at)
+        # Note: This is still inferential. For true event-sourcing, use an activity_events table.
+        elif not epic.is_archived and epic.archived_at and epic.updated_at > epic.archived_at:
+            recent_activity.append(ActivityEvent(
+                event_type="restored",
+                epic_id=epic.epic_id,
+                title=epic.title,
+                timestamp=epic.updated_at,
                 details=None
             ))
     
