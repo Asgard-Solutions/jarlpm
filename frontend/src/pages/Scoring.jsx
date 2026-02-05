@@ -212,7 +212,7 @@ const Scoring = () => {
           <p className="text-muted-foreground mt-1">MoSCoW prioritization and RICE scoring</p>
         </div>
         <div className="flex gap-2">
-          {suggestions.length > 0 && (
+          {getTotalSuggestions() > 0 && (
             <Button 
               onClick={handleApplyScores} 
               disabled={applying}
@@ -224,7 +224,7 @@ const Scoring = () => {
               ) : (
                 <Check className="h-4 w-4 mr-2" />
               )}
-              Apply {suggestions.length} Scores
+              Apply {getTotalSuggestions()} Scores
             </Button>
           )}
           <Button 
@@ -237,7 +237,7 @@ const Scoring = () => {
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
             )}
-            {generating ? 'Generating...' : 'AI Score Epic'}
+            {generating ? 'Generating...' : 'AI Score All'}
           </Button>
         </div>
       </div>
