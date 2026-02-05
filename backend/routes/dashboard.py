@@ -292,10 +292,10 @@ async def get_dashboard(
     recent_activity = recent_activity[:10]
     
     # Check if LLM is configured (simplified check)
-    from db.models import LLMProvider
-    llm_q = select(func.count(LLMProvider.id)).where(
-        LLMProvider.user_id == user_id,
-        LLMProvider.is_active == True
+    from db.models import LLMProviderConfig
+    llm_q = select(func.count(LLMProviderConfig.id)).where(
+        LLMProviderConfig.user_id == user_id,
+        LLMProviderConfig.is_active == True
     )
     llm_result = await session.execute(llm_q)
     has_llm = (llm_result.scalar() or 0) > 0
