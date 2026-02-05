@@ -195,9 +195,8 @@ async def get_delivery_context(user_id: str, session: AsyncSession) -> dict:
     num_devs = ctx.num_developers if ctx and ctx.num_developers else 0
     sprint_length = ctx.sprint_cycle_length if ctx and ctx.sprint_cycle_length else 14
     
-    # Check for custom points_per_dev_per_sprint (we'll need to add this field)
-    # For now, use default
-    points_per_dev = DEFAULT_POINTS_PER_DEV_PER_SPRINT
+    # Use user's custom velocity or default
+    points_per_dev = ctx.points_per_dev_per_sprint if ctx and ctx.points_per_dev_per_sprint else DEFAULT_POINTS_PER_DEV_PER_SPRINT
     
     sprint_capacity = num_devs * points_per_dev
     two_sprint_capacity = sprint_capacity * 2
