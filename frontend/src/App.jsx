@@ -76,6 +76,8 @@ const AppRouter = () => {
       {/* Protected routes with sidebar layout */}
       <Route path="/dashboard" element={<ProtectedPage><Dashboard /></ProtectedPage>} />
       <Route path="/initiatives" element={<ProtectedPage><Initiatives /></ProtectedPage>} />
+      <Route path="/delivery-reality" element={<ProtectedPage><DeliveryReality /></ProtectedPage>} />
+      <Route path="/delivery-reality/:epicId" element={<ProtectedPage><DeliveryReality /></ProtectedPage>} />
       <Route path="/new" element={<ProtectedPage><NewInitiative /></ProtectedPage>} />
       <Route path="/settings" element={<ProtectedPage><Settings /></ProtectedPage>} />
       <Route path="/epic/:epicId" element={<ProtectedPage><Epic /></ProtectedPage>} />
