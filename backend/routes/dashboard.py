@@ -219,8 +219,8 @@ async def get_dashboard(
     # Sort at-risk by delta (worst first)
     at_risk_initiatives.sort(key=lambda x: x.delta)
     
-    # Sort focus list by must-have points (most first), limit to 5
-    focus_list.sort(key=lambda x: (-x.must_have_points, x.updated_at), reverse=False)
+    # Sort focus list by must-have points desc, then updated_at desc (most urgent + most recent first)
+    focus_list.sort(key=lambda x: (-x.must_have_points, -x.updated_at.timestamp()))
     focus_list = focus_list[:5]
     
     # Calculate KPIs
