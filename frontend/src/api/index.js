@@ -378,6 +378,11 @@ export const deliveryRealityAPI = {
   
   // Get specific initiative delivery reality
   getInitiative: (epicId) => api.get(`/delivery-reality/initiative/${epicId}`),
+  
+  // Scope Plan endpoints
+  getScopePlan: (epicId) => api.get(`/delivery-reality/initiative/${epicId}/scope-plan`),
+  saveScopePlan: (epicId, data) => api.post(`/delivery-reality/initiative/${epicId}/scope-plan`, data),
+  clearScopePlan: (epicId) => api.delete(`/delivery-reality/initiative/${epicId}/scope-plan`),
 };
 
 export default api;
