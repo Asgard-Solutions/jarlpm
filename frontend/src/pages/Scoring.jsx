@@ -64,11 +64,14 @@ const Scoring = () => {
     }
     
     setGenerating(true);
-    setSuggestions([]);
+    setAllSuggestions(null);
     try {
-      const response = await scoringAPI.bulkScoreEpic(selectedEpic);
-      setSuggestions(response.data.suggestions || []);
-      toast.success(`Generated scores for ${response.data.suggestions?.length || 0} features`);
+      const response = await scoringAPI.bulkScoreAll(selectedEpic);
+      setAllSuggestions(response.data);
+      const total = (response.data.feature_suggestions?.length || 0) + 
+                    (response.data.story_suggestions?.length || 0) + 
+                    (response.data.bug_suggestions?.length || 0);
+      toast.success(`Generated scores for ${total} items (${response.data.feature_suggestions?.length || 0} features, ${response.data.story_suggestions?.length || 0} stories, ${response.data.bug_suggestions?.length || 0} bugs)`);
     } catch (error) {
       console.error('Failed to generate scores:', error);
       const message = error.response?.data?.detail || 'Failed to generate scores';
@@ -79,13 +82,13 @@ const Scoring = () => {
   };
 
   const handleApplyScores = async () => {
-    if (!suggestions.length) return;
+    if (!allSuggestions) return;
     
     setApplying(true);
     try {
-      const response = await scoringAPI.applyBulkScores(selectedEpic, suggestions);
-      toast.success(`Applied scores to ${response.data.applied} features`);
-      setSuggestions([]);
+      const response = await scoringAPI.applyAllScores(selectedEpic, allSuggestions);
+      toast.success(`Applied scores: ${response.data.applied.features} features, ${response.data.applied.stories} stories, ${response.data.applied.bugs} bugs`);
+      setAllSuggestions(null);
       await loadData(); // Reload to show updated scores
     } catch (error) {
       console.error('Failed to apply scores:', error);
@@ -93,6 +96,13 @@ const Scoring = () => {
     } finally {
       setApplying(false);
     }
+  };
+
+  const getTotalSuggestions = () => {
+    if (!allSuggestions) return 0;
+    return (allSuggestions.feature_suggestions?.length || 0) + 
+           (allSuggestions.story_suggestions?.length || 0) + 
+           (allSuggestions.bug_suggestions?.length || 0);
   };
 
   const filterAndSort = (items) => {
