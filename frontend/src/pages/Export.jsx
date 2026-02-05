@@ -237,24 +237,20 @@ const Export = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background" data-testid="export-page">
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} data-testid="back-btn">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div>
-                <h1 className="text-xl font-bold text-foreground">Export to Jira / Azure DevOps</h1>
-                <p className="text-sm text-muted-foreground">Export your epics, features, stories, and bugs</p>
-              </div>
+    <div className="-m-6" data-testid="export-page">
+      {/* Page Title Bar */}
+      <div className="border-b border-border bg-card/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center gap-4 h-14">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} data-testid="back-btn">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-lg font-semibold text-foreground">Export to Jira / Azure DevOps</h1>
             </div>
-            <ThemeToggle />
           </div>
         </div>
-      </header>
+      </div>
 
       <main className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
