@@ -319,7 +319,13 @@ const PokerPlanning = () => {
               <Card className="bg-card border-border">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <Badge variant="outline">Story {currentStoryIndex + 1}</Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">Story {currentStoryIndex + 1}</Badge>
+                      <PokerSessionHistory 
+                        storyId={currentStory.story_id} 
+                        storyTitle={currentStory.title}
+                      />
+                    </div>
                     {estimatedStories[currentStory.story_id] && (
                       <Badge className="bg-green-500/10 text-green-500 border-green-500/30">
                         <Check className="h-3 w-3 mr-1" />
