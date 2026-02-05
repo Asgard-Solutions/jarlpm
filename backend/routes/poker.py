@@ -15,7 +15,7 @@ from sqlalchemy import select
 
 from db import get_db
 from db.models import Epic, EpicSnapshot
-from db.user_story_models import UserStory
+from db.user_story_models import UserStory, PokerEstimateSession, PokerPersonaEstimate
 from services.llm_service import LLMService
 from services.prompt_service import PromptService
 from routes.auth import get_current_user_id
