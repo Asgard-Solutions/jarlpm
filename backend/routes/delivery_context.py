@@ -24,6 +24,7 @@ class DeliveryContextCreate(BaseModel):
     num_developers: Optional[int] = Field(None, ge=0, description="Number of developers")
     num_qa: Optional[int] = Field(None, ge=0, description="Number of QA engineers")
     delivery_platform: Optional[str] = Field(None, description="jira, azure_devops, none, other")
+    points_per_dev_per_sprint: Optional[int] = Field(8, ge=1, le=50, description="Story points per developer per sprint (default 8)")
     quality_mode: Optional[str] = Field("standard", description="standard or quality (2-pass with critique)")
 
 
@@ -36,6 +37,7 @@ class DeliveryContextResponse(BaseModel):
     num_developers: Optional[int] = None
     num_qa: Optional[int] = None
     delivery_platform: Optional[str] = None
+    points_per_dev_per_sprint: Optional[int] = 8
     quality_mode: Optional[str] = "standard"
     created_at: datetime
     updated_at: datetime
