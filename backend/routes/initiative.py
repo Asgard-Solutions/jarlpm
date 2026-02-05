@@ -1435,18 +1435,15 @@ async def save_initiative(
         
         # Create snapshot with PRD data
         snapshot = EpicSnapshot(
-            snapshot_id=generate_id("snap_"),
             epic_id=epic.epic_id,
-            version=1,
             problem_statement=validated.prd.problem_statement,
-            vision=validated.epic.vision,
             desired_outcome=validated.prd.desired_outcome,
-            target_users=validated.prd.target_users,
-            out_of_scope=validated.prd.out_of_scope,
-            risks=validated.prd.risks,
-            assumptions=[],
-            success_metrics=validated.prd.key_metrics,
-            created_at=now
+            epic_summary=f"{validated.epic.vision}\n\nTarget Users: {validated.prd.target_users}\n\nOut of Scope: {', '.join(validated.prd.out_of_scope)}\n\nRisks: {', '.join(validated.prd.risks)}\n\nKey Metrics: {', '.join(validated.prd.key_metrics)}",
+            acceptance_criteria=[],  # Acceptance criteria at epic level
+            # Lock the epic since it's being created from a complete initiative
+            problem_confirmed_at=now,
+            outcome_confirmed_at=now,
+            epic_locked_at=now,
         )
         session.add(snapshot)
         
