@@ -451,3 +451,199 @@ async def get_initiative_delivery_reality(
         should_have_points=points_data["should_have_points"],
         nice_to_have_points=points_data["nice_to_have_points"]
     )
+
+
+# ============================================
+# SCOPE PLAN ENDPOINTS
+# ============================================
+
+class ScopePlanCreate(BaseModel):
+    """Request to save a scope plan"""
+    name: str = "Default Plan"
+    deferred_story_ids: List[str] = []
+    notes: Optional[str] = None
+
+
+class ScopePlanResponse(BaseModel):
+    """Saved scope plan response"""
+    plan_id: str
+    epic_id: str
+    name: str
+    deferred_story_ids: List[str] = []
+    total_points: int
+    deferred_points: int
+    remaining_points: int
+    notes: Optional[str] = None
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+@router.post("/initiative/{epic_id}/scope-plan", response_model=ScopePlanResponse)
+async def save_scope_plan(
+    request: Request,
+    epic_id: str,
+    body: ScopePlanCreate,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Save a scope plan for an initiative.
+    
+    Stores deferred story IDs without modifying the stories themselves.
+    This allows reversible planning - PMs can experiment with scope cuts.
+    """
+    from db.models import ScopePlan, generate_uuid
+    
+    user_id = await get_current_user_id(request, session)
+    
+    # Verify epic ownership
+    epic_q = select(Epic).where(Epic.epic_id == epic_id, Epic.user_id == user_id)
+    epic_result = await session.execute(epic_q)
+    epic = epic_result.scalar_one_or_none()
+    
+    if not epic:
+        raise HTTPException(status_code=404, detail="Initiative not found")
+    
+    # Get current points breakdown
+    points_data = await get_initiative_points(epic_id, session)
+    total_points = points_data["total_points"]
+    
+    # Calculate deferred points from selected stories
+    deferred_points = sum(
+        s["points"] for s in points_data["stories"]
+        if s["story_id"] in body.deferred_story_ids
+    )
+    remaining_points = total_points - deferred_points
+    
+    # Deactivate any existing active plans for this epic
+    existing_q = select(ScopePlan).where(
+        ScopePlan.epic_id == epic_id,
+        ScopePlan.user_id == user_id,
+        ScopePlan.is_active == True
+    )
+    existing_result = await session.execute(existing_q)
+    existing_plans = existing_result.scalars().all()
+    
+    for plan in existing_plans:
+        plan.is_active = False
+    
+    # Create new plan
+    new_plan = ScopePlan(
+        plan_id=generate_uuid("splan_"),
+        epic_id=epic_id,
+        user_id=user_id,
+        name=body.name,
+        deferred_story_ids=body.deferred_story_ids,
+        total_points=total_points,
+        deferred_points=deferred_points,
+        remaining_points=remaining_points,
+        notes=body.notes,
+        is_active=True
+    )
+    session.add(new_plan)
+    await session.commit()
+    await session.refresh(new_plan)
+    
+    return ScopePlanResponse(
+        plan_id=new_plan.plan_id,
+        epic_id=new_plan.epic_id,
+        name=new_plan.name,
+        deferred_story_ids=new_plan.deferred_story_ids or [],
+        total_points=new_plan.total_points,
+        deferred_points=new_plan.deferred_points,
+        remaining_points=new_plan.remaining_points,
+        notes=new_plan.notes,
+        is_active=new_plan.is_active,
+        created_at=new_plan.created_at,
+        updated_at=new_plan.updated_at
+    )
+
+
+@router.get("/initiative/{epic_id}/scope-plan", response_model=Optional[ScopePlanResponse])
+async def get_active_scope_plan(
+    request: Request,
+    epic_id: str,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Get the active scope plan for an initiative.
+    
+    Returns None if no plan exists.
+    """
+    from db.models import ScopePlan
+    
+    user_id = await get_current_user_id(request, session)
+    
+    # Verify epic ownership
+    epic_q = select(Epic).where(Epic.epic_id == epic_id, Epic.user_id == user_id)
+    epic_result = await session.execute(epic_q)
+    epic = epic_result.scalar_one_or_none()
+    
+    if not epic:
+        raise HTTPException(status_code=404, detail="Initiative not found")
+    
+    # Get active plan
+    plan_q = select(ScopePlan).where(
+        ScopePlan.epic_id == epic_id,
+        ScopePlan.user_id == user_id,
+        ScopePlan.is_active == True
+    )
+    plan_result = await session.execute(plan_q)
+    plan = plan_result.scalar_one_or_none()
+    
+    if not plan:
+        return None
+    
+    return ScopePlanResponse(
+        plan_id=plan.plan_id,
+        epic_id=plan.epic_id,
+        name=plan.name,
+        deferred_story_ids=plan.deferred_story_ids or [],
+        total_points=plan.total_points,
+        deferred_points=plan.deferred_points,
+        remaining_points=plan.remaining_points,
+        notes=plan.notes,
+        is_active=plan.is_active,
+        created_at=plan.created_at,
+        updated_at=plan.updated_at
+    )
+
+
+@router.delete("/initiative/{epic_id}/scope-plan")
+async def clear_scope_plan(
+    request: Request,
+    epic_id: str,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Clear (deactivate) the active scope plan for an initiative.
+    
+    This allows returning to the "base plan" (no deferrals).
+    """
+    from db.models import ScopePlan
+    
+    user_id = await get_current_user_id(request, session)
+    
+    # Verify epic ownership
+    epic_q = select(Epic).where(Epic.epic_id == epic_id, Epic.user_id == user_id)
+    epic_result = await session.execute(epic_q)
+    epic = epic_result.scalar_one_or_none()
+    
+    if not epic:
+        raise HTTPException(status_code=404, detail="Initiative not found")
+    
+    # Deactivate any active plans
+    plan_q = select(ScopePlan).where(
+        ScopePlan.epic_id == epic_id,
+        ScopePlan.user_id == user_id,
+        ScopePlan.is_active == True
+    )
+    plan_result = await session.execute(plan_q)
+    active_plans = plan_result.scalars().all()
+    
+    for plan in active_plans:
+        plan.is_active = False
+    
+    await session.commit()
+    
+    return {"message": "Scope plan cleared", "epic_id": epic_id}
