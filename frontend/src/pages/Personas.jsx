@@ -211,40 +211,24 @@ const Personas = () => {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden" data-testid="personas-page">
-      {/* Header */}
-      <header className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur-sm">
+    <div className="flex flex-col overflow-hidden -m-6" style={{ height: 'calc(100vh - 4rem)' }} data-testid="personas-page">
+      {/* Page Title Bar */}
+      <div className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => navigate('/dashboard')} 
-                className="text-muted-foreground hover:text-foreground"
-                data-testid="back-btn"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div className="flex items-center gap-2">
-                <img src={logoSrc} alt="JarlPM" className="h-8 w-auto" />
-                <span className="text-lg font-semibold text-foreground">User Personas</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => navigate('/settings')} 
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <Settings className="w-5 h-5" />
-              </Button>
-            </div>
+          <div className="flex items-center gap-4 h-14">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate('/dashboard')} 
+              className="text-muted-foreground hover:text-foreground"
+              data-testid="back-btn"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <span className="text-lg font-semibold text-foreground">User Personas</span>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Filters Bar */}
       <div className="flex-shrink-0 border-b border-border bg-muted/30">

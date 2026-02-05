@@ -583,29 +583,21 @@ const Epic = () => {
     const allStoriesComplete = allFeaturesApproved && featuresWithCompleteStories === approvedFeatures.length && approvedFeatures.length > 0;
 
     return (
-      <div className="h-screen bg-background flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="flex-shrink-0 border-b-2 border-violet-500/50 bg-violet-500/5" data-testid="feature-planning-header">
+      <div className="flex flex-col overflow-hidden -m-6" style={{ height: 'calc(100vh - 4rem)' }}>
+        {/* Page Title Bar */}
+        <div className="flex-shrink-0 border-b-2 border-violet-500/50 bg-violet-500/5" data-testid="feature-planning-header">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="text-muted-foreground hover:text-foreground" data-testid="back-to-dashboard-btn">
-                  <ArrowLeft className="w-5 h-5" />
-                </Button>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-muted-foreground">Epic:</span>
-                  <span className="text-foreground font-medium">{epic.title}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <ThemeToggle />
-                <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} className="text-muted-foreground hover:text-foreground" data-testid="settings-btn">
-                  <Settings className="w-5 h-5" />
-                </Button>
+            <div className="flex items-center gap-4 h-14">
+              <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="text-muted-foreground hover:text-foreground" data-testid="back-to-dashboard-btn">
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Epic:</span>
+                <span className="text-foreground font-medium">{epic.title}</span>
               </div>
             </div>
           </div>
-        </header>
+        </div>
 
         {/* Workflow Stepper */}
         <WorkflowStepper 
@@ -1121,24 +1113,19 @@ const Epic = () => {
   // EPIC CREATION MODE (Not Locked)
   // ============================================
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden" data-testid="epic-creation-page">
-      <header className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur-sm z-50">
+    <div className="flex flex-col overflow-hidden -m-6" style={{ height: 'calc(100vh - 4rem)' }} data-testid="epic-creation-page">
+      {/* Page Title Bar */}
+      <div className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="text-muted-foreground hover:text-foreground" data-testid="back-btn"><ArrowLeft className="w-5 h-5" /></Button>
-              <div>
-                <h1 className="text-lg font-semibold text-foreground line-clamp-1">{epic.title}</h1>
-                <p className="text-xs text-muted-foreground">Epic Creation</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-              <Button variant="ghost" size="icon" onClick={() => navigate('/settings')} className="text-muted-foreground hover:text-foreground" data-testid="settings-btn"><Settings className="w-5 h-5" /></Button>
+          <div className="flex items-center gap-4 h-14">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="text-muted-foreground hover:text-foreground" data-testid="back-btn"><ArrowLeft className="w-5 h-5" /></Button>
+            <div>
+              <h1 className="text-lg font-semibold text-foreground line-clamp-1">{epic.title}</h1>
+              <p className="text-xs text-muted-foreground">Epic Creation</p>
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Workflow Stepper - Epic Definition Mode */}
       <WorkflowStepper 

@@ -1013,3 +1013,25 @@ When an Epic is locked, users enter Feature Planning Mode:
 - **AI Initiative** (primary button) → AI-powered complete plan generator
 
 **Tests:** Save endpoint verified working via curl, Create Epic flow verified via screenshot
+
+
+### 2026-02-05: UI Header Cleanup & Logout Fix (COMPLETE)
+**Issues fixed:**
+1. **Double header removed** - Pages like Epic, Bugs, Stories, Personas, Settings, Export, StoryPlanning, and CompletedEpic had their own `<header>` elements conflicting with AppLayout's header. Removed page-level headers, keeping only the AppLayout header with user menu.
+2. **Logout broken** - AppLayout was calling `clearUser()` which didn't exist in auth store. Fixed to use `logout()` (the correct store action).
+
+**Pages updated:**
+- Epic.jsx (both modes)
+- Bugs.jsx
+- Stories.jsx
+- Personas.jsx
+- Settings.jsx
+- Export.jsx
+- StoryPlanning.jsx
+- CompletedEpic.jsx
+
+**Layout pattern now:**
+- AppLayout provides: Sidebar + Top header (theme toggle, user menu with Settings/Logout)
+- Pages provide: Page title bar with back button + page-specific actions
+
+**Tests:** Screenshot verified single header, logout flow tested and working

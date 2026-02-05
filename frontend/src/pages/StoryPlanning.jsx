@@ -335,43 +335,27 @@ const StoryPlanning = () => {
   const approvedStories = stories.filter(s => s.current_stage === 'approved');
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
-      {/* Header */}
-      <header className="flex-shrink-0 border-b-2 border-blue-500/50 bg-blue-500/5" data-testid="story-planning-header">
+    <div className="flex flex-col overflow-hidden -m-6" style={{ height: 'calc(100vh - 4rem)' }}>
+      {/* Page Title Bar */}
+      <div className="flex-shrink-0 border-b-2 border-blue-500/50 bg-blue-500/5" data-testid="story-planning-header">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => navigate(`/epic/${feature.epic_id}`)} 
-                className="text-muted-foreground hover:text-foreground" 
-                data-testid="back-btn"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div className="flex items-center gap-2 text-sm">
-                <img src={logoSrc} alt="JarlPM" className="h-7 w-auto" />
-                <span className="text-muted-foreground">Epic</span>
-                <span className="text-muted-foreground">→</span>
-                <span className="text-foreground font-medium truncate max-w-[200px]">{feature.title}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => navigate('/settings')} 
-                className="text-muted-foreground hover:text-foreground"
-                data-testid="settings-btn"
-              >
-                <Settings className="w-5 h-5" />
-              </Button>
+          <div className="flex items-center gap-4 h-14">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate(`/epic/${feature.epic_id}`)} 
+              className="text-muted-foreground hover:text-foreground" 
+              data-testid="back-btn"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Epic →</span>
+              <span className="text-foreground font-medium truncate max-w-[200px]">{feature.title}</span>
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Workflow Stepper */}
       <WorkflowStepper currentStep="stories" />
