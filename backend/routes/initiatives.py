@@ -505,6 +505,7 @@ async def archive_initiative(
 ):
     """
     Archive an initiative (soft delete - reversible).
+    Sets is_archived=True and records archived_at timestamp.
     """
     user_id = await get_current_user_id(request, session)
     
@@ -516,8 +517,8 @@ async def archive_initiative(
     if not epic:
         raise HTTPException(status_code=404, detail="Initiative not found")
     
-    # For now, we'll track this via updated_at timestamp
-    # In future, add a dedicated "archived" field
+    epic.is_archived = True
+    epic.archived_at = datetime.now(timezone.utc)
     epic.updated_at = datetime.now(timezone.utc)
     await session.commit()
     
@@ -532,6 +533,7 @@ async def unarchive_initiative(
 ):
     """
     Unarchive an initiative (restore from soft delete).
+    Sets is_archived=False and clears archived_at.
     """
     user_id = await get_current_user_id(request, session)
     
@@ -543,6 +545,8 @@ async def unarchive_initiative(
     if not epic:
         raise HTTPException(status_code=404, detail="Initiative not found")
     
+    epic.is_archived = False
+    epic.archived_at = None
     epic.updated_at = datetime.now(timezone.utc)
     await session.commit()
     
