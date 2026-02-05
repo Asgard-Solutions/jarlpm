@@ -914,3 +914,37 @@ When an Epic is locked, users enter Feature Planning Mode:
   - Search is now SQL-based, not client-side (correct pagination/totals)
   - Archived filter actually filters for is_archived=true
 - **Tests:** 22/22 backend tests passed
+
+### 2026-02-05: Delivery Reality View (COMPLETE)
+**Senior-PM assistant showing feasibility, capacity, and scope recommendations**
+- **Backend Routes (`/app/backend/routes/delivery_reality.py`):**
+  - `GET /api/delivery-reality/summary` - Global summary with delivery context, status breakdown, total points
+  - `GET /api/delivery-reality/initiatives` - List all initiatives with delivery assessment
+  - `GET /api/delivery-reality/initiative/{epic_id}` - Per-initiative detail with recommended deferrals
+- **Capacity Model:**
+  - `points_per_dev_per_sprint` = 8 (default)
+  - `sprint_capacity` = num_developers * points_per_dev_per_sprint
+  - `two_sprint_capacity` = sprint_capacity * 2
+  - `delta` = two_sprint_capacity - total_points
+- **Assessment Logic:**
+  - `on_track`: delta >= 0
+  - `at_risk`: delta < 0 but |delta| <= 25% of sprint_capacity
+  - `overloaded`: delta < -25% of sprint_capacity
+- **Scope Cut Algorithm (deterministic, no AI):**
+  1. Sort stories by priority ASC (nice-to-have first) then points DESC
+  2. Select stories to defer until deferred_points >= |delta|
+  3. Return recommended_defer list with story details
+- **Frontend Page (`/app/frontend/src/pages/DeliveryReality.jsx`):**
+  - Delivery Context card with devs, sprint length, capacity metrics
+  - Warning banner when no team capacity configured with "Configure" button
+  - Status summary cards: Active Initiatives, On Track, At Risk, Overloaded
+  - Initiative table: Name, Stories, Total Points, Capacity, Delta, Status badge
+  - Detail dialog on row click:
+    - Capacity meter (progress bar)
+    - Points breakdown by priority (Must/Should/Nice to Have)
+    - Recommended deferrals table with checkboxes
+    - New totals after deferral calculation
+- **Navigation:**
+  - Route `/delivery-reality` and `/delivery-reality/:epicId` added
+  - "Delivery Reality" link added to Sidebar under Delivery section
+- **Tests:** 23/23 backend tests passed, 100% frontend tests passed
