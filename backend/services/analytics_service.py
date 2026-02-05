@@ -328,7 +328,7 @@ class AnalyticsService:
         # Success rate
         success_result = await self.session.execute(
             select(func.count(InitiativeGenerationLog.id)).where(
-                and_(base_filter, InitiativeGenerationLog.success == True)
+                and_(base_filter, InitiativeGenerationLog.success.is_(True))
             )
         )
         successes = success_result.scalar() or 0
