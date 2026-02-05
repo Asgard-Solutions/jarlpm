@@ -783,3 +783,210 @@ Provide analysis, then end with:
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"}
     )
+
+
+
+# ============================================
+# Bulk Epic Scoring Endpoint
+# ============================================
+
+class BulkScoringRequest(BaseModel):
+    epic_id: str
+
+
+class FeatureScoreSuggestion(BaseModel):
+    feature_id: str
+    title: str
+    moscow: dict
+    rice: dict
+
+
+class BulkScoringResponse(BaseModel):
+    epic_id: str
+    epic_title: str
+    suggestions: List[FeatureScoreSuggestion]
+    generated_at: str
+
+
+@router.post("/epic/{epic_id}/bulk-score", response_model=BulkScoringResponse)
+async def bulk_score_epic_features(
+    request: Request,
+    epic_id: str,
+    session: AsyncSession = Depends(get_db)
+):
+    """Generate AI scoring suggestions for all features in an Epic"""
+    from datetime import datetime, timezone
+    from db.models import Epic, Subscription, SubscriptionStatus
+    from db.feature_models import Feature
+    from sqlalchemy import select
+    
+    user_id = await get_current_user_id(request, session)
+    
+    # Check subscription
+    sub_result = await session.execute(
+        select(Subscription).where(
+            Subscription.user_id == user_id,
+            Subscription.status == SubscriptionStatus.ACTIVE.value
+        )
+    )
+    if not sub_result.scalar_one_or_none():
+        raise HTTPException(status_code=402, detail="Active subscription required")
+    
+    # Get epic
+    epic_result = await session.execute(
+        select(Epic).where(Epic.epic_id == epic_id, Epic.user_id == user_id)
+    )
+    epic = epic_result.scalar_one_or_none()
+    if not epic:
+        raise HTTPException(status_code=404, detail="Epic not found")
+    
+    # Get features for this epic
+    features_result = await session.execute(
+        select(Feature).where(Feature.epic_id == epic_id)
+    )
+    features = features_result.scalars().all()
+    
+    if not features:
+        raise HTTPException(status_code=400, detail="No features found for this epic")
+    
+    # Get LLM service
+    llm_service = LLMService(session)
+    llm_config = await llm_service.get_user_llm_config(user_id)
+    if not llm_config:
+        raise HTTPException(status_code=400, detail="Please configure an LLM provider in Settings first")
+    
+    # Build context for all features
+    features_context = []
+    for f in features:
+        features_context.append(f"- {f.title}: {f.description or 'No description'}")
+    
+    features_list = "\n".join(features_context)
+    
+    system_prompt = f"""You are a Senior Product Manager helping prioritize features using MoSCoW and RICE frameworks.
+
+EPIC: {epic.title}
+
+FEATURES TO SCORE:
+{features_list}
+
+For each feature, provide:
+1. MoSCoW score (must_have, should_have, could_have, wont_have)
+2. RICE scores:
+   - Reach (1-10): Users affected
+   - Impact (0.25=minimal, 0.5=low, 1=medium, 2=high, 3=massive)
+   - Confidence (0.5=low, 0.8=medium, 1.0=high)
+   - Effort (0.5-10 person-months)
+
+IMPORTANT: Return ONLY valid JSON, no markdown fences.
+
+Return format:
+{{
+  "features": [
+    {{
+      "title": "Feature name",
+      "moscow": {{"score": "must_have|should_have|could_have|wont_have", "reasoning": "..."}},
+      "rice": {{"reach": 1-10, "impact": 0.25-3, "confidence": 0.5-1.0, "effort": 0.5-10, "reasoning": "..."}}
+    }}
+  ]
+}}"""
+
+    user_prompt = "Please analyze and score all features for this epic."
+    
+    try:
+        response_text = ""
+        async for chunk in llm_service.generate_stream(
+            user_id=user_id,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt
+        ):
+            response_text += chunk
+        
+        # Parse JSON response
+        clean_response = response_text.strip()
+        if clean_response.startswith("```"):
+            lines = clean_response.split("\n")
+            clean_response = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+        
+        import json as json_lib
+        result = json_lib.loads(clean_response)
+        
+        # Map suggestions back to features
+        suggestions = []
+        for suggestion in result.get("features", []):
+            # Find matching feature
+            matching_feature = next(
+                (f for f in features if f.title.lower() == suggestion.get("title", "").lower()),
+                None
+            )
+            if matching_feature:
+                suggestions.append(FeatureScoreSuggestion(
+                    feature_id=matching_feature.feature_id,
+                    title=matching_feature.title,
+                    moscow=suggestion.get("moscow", {}),
+                    rice=suggestion.get("rice", {})
+                ))
+        
+        return BulkScoringResponse(
+            epic_id=epic_id,
+            epic_title=epic.title,
+            suggestions=suggestions,
+            generated_at=datetime.now(timezone.utc).isoformat()
+        )
+        
+    except json_lib.JSONDecodeError as e:
+        logger.error(f"Failed to parse bulk scoring JSON: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate valid scores. Please try again.")
+    except Exception as e:
+        logger.error(f"Bulk scoring failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Scoring failed: {str(e)}")
+
+
+@router.post("/epic/{epic_id}/apply-scores")
+async def apply_bulk_scores(
+    request: Request,
+    epic_id: str,
+    body: List[FeatureScoreSuggestion],
+    session: AsyncSession = Depends(get_db)
+):
+    """Apply AI-generated scores to features"""
+    from db.feature_models import Feature
+    from sqlalchemy import select
+    
+    user_id = await get_current_user_id(request, session)
+    scoring_service = ScoringService(session)
+    
+    # Verify epic ownership
+    epic_service = EpicService(session)
+    epic = await epic_service.get_epic(epic_id, user_id)
+    if not epic:
+        raise HTTPException(status_code=404, detail="Epic not found")
+    
+    applied = []
+    for suggestion in body:
+        try:
+            # Update MoSCoW
+            if suggestion.moscow and suggestion.moscow.get("score"):
+                await scoring_service.update_feature_moscow(
+                    suggestion.feature_id, 
+                    suggestion.moscow["score"]
+                )
+            
+            # Update RICE
+            if suggestion.rice:
+                rice = suggestion.rice
+                if all(k in rice for k in ["reach", "impact", "confidence", "effort"]):
+                    await scoring_service.update_feature_rice(
+                        suggestion.feature_id,
+                        rice["reach"],
+                        rice["impact"],
+                        rice["confidence"],
+                        rice["effort"]
+                    )
+            
+            applied.append(suggestion.feature_id)
+        except Exception as e:
+            logger.error(f"Failed to apply scores for feature {suggestion.feature_id}: {e}")
+    
+    await session.commit()
+    
+    return {"applied": len(applied), "feature_ids": applied}
