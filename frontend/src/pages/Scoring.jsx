@@ -196,9 +196,40 @@ const Scoring = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Scoring</h1>
-        <p className="text-muted-foreground mt-1">MoSCoW prioritization and RICE scoring</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Scoring</h1>
+          <p className="text-muted-foreground mt-1">MoSCoW prioritization and RICE scoring</p>
+        </div>
+        <div className="flex gap-2">
+          {suggestions.length > 0 && (
+            <Button 
+              onClick={handleApplyScores} 
+              disabled={applying}
+              variant="outline"
+              className="border-green-500 text-green-500 hover:bg-green-500/10"
+            >
+              {applying ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Check className="h-4 w-4 mr-2" />
+              )}
+              Apply {suggestions.length} Scores
+            </Button>
+          )}
+          <Button 
+            onClick={handleAIGenerate} 
+            disabled={generating || selectedEpic === 'all'}
+            className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white"
+          >
+            {generating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4 mr-2" />
+            )}
+            {generating ? 'Generating...' : 'AI Score Epic'}
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
