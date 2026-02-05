@@ -13,6 +13,9 @@ import { toast } from 'sonner';
 const Scoring = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
   const [epics, setEpics] = useState([]);
   const [features, setFeatures] = useState([]);
   const [stories, setStories] = useState([]);
