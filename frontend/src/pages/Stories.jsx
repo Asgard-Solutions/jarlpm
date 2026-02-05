@@ -13,12 +13,12 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { LinkedBugs } from '@/components/LinkedBugs';
 import { useAuthStore } from '@/store';
 import { userStoryAPI } from '@/api';
-import { 
-  BookOpen, Plus, Search, ArrowLeft, Settings,
+import { BookOpen, Plus, Search, ArrowLeft, Settings,
   CheckCircle2, Clock, Edit3, Loader2, Trash2,
   Sparkles, ArrowUpDown, User, Send, Bot, UserIcon,
-  Lock, FileText, ChevronRight
+  Lock, FileText, ChevronRight, History
 } from 'lucide-react';
+import PokerSessionHistory from '@/components/PokerSessionHistory';
 
 // Constants
 const STAGE_CONFIG = {
