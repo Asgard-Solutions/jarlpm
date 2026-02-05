@@ -133,7 +133,7 @@ async def get_prd(
         "epic_title": epic.title,
         "prd": {
             "prd_id": prd.prd_id,
-            "content": prd.content,
+            "content": prd.sections,  # Return 'sections' as 'content' for frontend
             "title": prd.title,
             "version": prd.version,
             "status": prd.status,
