@@ -973,3 +973,25 @@ When an Epic is locked, users enter Feature Planning Mode:
   - Route `/delivery-reality` and `/delivery-reality/:epicId` added
   - "Delivery Reality" link in Sidebar under Delivery section
 - **Tests:** All API endpoints verified working
+
+
+### 2026-02-05: Best-in-Class Prompt Engineering - Bug Fixes (COMPLETE)
+**Fixed critical issues in the prompt engineering implementation:**
+1. **CRITIC_SYSTEM Syntax Error Fixed:** Removed extraneous JSON content (lines 649-664) that leaked outside the string literal, causing IndentationError and preventing backend startup.
+2. **analytics_service.py Date Calculation Fixed:** Changed `from_date.replace(day=from_date.day - days)` to proper `from_date - timedelta(days=days)` to avoid negative day values.
+3. **initiative.py Save Endpoint Fixed:** 
+   - Changed `status="in_progress"` to `current_stage=EpicStage.EPIC_LOCKED.value`
+   - Removed non-existent `description` field from Epic creation (description is stored in EpicSnapshot)
+4. **Lint Fixes:** Removed unnecessary f-strings without placeholders
+5. **vite.config.js:** Added `pm-assistant-3.preview.emergentagent.com` to allowedHosts
+
+**Prompt Improvements Verified:**
+- All 4 pass prompts (PRD, Decomposition, Planning, Critic) have proper structure
+- Character limits (400 chars for problem_statement, 100 for tagline)
+- Exact item counts (3-5 key_metrics)
+- NFR story requirements in decomposition
+- Gherkin format enforcement for acceptance criteria
+- confidence_assessment with confidence_score, top_risks, key_assumptions, validate_first
+- All system prompts forbid markdown code fences
+
+**Tests:** 25/25 backend tests passed, frontend /new page verified working
