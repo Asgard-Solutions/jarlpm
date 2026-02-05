@@ -161,26 +161,16 @@ async def generate_lean_canvas(
 Return a complete Lean Canvas in JSON format with all 9 sections filled out based on this context.
 Be specific and actionable - don't use generic placeholders."""
 
-    # Decrypt API key
-    encryption_service = get_encryption_service()
-    api_key = encryption_service.decrypt(llm_config.encrypted_api_key)
-    
-    # Call LLM
-    llm_service = LLMService(
-        provider=llm_config.provider,
-        api_key=api_key,
-        model=llm_config.model_name or "gpt-4o-mini",
-        base_url=llm_config.base_url
-    )
-    
-    messages = [
-        {"role": "system", "content": LEAN_CANVAS_SYSTEM_PROMPT},
-        {"role": "user", "content": user_prompt}
-    ]
+    # Call LLM using the standard service
+    llm_service = LLMService(session)
     
     try:
         response_text = ""
-        async for chunk in llm_service.chat_stream(messages):
+        async for chunk in llm_service.generate_stream(
+            user_id=user_id,
+            system_prompt=LEAN_CANVAS_SYSTEM_PROMPT,
+            user_prompt=user_prompt
+        ):
             response_text += chunk
         
         # Parse JSON response
