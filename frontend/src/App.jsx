@@ -31,6 +31,7 @@ import LeanCanvas from '@/pages/LeanCanvas';
 import PokerPlanning from '@/pages/PokerPlanning';
 import NewInitiative from '@/pages/NewInitiative';
 import Initiatives from '@/pages/Initiatives';
+import DeliveryReality from '@/pages/DeliveryReality';
 
 // Theme initializer component
 const ThemeInitializer = ({ children }) => {
