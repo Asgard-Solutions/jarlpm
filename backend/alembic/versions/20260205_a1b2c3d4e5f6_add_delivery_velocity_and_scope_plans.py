@@ -1,7 +1,7 @@
 """add_delivery_velocity_and_scope_plans
 
 Revision ID: a1b2c3d4e5f6
-Revises: f8fd07732cde
+Revises: b2c3d4e5f6g7
 Create Date: 2026-02-05
 
 Adds:
@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'a1b2c3d4e5f6'
-down_revision = 'f8fd07732cde'
+down_revision = 'b2c3d4e5f6g7'
 branch_labels = None
 depends_on = None
 
