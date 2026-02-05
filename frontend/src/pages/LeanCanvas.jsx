@@ -232,7 +232,10 @@ const LeanCanvas = () => {
         revenue_streams: generatedCanvas.revenue_streams || '',
       });
       
-      toast.success('Lean Canvas generated successfully!');
+      // Mark as AI generated
+      setCanvasSource('ai_generated');
+      
+      toast.success('Lean Canvas generated! Click Save to persist.');
     } catch (error) {
       console.error('Failed to generate lean canvas:', error);
       const message = error.response?.data?.detail || 'Failed to generate Lean Canvas';
