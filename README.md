@@ -171,6 +171,11 @@ alembic upgrade head
 alembic downgrade -1  # Rollback one migration
 ```
 
+**Current Migration Chain:**
+1. `f8fd07732cde` - Initial schema (users, epics, features, stories, etc.)
+2. `b2c3d4e5f6g7` - Add `is_archived`, `archived_at` to epics
+3. `a1b2c3d4e5f6` - Add `points_per_dev_per_sprint` to delivery context, create `scope_plans` table
+
 > **Note:** App startup no longer modifies schema in production. 
 > Set `DB_RESET_ON_STARTUP=true` only in development to reset the database.
 
