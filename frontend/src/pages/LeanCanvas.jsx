@@ -173,32 +173,14 @@ const LeanCanvas = () => {
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selectedEpic) return;
     
     setSaving(true);
     try {
-      const existingIndex = canvasList.findIndex(c => c.epicId === selectedEpic);
-      const epic = epics.find(e => e.epic_id === selectedEpic);
-      
-      const newCanvas = {
-        epicId: selectedEpic,
-        epicTitle: epic?.title || 'Untitled',
-        data: canvas,
-        updatedAt: new Date().toISOString()
-      };
-      
-      let updatedList;
-      if (existingIndex >= 0) {
-        updatedList = [...canvasList];
-        updatedList[existingIndex] = newCanvas;
-      } else {
-        updatedList = [...canvasList, newCanvas];
-      }
-      
-      setCanvasList(updatedList);
-      localStorage.setItem('jarlpm_lean_canvases', JSON.stringify(updatedList));
-      toast.success('Lean Canvas saved successfully!');
+      await leanCanvasAPI.save(selectedEpic, canvas, canvasSource);
+      setHasExistingCanvas(true);
+      toast.success('Lean Canvas saved to database!');
     } catch (error) {
       console.error('Failed to save canvas:', error);
       toast.error('Failed to save Lean Canvas');
