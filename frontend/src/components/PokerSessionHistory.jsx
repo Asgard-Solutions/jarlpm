@@ -106,7 +106,7 @@ const PokerSessionHistory = ({ storyId, storyTitle }) => {
             Estimation History
           </DialogTitle>
           <DialogDescription>
-            Past AI poker planning sessions for "{storyTitle?.substring(0, 50) || 'this story'}..."
+            Past AI poker planning sessions for &quot;{storyTitle?.substring(0, 50) || 'this story'}&quot;...
           </DialogDescription>
         </DialogHeader>
         
