@@ -921,8 +921,14 @@ When an Epic is locked, users enter Feature Planning Mode:
   - `GET /api/delivery-reality/summary` - Global summary with delivery context, status breakdown, total points
   - `GET /api/delivery-reality/initiatives` - List all initiatives with delivery assessment
   - `GET /api/delivery-reality/initiative/{epic_id}` - Per-initiative detail with recommended deferrals
+  - `POST /api/delivery-reality/initiative/{epic_id}/scope-plan` - Save scope plan (reversible)
+  - `GET /api/delivery-reality/initiative/{epic_id}/scope-plan` - Get active scope plan
+  - `DELETE /api/delivery-reality/initiative/{epic_id}/scope-plan` - Clear scope plan (return to base)
+- **Database Changes:**
+  - Added `points_per_dev_per_sprint` (Integer, default 8) to ProductDeliveryContext
+  - Added `scope_plans` table for reversible deferral planning
 - **Capacity Model:**
-  - `points_per_dev_per_sprint` = 8 (default)
+  - `points_per_dev_per_sprint` = user-configurable (default 8)
   - `sprint_capacity` = num_developers * points_per_dev_per_sprint
   - `two_sprint_capacity` = sprint_capacity * 2
   - `delta` = two_sprint_capacity - total_points
@@ -930,21 +936,24 @@ When an Epic is locked, users enter Feature Planning Mode:
   - `on_track`: delta >= 0
   - `at_risk`: delta < 0 but |delta| <= 25% of sprint_capacity
   - `overloaded`: delta < -25% of sprint_capacity
-- **Scope Cut Algorithm (deterministic, no AI):**
-  1. Sort stories by priority ASC (nice-to-have first) then points DESC
-  2. Select stories to defer until deferred_points >= |delta|
-  3. Return recommended_defer list with story details
+- **Scope Plan Feature:**
+  - Stores deferred story IDs without mutating stories (reversible)
+  - Saves total/deferred/remaining points at time of save
+  - Supports notes from PM
+  - Active plan per epic (old plans deactivated)
 - **Frontend Page (`/app/frontend/src/pages/DeliveryReality.jsx`):**
-  - Delivery Context card with devs, sprint length, capacity metrics
-  - Warning banner when no team capacity configured with "Configure" button
+  - Delivery Context card with all metrics including custom velocity
   - Status summary cards: Active Initiatives, On Track, At Risk, Overloaded
-  - Initiative table: Name, Stories, Total Points, Capacity, Delta, Status badge
-  - Detail dialog on row click:
+  - Initiative table with clickable rows
+  - Detail dialog:
     - Capacity meter (progress bar)
     - Points breakdown by priority (Must/Should/Nice to Have)
-    - Recommended deferrals table with checkboxes
-    - New totals after deferral calculation
+    - "Recommended Scope Cuts" or "Saved Scope Plan" (labeled correctly)
+    - Deferral checkboxes with notes field
+    - Save Plan / Update Plan / Reset to Base buttons
+- **Settings UI (`/app/frontend/src/pages/Settings.jsx`):**
+  - Added "Velocity (Points per Dev per Sprint)" field with helper text
 - **Navigation:**
   - Route `/delivery-reality` and `/delivery-reality/:epicId` added
-  - "Delivery Reality" link added to Sidebar under Delivery section
-- **Tests:** 23/23 backend tests passed, 100% frontend tests passed
+  - "Delivery Reality" link in Sidebar under Delivery section
+- **Tests:** All API endpoints verified working
