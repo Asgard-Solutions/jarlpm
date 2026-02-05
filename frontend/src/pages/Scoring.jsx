@@ -335,6 +335,37 @@ const Scoring = () => {
         </CardContent>
       </Card>
 
+      {/* AI Suggestions Preview */}
+      {suggestions.length > 0 && (
+        <Card className="bg-violet-500/5 border-violet-500/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-violet-500" />
+              AI-Generated Scores (Review before applying)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {suggestions.map((s) => (
+                <div key={s.feature_id} className="flex items-center justify-between p-3 bg-background rounded-lg border">
+                  <span className="font-medium">{s.title}</span>
+                  <div className="flex items-center gap-3">
+                    <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/30">
+                      {s.moscow?.score?.replace('_', ' ')}
+                    </Badge>
+                    <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
+                      RICE: {s.rice?.reach && s.rice?.impact && s.rice?.confidence && s.rice?.effort 
+                        ? ((s.rice.reach * s.rice.impact * s.rice.confidence) / s.rice.effort).toFixed(1)
+                        : 'N/A'}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Content */}
       {loading ? (
         <div className="flex justify-center py-20">
