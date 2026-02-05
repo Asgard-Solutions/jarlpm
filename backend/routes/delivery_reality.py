@@ -53,7 +53,7 @@ class DeliveryAssessment(str, Enum):
 class DeliveryContextSummary(BaseModel):
     """Delivery context configuration"""
     num_developers: int = 0
-    num_qa: int = 0
+    num_qa: Optional[int] = 0
     sprint_cycle_length: int = 14
     points_per_dev_per_sprint: int = DEFAULT_POINTS_PER_DEV_PER_SPRINT
     sprint_capacity: int = 0
