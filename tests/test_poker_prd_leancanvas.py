@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://pm-assistant-3.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://teampm-agent.preview.emergentagent.com')
 
 # Test session token for authenticated requests
 TEST_SESSION_TOKEN = "test_session_jarlpm_full_access_2025"
