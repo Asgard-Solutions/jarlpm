@@ -232,6 +232,7 @@ const Settings = () => {
         num_developers: deliveryContext.num_developers ? parseInt(deliveryContext.num_developers) : null,
         num_qa: deliveryContext.num_qa ? parseInt(deliveryContext.num_qa) : null,
         delivery_platform: deliveryContext.delivery_platform || null,
+        points_per_dev_per_sprint: deliveryContext.points_per_dev_per_sprint ? parseInt(deliveryContext.points_per_dev_per_sprint) : 8,
         quality_mode: deliveryContext.quality_mode || 'standard',
       };
       
