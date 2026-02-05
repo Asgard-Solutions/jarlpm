@@ -423,6 +423,24 @@ const Settings = () => {
                   </div>
                 </div>
 
+                {/* Velocity */}
+                <div className="space-y-2">
+                  <Label className="text-nordic-text-secondary">Velocity (Points per Dev per Sprint)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={deliveryContext.points_per_dev_per_sprint}
+                    onChange={(e) => setDeliveryContext({ ...deliveryContext, points_per_dev_per_sprint: e.target.value })}
+                    placeholder="e.g., 8"
+                    className="bg-background border-border text-foreground placeholder:text-muted-foreground"
+                    data-testid="input-velocity"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Used in Delivery Reality to calculate 2-sprint capacity. Default is 8 points.
+                  </p>
+                </div>
+
                 {/* Delivery Platform */}
                 <div className="space-y-2">
                   <Label className="text-nordic-text-secondary">Delivery Platform</Label>
