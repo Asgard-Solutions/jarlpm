@@ -329,8 +329,8 @@ async def get_initiative(
             ]
         })
     
-    # Map status
-    display_status = map_stage_to_status(epic.current_stage)
+    # Map status (respects is_archived)
+    display_status = map_stage_to_status(epic.current_stage, epic.is_archived)
     
     return InitiativeDetail(
         epic_id=epic.epic_id,
