@@ -1487,8 +1487,9 @@ async def save_initiative(
                     dependencies=story_data.dependencies,
                     risks=story_data.risks,
                     current_stage="draft",
+                    source="ai_generated",
                     story_points=story_data.points,
-                    priority=j,  # Use priority for ordering
+                    priority=j,
                     created_at=now,
                     updated_at=now
                 )
