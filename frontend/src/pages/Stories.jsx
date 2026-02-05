@@ -416,11 +416,11 @@ const Stories = () => {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden" data-testid="stories-page">
-      {/* Header */}
-      <header className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur-sm">
+    <div className="flex flex-col overflow-hidden -m-6" style={{ height: 'calc(100vh - 4rem)' }} data-testid="stories-page">
+      {/* Page Title Bar */}
+      <div className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-4">
               <Button 
                 variant="ghost" 
@@ -431,10 +431,7 @@ const Stories = () => {
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <div className="flex items-center gap-2">
-                <img src={logoSrc} alt="JarlPM" className="h-8 w-auto" />
-                <span className="text-lg font-semibold text-foreground">User Stories</span>
-              </div>
+              <span className="text-lg font-semibold text-foreground">User Stories</span>
             </div>
             <div className="flex items-center gap-2">
               <Button 
@@ -453,19 +450,10 @@ const Stories = () => {
                 <Plus className="w-4 h-4 mr-2" />
                 Manual
               </Button>
-              <ThemeToggle />
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => navigate('/settings')} 
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <Settings className="w-5 h-5" />
-              </Button>
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Filters Bar */}
       <div className="flex-shrink-0 border-b border-border bg-muted/30">
