@@ -285,6 +285,14 @@ const Settings = () => {
       </div>
 
       <main className="container mx-auto px-4 py-8 max-w-4xl" data-testid="settings-page">
+        <div className="mb-8">
+          <h1 className="text-3xl font-semibold text-nordic-text-primary">Settings</h1>
+          <p className="text-nordic-text-muted mt-2">
+            Configure your account, subscription, and integrations
+          </p>
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-nordic-bg-secondary border border-nordic-border">
             <TabsTrigger value="delivery" className="data-[state=active]:bg-nordic-bg-primary" data-testid="tab-delivery">
               <Briefcase className="w-4 h-4 mr-2" />
