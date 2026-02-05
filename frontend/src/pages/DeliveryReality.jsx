@@ -132,14 +132,27 @@ const DeliveryReality = () => {
     try {
       setDetailLoading(true);
       setSelectedInitiative(id);
-      const response = await deliveryRealityAPI.getInitiative(id);
-      setInitiativeDetail(response.data);
       
-      // Pre-select recommended deferrals
-      const recommendedIds = new Set(
-        response.data.recommended_defer.map(s => s.story_id)
-      );
-      setDeferredStories(recommendedIds);
+      const [detailRes, planRes] = await Promise.all([
+        deliveryRealityAPI.getInitiative(id),
+        deliveryRealityAPI.getScopePlan(id).catch(() => ({ data: null })),
+      ]);
+      
+      setInitiativeDetail(detailRes.data);
+      setScopePlan(planRes.data);
+      
+      // If there's a saved plan, use those deferrals
+      // Otherwise, use recommended deferrals
+      if (planRes.data) {
+        setDeferredStories(new Set(planRes.data.deferred_story_ids || []));
+        setPlanNotes(planRes.data.notes || '');
+      } else {
+        const recommendedIds = new Set(
+          detailRes.data.recommended_defer.map(s => s.story_id)
+        );
+        setDeferredStories(recommendedIds);
+        setPlanNotes('');
+      }
     } catch (error) {
       console.error('Failed to fetch initiative detail:', error);
       toast.error('Failed to load initiative details');
