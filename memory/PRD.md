@@ -995,3 +995,21 @@ When an Epic is locked, users enter Feature Planning Mode:
 - All system prompts forbid markdown code fences
 
 **Tests:** 25/25 backend tests passed, frontend /new page verified working
+
+
+### 2026-02-05: Dashboard & Save Fixes (COMPLETE)
+**User-reported issues fixed:**
+1. **Save endpoint was broken** - EpicSnapshot model mismatch (`snapshot_id`, `version`, `vision` fields didn't exist). Fixed to use correct fields.
+2. **Feature model mismatch** - Changed `name` → `title`, `status` → `current_stage`, removed `order_index`.
+3. **UserStory save** - Added `source="ai_generated"` field.
+4. **Missing "Create Epic" button** - Added back to Dashboard header alongside "AI Initiative".
+
+**Dashboard improvements (per user feedback):**
+1. **Focus list sorting** - Fixed to sort by must_have_points DESC, then updated_at DESC (most urgent + recent first).
+2. **Activity includes archived epics** - Now queries all epics (including archived) for activity events, shows `archived` and `restored` events.
+
+**Both workflows now available:**
+- **Create Epic** (outline button) → Traditional 6-stage conversational workflow
+- **AI Initiative** (primary button) → AI-powered complete plan generator
+
+**Tests:** Save endpoint verified working via curl, Create Epic flow verified via screenshot
