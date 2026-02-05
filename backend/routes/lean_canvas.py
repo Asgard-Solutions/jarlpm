@@ -13,9 +13,8 @@ from sqlalchemy import select
 from pydantic import BaseModel, Field
 
 from db import get_db
-from db.models import Epic, EpicSnapshot, Subscription, SubscriptionStatus, LLMProviderConfig
+from db.models import Epic, EpicSnapshot, Subscription, SubscriptionStatus
 from services.llm_service import LLMService
-from services.encryption import get_encryption_service
 
 logger = logging.getLogger(__name__)
 
