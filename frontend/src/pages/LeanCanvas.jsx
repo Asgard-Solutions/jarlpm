@@ -94,16 +94,17 @@ const CANVAS_SECTIONS = [
 const LeanCanvas = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [loadingCanvas, setLoadingCanvas] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [epics, setEpics] = useState([]);
   const [selectedEpic, setSelectedEpic] = useState('');
   const [canvas, setCanvas] = useState({});
-  const [canvasList, setCanvasList] = useState([]);
+  const [canvasSource, setCanvasSource] = useState('manual');
+  const [hasExistingCanvas, setHasExistingCanvas] = useState(false);
 
   useEffect(() => {
     loadEpics();
-    loadSavedCanvases();
   }, []);
 
   useEffect(() => {
@@ -123,35 +124,45 @@ const LeanCanvas = () => {
     }
   };
 
-  const loadSavedCanvases = () => {
+  const loadCanvasForEpic = async () => {
+    setLoadingCanvas(true);
     try {
-      const saved = localStorage.getItem('jarlpm_lean_canvases');
-      if (saved) {
-        setCanvasList(JSON.parse(saved));
+      const response = await leanCanvasAPI.get(selectedEpic);
+      const data = response.data;
+      
+      if (data.exists && data.canvas) {
+        // Load saved canvas from database
+        setCanvas(data.canvas);
+        setCanvasSource(data.source || 'manual');
+        setHasExistingCanvas(true);
+      } else {
+        // Pre-populate from epic data
+        const epic = epics.find(e => e.epic_id === selectedEpic);
+        if (epic) {
+          setCanvas({
+            problem: epic.problem_statement || '',
+            solution: epic.vision || '',
+            unique_value: epic.desired_outcome || '',
+            customer_segments: epic.target_users || '',
+            key_metrics: epic.success_metrics || '',
+            unfair_advantage: '',
+            channels: '',
+            cost_structure: '',
+            revenue_streams: '',
+          });
+        } else {
+          setCanvas({});
+        }
+        setCanvasSource('manual');
+        setHasExistingCanvas(false);
       }
     } catch (error) {
-      console.error('Failed to load saved canvases:', error);
-    }
-  };
-
-  const loadCanvasForEpic = () => {
-    const savedCanvas = canvasList.find(c => c.epicId === selectedEpic);
-    if (savedCanvas) {
-      setCanvas(savedCanvas.data || {});
-    } else {
-      // Pre-populate from epic data
-      const epic = epics.find(e => e.epic_id === selectedEpic);
-      if (epic) {
-        setCanvas({
-          problem: epic.problem_statement || '',
-          solution: epic.vision || '',
-          unique_value: epic.desired_outcome || '',
-          customer_segments: epic.target_users || '',
-          key_metrics: epic.success_metrics || '',
-        });
-      } else {
-        setCanvas({});
-      }
+      console.error('Failed to load canvas:', error);
+      // Fallback to empty canvas
+      setCanvas({});
+      setHasExistingCanvas(false);
+    } finally {
+      setLoadingCanvas(false);
     }
   };
 
