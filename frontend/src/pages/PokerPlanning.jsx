@@ -166,9 +166,18 @@ const PokerPlanning = () => {
     }
   };
 
-  const acceptEstimate = (points) => {
+  const acceptEstimate = async (points) => {
     const currentStory = stories[currentStoryIndex];
     if (!currentStory) return;
+    
+    // Save to database
+    try {
+      await pokerAPI.saveEstimate(currentStory.story_id, points);
+      toast.success(`Saved ${points} story points for "${currentStory.title}"`);
+    } catch (error) {
+      console.error('Failed to save estimate to database:', error);
+      toast.error('Failed to save estimate to database');
+    }
     
     const newEstimates = {
       ...estimatedStories,
