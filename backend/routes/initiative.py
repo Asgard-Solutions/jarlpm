@@ -33,7 +33,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from db import get_db
-from db.models import Epic, EpicSnapshot, Subscription, SubscriptionStatus, ProductDeliveryContext
+from db.models import Epic, EpicSnapshot, EpicStage, Subscription, SubscriptionStatus, ProductDeliveryContext
 from db.feature_models import Feature
 from db.user_story_models import UserStory
 from services.llm_service import LLMService
