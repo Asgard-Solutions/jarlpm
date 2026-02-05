@@ -173,10 +173,15 @@ const PokerPlanning = () => {
     // Save to database
     try {
       await pokerAPI.saveEstimate(currentStory.story_id, points);
-      toast.success(`Saved ${points} story points for "${currentStory.title}"`);
+      toast.success(`✅ Saved ${points} story points for "${currentStory.title.substring(0, 30)}..."`, {
+        duration: 4000,
+      });
     } catch (error) {
       console.error('Failed to save estimate to database:', error);
-      toast.error('Failed to save estimate to database');
+      toast.error('Failed to save estimate to database', {
+        duration: 5000,
+      });
+      return; // Don't move to next story if save failed
     }
     
     const newEstimates = {
