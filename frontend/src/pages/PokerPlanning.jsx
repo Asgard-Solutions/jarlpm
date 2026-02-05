@@ -14,6 +14,7 @@ import {
   ChevronRight, ChevronLeft, AlertCircle, Trophy, Target
 } from 'lucide-react';
 import { epicAPI, featureAPI, userStoryAPI, pokerAPI } from '@/api';
+import PokerSessionHistory from '@/components/PokerSessionHistory';
 
 const FIBONACCI = [1, 2, 3, 5, 8, 13];
 
