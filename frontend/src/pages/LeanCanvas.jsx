@@ -299,14 +299,19 @@ const LeanCanvas = () => {
                   <Download className="h-4 w-4 mr-2" />
                   Export
                 </Button>
-                <Button onClick={handleSave} disabled={saving}>
+                <Button onClick={handleSave} disabled={saving || loadingCanvas}>
                   {saving ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
                     <Save className="h-4 w-4 mr-2" />
                   )}
-                  Save
+                  {hasExistingCanvas ? 'Update' : 'Save'}
                 </Button>
+                {hasExistingCanvas && (
+                  <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/30">
+                    Saved
+                  </Badge>
+                )}
               </div>
             )}
           </div>
