@@ -53,6 +53,7 @@ const Settings = () => {
     num_developers: '',
     num_qa: '',
     delivery_platform: '',
+    points_per_dev_per_sprint: '8',
     quality_mode: 'standard',
   });
   const [savingContext, setSavingContext] = useState(false);
