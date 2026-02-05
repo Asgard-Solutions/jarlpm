@@ -14,6 +14,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import ThemeToggle from '@/components/ThemeToggle';
+import PageHeader from '@/components/PageHeader';
+import EmptyState from '@/components/EmptyState';
 import {
   ArrowLeft, Download, Upload, FileJson, FileText, FileSpreadsheet,
   ExternalLink, Loader2, CheckCircle2, XCircle, AlertTriangle,
@@ -238,21 +240,17 @@ const Export = () => {
 
   return (
     <div className="-m-6" data-testid="export-page">
-      {/* Page Title Bar */}
-      <div className="border-b border-border bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center gap-4 h-14">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} data-testid="back-btn">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="text-lg font-semibold text-foreground">Export to Jira / Azure DevOps</h1>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <main className="container mx-auto px-4 py-8 max-w-6xl">
+        <PageHeader
+          title="Export"
+          description="Export an Epic to files or push it into Jira / Azure DevOps."
+          actions={
+            <Button variant="ghost" onClick={() => navigate('/dashboard')} className="gap-2">
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+          }
+        />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Epic Selection & Preview */}
           <div className="lg:col-span-1 space-y-6">
@@ -288,7 +286,13 @@ const Export = () => {
             </Card>
 
             {/* Export Preview */}
-            {selectedEpic && (
+            {!selectedEpic ? (
+              <EmptyState
+                icon={Download}
+                title="Select an Epic to export"
+                description="Choose an Epic and we’ll show a preview of exactly what will be exported."
+              />
+            ) : (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Export Preview</CardTitle>
