@@ -320,6 +320,11 @@ const LeanCanvas = () => {
 
       {/* Canvas Grid */}
       {selectedEpic ? (
+        loadingCanvas ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+          </div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Row 1: Problem, Solution, UVP, Unfair Advantage, Customer Segments */}
           <div className="lg:col-span-2 lg:row-span-2 space-y-4">
