@@ -1019,7 +1019,7 @@ async def generate_initiative(
             yield f"data: {json.dumps({'type': 'pass', 'pass': 2, 'message': 'Breaking down features...'})}\n\n"
             
             # Build DoD section
-            dod_section = f"DEFINITION OF DONE:\n" + "\n".join(f"- {d}" for d in dod)
+            dod_section = "DEFINITION OF DONE:\n" + "\n".join(f"- {d}" for d in dod)
             
             decomp_prompt = DECOMP_USER.format(
                 product_name=product_name,
