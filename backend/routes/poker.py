@@ -362,7 +362,7 @@ async def save_estimate(
     """Save the accepted story point estimate to the database"""
     
     # Verify user is authenticated
-    user_id = await get_current_user_id(request, session)
+    await get_current_user_id(request, session)
     
     # Find the story
     result = await session.execute(
