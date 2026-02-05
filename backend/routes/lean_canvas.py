@@ -106,17 +106,6 @@ async def generate_lean_canvas(
     if not sub_result.scalar_one_or_none():
         raise HTTPException(status_code=402, detail="Active subscription required")
     
-    # Get LLM provider config
-    llm_result = await session.execute(
-        select(LLMProviderConfig).where(
-            LLMProviderConfig.user_id == user_id,
-            LLMProviderConfig.is_active.is_(True)
-        )
-    )
-    llm_config = llm_result.scalar_one_or_none()
-    if not llm_config:
-        raise HTTPException(status_code=400, detail="Please configure an LLM provider in Settings first")
-    
     # Get epic data
     epic_result = await session.execute(
         select(Epic).where(
