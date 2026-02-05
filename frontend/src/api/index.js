@@ -385,4 +385,10 @@ export const deliveryRealityAPI = {
   clearScopePlan: (epicId) => api.delete(`/delivery-reality/initiative/${epicId}/scope-plan`),
 };
 
+// Dashboard API
+export const dashboardAPI = {
+  // Get complete dashboard data
+  getData: () => api.get('/dashboard'),
+};
+
 export default api;
