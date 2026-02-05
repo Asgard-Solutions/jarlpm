@@ -44,7 +44,9 @@ const Sprints = () => {
       ]);
       
       setStories(storiesRes.data || []);
-      setEpics(epicsRes.data || []);
+      // Handle both {epics: [...]} and [...] formats
+      const epicsData = epicsRes.data?.epics || epicsRes.data || [];
+      setEpics(epicsData);
       setDeliveryContext(contextRes.data);
     } catch (error) {
       console.error('Failed to load data:', error);
