@@ -31,16 +31,17 @@ const Scoring = () => {
     setLoading(true);
     try {
       const [epicsRes, storiesRes] = await Promise.all([
-        epicAPI.getEpics(),
+        epicAPI.list(),
         storyAPI.getAllStories(),
       ]);
       
-      setEpics(epicsRes.data || []);
+      setEpics(epicsRes.data?.epics || epicsRes.data || []);
       setStories(storiesRes.data || []);
       
       // Load features for all epics
       const allFeatures = [];
-      for (const epic of epicsRes.data || []) {
+      const epicsList = epicsRes.data?.epics || epicsRes.data || [];
+      for (const epic of epicsList) {
         try {
           const featuresRes = await featureAPI.getFeatures(epic.epic_id);
           allFeatures.push(...(featuresRes.data || []));
@@ -53,6 +54,44 @@ const Scoring = () => {
       console.error('Failed to load data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAIGenerate = async () => {
+    if (selectedEpic === 'all') {
+      toast.error('Please select a specific epic to generate scores');
+      return;
+    }
+    
+    setGenerating(true);
+    setSuggestions([]);
+    try {
+      const response = await scoringAPI.bulkScoreEpic(selectedEpic);
+      setSuggestions(response.data.suggestions || []);
+      toast.success(`Generated scores for ${response.data.suggestions?.length || 0} features`);
+    } catch (error) {
+      console.error('Failed to generate scores:', error);
+      const message = error.response?.data?.detail || 'Failed to generate scores';
+      toast.error(message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleApplyScores = async () => {
+    if (!suggestions.length) return;
+    
+    setApplying(true);
+    try {
+      const response = await scoringAPI.applyBulkScores(selectedEpic, suggestions);
+      toast.success(`Applied scores to ${response.data.applied} features`);
+      setSuggestions([]);
+      await loadData(); // Reload to show updated scores
+    } catch (error) {
+      console.error('Failed to apply scores:', error);
+      toast.error('Failed to apply scores');
+    } finally {
+      setApplying(false);
     }
   };
 
