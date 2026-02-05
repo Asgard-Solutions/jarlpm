@@ -15,7 +15,7 @@ const Scoring = () => {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [applying, setApplying] = useState(false);
-  const [suggestions, setSuggestions] = useState([]);
+  const [allSuggestions, setAllSuggestions] = useState(null);
   const [epics, setEpics] = useState([]);
   const [features, setFeatures] = useState([]);
   const [stories, setStories] = useState([]);
@@ -64,11 +64,14 @@ const Scoring = () => {
     }
     
     setGenerating(true);
-    setSuggestions([]);
+    setAllSuggestions(null);
     try {
-      const response = await scoringAPI.bulkScoreEpic(selectedEpic);
-      setSuggestions(response.data.suggestions || []);
-      toast.success(`Generated scores for ${response.data.suggestions?.length || 0} features`);
+      const response = await scoringAPI.bulkScoreAll(selectedEpic);
+      setAllSuggestions(response.data);
+      const total = (response.data.feature_suggestions?.length || 0) + 
+                    (response.data.story_suggestions?.length || 0) + 
+                    (response.data.bug_suggestions?.length || 0);
+      toast.success(`Generated scores for ${total} items (${response.data.feature_suggestions?.length || 0} features, ${response.data.story_suggestions?.length || 0} stories, ${response.data.bug_suggestions?.length || 0} bugs)`);
     } catch (error) {
       console.error('Failed to generate scores:', error);
       const message = error.response?.data?.detail || 'Failed to generate scores';
@@ -79,13 +82,13 @@ const Scoring = () => {
   };
 
   const handleApplyScores = async () => {
-    if (!suggestions.length) return;
+    if (!allSuggestions) return;
     
     setApplying(true);
     try {
-      const response = await scoringAPI.applyBulkScores(selectedEpic, suggestions);
-      toast.success(`Applied scores to ${response.data.applied} features`);
-      setSuggestions([]);
+      const response = await scoringAPI.applyAllScores(selectedEpic, allSuggestions);
+      toast.success(`Applied scores: ${response.data.applied.features} features, ${response.data.applied.stories} stories, ${response.data.applied.bugs} bugs`);
+      setAllSuggestions(null);
       await loadData(); // Reload to show updated scores
     } catch (error) {
       console.error('Failed to apply scores:', error);
@@ -93,6 +96,13 @@ const Scoring = () => {
     } finally {
       setApplying(false);
     }
+  };
+
+  const getTotalSuggestions = () => {
+    if (!allSuggestions) return 0;
+    return (allSuggestions.feature_suggestions?.length || 0) + 
+           (allSuggestions.story_suggestions?.length || 0) + 
+           (allSuggestions.bug_suggestions?.length || 0);
   };
 
   const filterAndSort = (items) => {
@@ -202,7 +212,7 @@ const Scoring = () => {
           <p className="text-muted-foreground mt-1">MoSCoW prioritization and RICE scoring</p>
         </div>
         <div className="flex gap-2">
-          {suggestions.length > 0 && (
+          {getTotalSuggestions() > 0 && (
             <Button 
               onClick={handleApplyScores} 
               disabled={applying}
@@ -214,7 +224,7 @@ const Scoring = () => {
               ) : (
                 <Check className="h-4 w-4 mr-2" />
               )}
-              Apply {suggestions.length} Scores
+              Apply {getTotalSuggestions()} Scores
             </Button>
           )}
           <Button 
@@ -227,7 +237,7 @@ const Scoring = () => {
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
             )}
-            {generating ? 'Generating...' : 'AI Score Epic'}
+            {generating ? 'Generating...' : 'AI Score All'}
           </Button>
         </div>
       </div>
@@ -336,7 +346,7 @@ const Scoring = () => {
       </Card>
 
       {/* AI Suggestions Preview */}
-      {suggestions.length > 0 && (
+      {allSuggestions && getTotalSuggestions() > 0 && (
         <Card className="bg-violet-500/5 border-violet-500/30">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
@@ -344,24 +354,68 @@ const Scoring = () => {
               AI-Generated Scores (Review before applying)
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {suggestions.map((s) => (
-                <div key={s.feature_id} className="flex items-center justify-between p-3 bg-background rounded-lg border">
-                  <span className="font-medium">{s.title}</span>
-                  <div className="flex items-center gap-3">
-                    <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/30">
-                      {s.moscow?.score?.replace('_', ' ')}
-                    </Badge>
-                    <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
-                      RICE: {s.rice?.reach && s.rice?.impact && s.rice?.confidence && s.rice?.effort 
-                        ? ((s.rice.reach * s.rice.impact * s.rice.confidence) / s.rice.effort).toFixed(1)
-                        : 'N/A'}
-                    </Badge>
-                  </div>
+          <CardContent className="space-y-4">
+            {/* Features */}
+            {allSuggestions.feature_suggestions?.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">Features ({allSuggestions.feature_suggestions.length})</h4>
+                <div className="space-y-2">
+                  {allSuggestions.feature_suggestions.map((s) => (
+                    <div key={s.item_id} className="flex items-center justify-between p-3 bg-background rounded-lg border">
+                      <span className="font-medium truncate max-w-[300px]">{s.title}</span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/30 text-xs">
+                          {s.moscow?.score?.replace('_', ' ')}
+                        </Badge>
+                        <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-xs">
+                          RICE: {s.rice?.reach && s.rice?.impact && s.rice?.confidence && s.rice?.effort 
+                            ? ((s.rice.reach * s.rice.impact * s.rice.confidence) / s.rice.effort).toFixed(1)
+                            : 'N/A'}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+            
+            {/* Stories */}
+            {allSuggestions.story_suggestions?.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">User Stories ({allSuggestions.story_suggestions.length})</h4>
+                <div className="space-y-2">
+                  {allSuggestions.story_suggestions.map((s) => (
+                    <div key={s.item_id} className="flex items-center justify-between p-3 bg-background rounded-lg border">
+                      <span className="font-medium truncate max-w-[300px]">{s.title}</span>
+                      <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-xs">
+                        RICE: {s.rice?.reach && s.rice?.impact && s.rice?.confidence && s.rice?.effort 
+                          ? ((s.rice.reach * s.rice.impact * s.rice.confidence) / s.rice.effort).toFixed(1)
+                          : 'N/A'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Bugs */}
+            {allSuggestions.bug_suggestions?.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">Bugs ({allSuggestions.bug_suggestions.length})</h4>
+                <div className="space-y-2">
+                  {allSuggestions.bug_suggestions.map((s) => (
+                    <div key={s.item_id} className="flex items-center justify-between p-3 bg-background rounded-lg border">
+                      <span className="font-medium truncate max-w-[300px]">{s.title}</span>
+                      <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/30 text-xs">
+                        RICE: {s.rice?.reach && s.rice?.impact && s.rice?.confidence && s.rice?.effort 
+                          ? ((s.rice.reach * s.rice.impact * s.rice.confidence) / s.rice.effort).toFixed(1)
+                          : 'N/A'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

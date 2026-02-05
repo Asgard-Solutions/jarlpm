@@ -990,3 +990,317 @@ async def apply_bulk_scores(
     await session.commit()
     
     return {"applied": len(applied), "feature_ids": applied}
+
+
+
+# ============================================
+# Comprehensive Bulk Scoring (Features, Stories, Bugs)
+# ============================================
+
+class ItemScoreSuggestion(BaseModel):
+    item_id: str
+    item_type: str  # 'feature', 'story', 'bug'
+    title: str
+    moscow: Optional[dict] = None  # Only for features
+    rice: dict
+
+
+class ComprehensiveScoringResponse(BaseModel):
+    epic_id: str
+    epic_title: str
+    feature_suggestions: List[ItemScoreSuggestion]
+    story_suggestions: List[ItemScoreSuggestion]
+    bug_suggestions: List[ItemScoreSuggestion]
+    generated_at: str
+
+
+@router.post("/epic/{epic_id}/bulk-score-all")
+async def bulk_score_all_items(
+    request: Request,
+    epic_id: str,
+    session: AsyncSession = Depends(get_db)
+):
+    """Generate AI scoring suggestions for all features, stories, and bugs in an Epic"""
+    from datetime import datetime, timezone
+    from db.models import Epic, Subscription, SubscriptionStatus, Bug
+    from db.feature_models import Feature
+    from db.user_story_models import UserStory
+    from sqlalchemy import select
+    
+    user_id = await get_current_user_id(request, session)
+    
+    # Check subscription
+    sub_result = await session.execute(
+        select(Subscription).where(
+            Subscription.user_id == user_id,
+            Subscription.status == SubscriptionStatus.ACTIVE.value
+        )
+    )
+    if not sub_result.scalar_one_or_none():
+        raise HTTPException(status_code=402, detail="Active subscription required")
+    
+    # Get epic
+    epic_result = await session.execute(
+        select(Epic).where(Epic.epic_id == epic_id, Epic.user_id == user_id)
+    )
+    epic = epic_result.scalar_one_or_none()
+    if not epic:
+        raise HTTPException(status_code=404, detail="Epic not found")
+    
+    # Get features for this epic
+    features_result = await session.execute(
+        select(Feature).where(Feature.epic_id == epic_id)
+    )
+    features = features_result.scalars().all()
+    
+    # Get stories for all features
+    stories = []
+    for feature in features:
+        stories_result = await session.execute(
+            select(UserStory).where(UserStory.feature_id == feature.feature_id)
+        )
+        stories.extend(stories_result.scalars().all())
+    
+    # Get bugs for this user (bugs are linked to epics via BugLink, not directly)
+    # For now, get all bugs for the user
+    bugs_result = await session.execute(
+        select(Bug).where(Bug.user_id == user_id, Bug.is_deleted.is_(False))
+    )
+    bugs = bugs_result.scalars().all()
+    
+    if not features and not stories and not bugs:
+        raise HTTPException(status_code=400, detail="No items found for this epic")
+    
+    # Get LLM service
+    llm_service = LLMService(session)
+    llm_config = await llm_service.get_user_llm_config(user_id)
+    if not llm_config:
+        raise HTTPException(status_code=400, detail="Please configure an LLM provider in Settings first")
+    
+    # Build context for all items
+    items_context = []
+    
+    if features:
+        items_context.append("FEATURES (need MoSCoW + RICE):")
+        for f in features:
+            items_context.append(f"  - [FEATURE] {f.title}: {f.description or 'No description'}")
+    
+    if stories:
+        items_context.append("\nUSER STORIES (need RICE only):")
+        for s in stories:
+            items_context.append(f"  - [STORY] {s.title}: {s.story_text or 'No description'}")
+    
+    if bugs:
+        items_context.append("\nBUGS (need RICE only):")
+        for b in bugs:
+            items_context.append(f"  - [BUG] {b.title}: {b.description or 'No description'} (Severity: {b.severity or 'unknown'})")
+    
+    items_list = "\n".join(items_context)
+    
+    system_prompt = f"""You are a Senior Product Manager helping prioritize work using MoSCoW and RICE frameworks.
+
+EPIC: {epic.title}
+
+ITEMS TO SCORE:
+{items_list}
+
+SCORING RULES:
+- FEATURES: Need both MoSCoW (must_have, should_have, could_have, wont_have) AND RICE scores
+- USER STORIES: Need RICE scores only (no MoSCoW)
+- BUGS: Need RICE scores only (no MoSCoW)
+
+RICE Framework:
+- Reach (1-10): Users affected. 1=few, 10=everyone
+- Impact (0.25=minimal, 0.5=low, 1=medium, 2=high, 3=massive)
+- Confidence (0.5=low, 0.8=medium, 1.0=high)
+- Effort (0.5-10 person-months). Stories/bugs typically 0.5-2
+
+IMPORTANT: Return ONLY valid JSON, no markdown fences.
+
+Return format:
+{{
+  "features": [
+    {{
+      "title": "Feature name exactly as shown",
+      "moscow": {{"score": "must_have|should_have|could_have|wont_have", "reasoning": "..."}},
+      "rice": {{"reach": 1-10, "impact": 0.25-3, "confidence": 0.5-1.0, "effort": 0.5-10, "reasoning": "..."}}
+    }}
+  ],
+  "stories": [
+    {{
+      "title": "Story name exactly as shown",
+      "rice": {{"reach": 1-10, "impact": 0.25-3, "confidence": 0.5-1.0, "effort": 0.5-2, "reasoning": "..."}}
+    }}
+  ],
+  "bugs": [
+    {{
+      "title": "Bug name exactly as shown",
+      "rice": {{"reach": 1-10, "impact": 0.25-3, "confidence": 0.5-1.0, "effort": 0.5-2, "reasoning": "..."}}
+    }}
+  ]
+}}"""
+
+    user_prompt = "Please analyze and score all items (features, stories, bugs) for this epic."
+    
+    try:
+        response_text = ""
+        async for chunk in llm_service.generate_stream(
+            user_id=user_id,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt
+        ):
+            response_text += chunk
+        
+        # Parse JSON response
+        clean_response = response_text.strip()
+        if clean_response.startswith("```"):
+            lines = clean_response.split("\n")
+            clean_response = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+        
+        import json as json_lib
+        result = json_lib.loads(clean_response)
+        
+        # Map suggestions back to items
+        feature_suggestions = []
+        for suggestion in result.get("features", []):
+            matching = next(
+                (f for f in features if f.title.lower() == suggestion.get("title", "").lower()),
+                None
+            )
+            if matching:
+                feature_suggestions.append(ItemScoreSuggestion(
+                    item_id=matching.feature_id,
+                    item_type="feature",
+                    title=matching.title,
+                    moscow=suggestion.get("moscow"),
+                    rice=suggestion.get("rice", {})
+                ))
+        
+        story_suggestions = []
+        for suggestion in result.get("stories", []):
+            matching = next(
+                (s for s in stories if s.title.lower() == suggestion.get("title", "").lower()),
+                None
+            )
+            if matching:
+                story_suggestions.append(ItemScoreSuggestion(
+                    item_id=matching.story_id,
+                    item_type="story",
+                    title=matching.title,
+                    rice=suggestion.get("rice", {})
+                ))
+        
+        bug_suggestions = []
+        for suggestion in result.get("bugs", []):
+            matching = next(
+                (b for b in bugs if b.title.lower() == suggestion.get("title", "").lower()),
+                None
+            )
+            if matching:
+                bug_suggestions.append(ItemScoreSuggestion(
+                    item_id=matching.bug_id,
+                    item_type="bug",
+                    title=matching.title,
+                    rice=suggestion.get("rice", {})
+                ))
+        
+        return ComprehensiveScoringResponse(
+            epic_id=epic_id,
+            epic_title=epic.title,
+            feature_suggestions=feature_suggestions,
+            story_suggestions=story_suggestions,
+            bug_suggestions=bug_suggestions,
+            generated_at=datetime.now(timezone.utc).isoformat()
+        )
+        
+    except json_lib.JSONDecodeError as e:
+        logger.error(f"Failed to parse comprehensive scoring JSON: {e}")
+        logger.error(f"Response: {response_text[:500]}")
+        raise HTTPException(status_code=500, detail="Failed to generate valid scores. Please try again.")
+    except Exception as e:
+        logger.error(f"Comprehensive scoring failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Scoring failed: {str(e)}")
+
+
+@router.post("/epic/{epic_id}/apply-all-scores")
+async def apply_all_bulk_scores(
+    request: Request,
+    epic_id: str,
+    body: ComprehensiveScoringResponse,
+    session: AsyncSession = Depends(get_db)
+):
+    """Apply AI-generated scores to all items (features, stories, bugs)"""
+    user_id = await get_current_user_id(request, session)
+    scoring_service = ScoringService(session)
+    
+    # Verify epic ownership
+    epic_service = EpicService(session)
+    epic = await epic_service.get_epic(epic_id, user_id)
+    if not epic:
+        raise HTTPException(status_code=404, detail="Epic not found")
+    
+    applied = {"features": 0, "stories": 0, "bugs": 0}
+    
+    # Apply feature scores
+    for suggestion in body.feature_suggestions:
+        try:
+            if suggestion.moscow and suggestion.moscow.get("score"):
+                await scoring_service.update_feature_moscow(
+                    suggestion.item_id, 
+                    suggestion.moscow["score"]
+                )
+            if suggestion.rice:
+                rice = suggestion.rice
+                if all(k in rice for k in ["reach", "impact", "confidence", "effort"]):
+                    await scoring_service.update_feature_rice(
+                        suggestion.item_id,
+                        rice["reach"],
+                        rice["impact"],
+                        rice["confidence"],
+                        rice["effort"]
+                    )
+            applied["features"] += 1
+        except Exception as e:
+            logger.error(f"Failed to apply scores for feature {suggestion.item_id}: {e}")
+    
+    # Apply story scores
+    for suggestion in body.story_suggestions:
+        try:
+            if suggestion.rice:
+                rice = suggestion.rice
+                if all(k in rice for k in ["reach", "impact", "confidence", "effort"]):
+                    await scoring_service.update_story_rice(
+                        suggestion.item_id,
+                        rice["reach"],
+                        rice["impact"],
+                        rice["confidence"],
+                        rice["effort"]
+                    )
+            applied["stories"] += 1
+        except Exception as e:
+            logger.error(f"Failed to apply scores for story {suggestion.item_id}: {e}")
+    
+    # Apply bug scores
+    for suggestion in body.bug_suggestions:
+        try:
+            if suggestion.rice:
+                rice = suggestion.rice
+                if all(k in rice for k in ["reach", "impact", "confidence", "effort"]):
+                    await scoring_service.update_bug_rice(
+                        suggestion.item_id,
+                        user_id,
+                        rice["reach"],
+                        rice["impact"],
+                        rice["confidence"],
+                        rice["effort"]
+                    )
+            applied["bugs"] += 1
+        except Exception as e:
+            logger.error(f"Failed to apply scores for bug {suggestion.item_id}: {e}")
+    
+    await session.commit()
+    
+    return {
+        "applied": applied,
+        "total": applied["features"] + applied["stories"] + applied["bugs"]
+    }

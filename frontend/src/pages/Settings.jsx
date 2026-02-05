@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
 import { 
   ArrowLeft, CreditCard, Key, Loader2, 
   CheckCircle, AlertCircle, Trash2, ExternalLink, Palette, Sun, Moon, Monitor,
@@ -236,11 +237,29 @@ const Settings = () => {
         quality_mode: deliveryContext.quality_mode || 'standard',
       };
       
-      await deliveryContextAPI.update(data);
+      const response = await deliveryContextAPI.update(data);
+      
+      // Update local state with saved data from server
+      if (response.data) {
+        setDeliveryContext({
+          industry: response.data.industry || '',
+          delivery_methodology: response.data.delivery_methodology || '',
+          sprint_cycle_length: response.data.sprint_cycle_length?.toString() || '',
+          sprint_start_date: response.data.sprint_start_date || '',
+          num_developers: response.data.num_developers?.toString() || '',
+          num_qa: response.data.num_qa?.toString() || '',
+          delivery_platform: response.data.delivery_platform || '',
+          points_per_dev_per_sprint: response.data.points_per_dev_per_sprint?.toString() || '8',
+          quality_mode: response.data.quality_mode || 'standard',
+        });
+      }
+      
       setContextSuccess(true);
+      toast.success('Delivery context saved successfully');
       setTimeout(() => setContextSuccess(false), 3000);
     } catch (error) {
       setContextError(error.response?.data?.detail || 'Failed to save delivery context');
+      toast.error('Failed to save delivery context');
     } finally {
       setSavingContext(false);
     }

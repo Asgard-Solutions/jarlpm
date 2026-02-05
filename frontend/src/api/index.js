@@ -309,6 +309,10 @@ export const scoringAPI = {
   // Bulk scoring for Epic features
   bulkScoreEpic: (epicId) => api.post(`/scoring/epic/${epicId}/bulk-score`),
   applyBulkScores: (epicId, suggestions) => api.post(`/scoring/epic/${epicId}/apply-scores`, suggestions),
+  
+  // Comprehensive bulk scoring (Features, Stories, Bugs)
+  bulkScoreAll: (epicId) => api.post(`/scoring/epic/${epicId}/bulk-score-all`),
+  applyAllScores: (epicId, data) => api.post(`/scoring/epic/${epicId}/apply-all-scores`, data),
 };
 
 // AI Poker Planning API
