@@ -8,12 +8,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { toast } from 'sonner';
 import { 
   Loader2, LayoutGrid, Save, Download, Plus, Trash2, 
   Users, Lightbulb, DollarSign, Target, Gift, BarChart3,
-  Zap, TrendingUp, ShieldCheck
+  Zap, TrendingUp, ShieldCheck, Sparkles
 } from 'lucide-react';
-import { epicAPI } from '@/api';
+import { epicAPI, leanCanvasAPI } from '@/api';
 
 const CANVAS_SECTIONS = [
   { 
