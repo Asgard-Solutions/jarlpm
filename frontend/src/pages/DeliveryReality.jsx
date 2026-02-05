@@ -651,6 +651,30 @@ const DeliveryReality = () => {
                   Close
                 </Button>
                 <div className="flex gap-2">
+                  {scopePlan && (
+                    <Button 
+                      variant="outline"
+                      onClick={clearScopePlan}
+                      className="gap-2"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Reset to Base
+                    </Button>
+                  )}
+                  {initiativeDetail.recommended_defer.length > 0 && (
+                    <Button 
+                      onClick={saveScopePlan}
+                      disabled={savingPlan}
+                      className="gap-2"
+                    >
+                      {savingPlan ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
+                      {scopePlan ? 'Update Plan' : 'Save Plan'}
+                    </Button>
+                  )}
                   <Button 
                     variant="outline" 
                     onClick={() => navigate(`/epic/${initiativeDetail.epic_id}`)}
