@@ -311,10 +311,8 @@ class AnalyticsService:
         user_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """Get aggregated generation statistics"""
-        from_date = datetime.now(timezone.utc).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
-        from_date = from_date.replace(day=from_date.day - days)
+        from_date = datetime.now(timezone.utc) - timedelta(days=days)
+        from_date = from_date.replace(hour=0, minute=0, second=0, microsecond=0)
         
         # Build query
         base_filter = InitiativeGenerationLog.created_at >= from_date
