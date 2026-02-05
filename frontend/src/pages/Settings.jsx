@@ -94,6 +94,7 @@ const Settings = () => {
           num_developers: ctxRes.data.num_developers?.toString() || '',
           num_qa: ctxRes.data.num_qa?.toString() || '',
           delivery_platform: ctxRes.data.delivery_platform || '',
+          points_per_dev_per_sprint: ctxRes.data.points_per_dev_per_sprint?.toString() || '8',
           quality_mode: ctxRes.data.quality_mode || 'standard',
         });
       }
