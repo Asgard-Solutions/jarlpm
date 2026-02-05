@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Gauge, ArrowUpDown, Filter, ExternalLink } from 'lucide-react';
+import { Loader2, Gauge, ArrowUpDown, Filter, ExternalLink, Sparkles, Check } from 'lucide-react';
 import { MoSCoWBadge, RICEBadge } from '@/components/ScoringComponents';
-import { epicAPI, featureAPI, storyAPI } from '@/api';
+import { epicAPI, featureAPI, storyAPI, scoringAPI } from '@/api';
+import { toast } from 'sonner';
 
 const Scoring = () => {
   const navigate = useNavigate();
