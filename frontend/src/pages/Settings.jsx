@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
 import { 
   ArrowLeft, CreditCard, Key, Loader2, 
   CheckCircle, AlertCircle, Trash2, ExternalLink, Palette, Sun, Moon, Monitor,
