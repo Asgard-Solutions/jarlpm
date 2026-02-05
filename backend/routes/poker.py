@@ -15,7 +15,7 @@ from sqlalchemy import select
 
 from db import get_db
 from db.models import Epic, EpicSnapshot
-from db.user_story_models import UserStory
+from db.user_story_models import UserStory, PokerEstimateSession, PokerPersonaEstimate
 from services.llm_service import LLMService
 from services.prompt_service import PromptService
 from routes.auth import get_current_user_id
@@ -274,7 +274,8 @@ Provide your estimate in the specified JSON format."""
                 logger.error(f"Error getting estimate from {persona['name']}: {e}")
                 yield f"data: {json.dumps({'type': 'persona_error', 'persona_id': persona['id'], 'error': str(e)})}\n\n"
         
-        # Calculate summary statistics
+        # Calculate summary statistics and save session
+        session_id = None
         if estimates:
             valid_estimates = [e["estimate"] for e in estimates if isinstance(e["estimate"], int)]
             if valid_estimates:
@@ -288,13 +289,46 @@ Provide your estimate in the specified JSON format."""
                 variance = sum((e - avg) ** 2 for e in valid_estimates) / len(valid_estimates)
                 consensus = "high" if variance < 2 else "medium" if variance < 5 else "low"
                 
+                # Save session and estimates to database
+                try:
+                    poker_session = PokerEstimateSession(
+                        story_id=body.story_id,
+                        user_id=user_id,
+                        min_estimate=min(valid_estimates),
+                        max_estimate=max(valid_estimates),
+                        average_estimate=round(avg, 2),
+                        suggested_estimate=most_common
+                    )
+                    session.add(poker_session)
+                    await session.flush()  # Get the session_id
+                    
+                    # Save individual persona estimates
+                    for est in estimates:
+                        persona_est = PokerPersonaEstimate(
+                            session_id=poker_session.session_id,
+                            persona_name=est["name"],
+                            persona_role=est["role"],
+                            estimate_points=est["estimate"],
+                            reasoning=est["reasoning"],
+                            confidence=est.get("confidence", "medium")
+                        )
+                        session.add(persona_est)
+                    
+                    await session.commit()
+                    session_id = poker_session.session_id
+                    logger.info(f"Saved poker session {session_id} with {len(estimates)} estimates")
+                except Exception as save_error:
+                    logger.error(f"Failed to save poker session: {save_error}")
+                    # Don't fail the whole operation if save fails
+                
                 summary = {
                     "estimates": estimates,
                     "average": round(avg, 1),
                     "suggested": most_common,
                     "min": min(valid_estimates),
                     "max": max(valid_estimates),
-                    "consensus": consensus
+                    "consensus": consensus,
+                    "session_id": session_id
                 }
                 
                 yield f"data: {json.dumps({'type': 'summary', 'summary': summary})}\n\n"
@@ -316,6 +350,7 @@ Provide your estimate in the specified JSON format."""
 class SaveEstimateRequest(BaseModel):
     story_id: str
     story_points: int
+    session_id: Optional[str] = None  # Link to poker session if available
 
 
 @router.post("/save-estimate")
@@ -325,9 +360,8 @@ async def save_estimate(
     session: AsyncSession = Depends(get_db)
 ):
     """Save the accepted story point estimate to the database"""
-    from db.user_story_models import UserStory
     
-    # Verify user is authenticated (we don't need the ID, just auth check)
+    # Verify user is authenticated
     await get_current_user_id(request, session)
     
     # Find the story
@@ -343,13 +377,24 @@ async def save_estimate(
     story.story_points = body.story_points
     story.updated_at = datetime.now(timezone.utc)
     
+    # If session_id provided, mark that session as accepted
+    if body.session_id:
+        session_result = await session.execute(
+            select(PokerEstimateSession).where(PokerEstimateSession.session_id == body.session_id)
+        )
+        poker_session = session_result.scalar_one_or_none()
+        if poker_session:
+            poker_session.accepted_estimate = body.story_points
+            poker_session.accepted_at = datetime.now(timezone.utc)
+    
     await session.commit()
     await session.refresh(story)
     
     return {
         "success": True,
         "story_id": body.story_id,
-        "story_points": body.story_points
+        "story_points": body.story_points,
+        "session_id": body.session_id
     }
 
 
@@ -492,3 +537,103 @@ RESPONSE FORMAT (JSON only):
             "X-Accel-Buffering": "no"
         }
     )
+
+
+@router.get("/sessions/{story_id}")
+async def get_poker_sessions(
+    story_id: str,
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get all poker estimation sessions for a story with their reasoning"""
+    await get_current_user_id(request, session)
+    
+    # Get all sessions for this story
+    result = await session.execute(
+        select(PokerEstimateSession)
+        .where(PokerEstimateSession.story_id == story_id)
+        .order_by(PokerEstimateSession.created_at.desc())
+    )
+    sessions = result.scalars().all()
+    
+    sessions_data = []
+    for poker_session in sessions:
+        # Get persona estimates for this session
+        estimates_result = await session.execute(
+            select(PokerPersonaEstimate)
+            .where(PokerPersonaEstimate.session_id == poker_session.session_id)
+        )
+        persona_estimates = estimates_result.scalars().all()
+        
+        sessions_data.append({
+            "session_id": poker_session.session_id,
+            "story_id": poker_session.story_id,
+            "min_estimate": poker_session.min_estimate,
+            "max_estimate": poker_session.max_estimate,
+            "average_estimate": poker_session.average_estimate,
+            "suggested_estimate": poker_session.suggested_estimate,
+            "accepted_estimate": poker_session.accepted_estimate,
+            "accepted_at": poker_session.accepted_at.isoformat() if poker_session.accepted_at else None,
+            "created_at": poker_session.created_at.isoformat(),
+            "estimates": [
+                {
+                    "persona_name": est.persona_name,
+                    "persona_role": est.persona_role,
+                    "estimate_points": est.estimate_points,
+                    "reasoning": est.reasoning,
+                    "confidence": est.confidence
+                }
+                for est in persona_estimates
+            ]
+        })
+    
+    return {"sessions": sessions_data}
+
+
+@router.get("/session/{session_id}")
+async def get_poker_session(
+    session_id: str,
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get a specific poker session with full reasoning details"""
+    await get_current_user_id(request, session)
+    
+    # Get the session
+    result = await session.execute(
+        select(PokerEstimateSession).where(PokerEstimateSession.session_id == session_id)
+    )
+    poker_session = result.scalar_one_or_none()
+    
+    if not poker_session:
+        raise HTTPException(status_code=404, detail="Poker session not found")
+    
+    # Get persona estimates
+    estimates_result = await session.execute(
+        select(PokerPersonaEstimate)
+        .where(PokerPersonaEstimate.session_id == session_id)
+    )
+    persona_estimates = estimates_result.scalars().all()
+    
+    return {
+        "session_id": poker_session.session_id,
+        "story_id": poker_session.story_id,
+        "min_estimate": poker_session.min_estimate,
+        "max_estimate": poker_session.max_estimate,
+        "average_estimate": poker_session.average_estimate,
+        "suggested_estimate": poker_session.suggested_estimate,
+        "accepted_estimate": poker_session.accepted_estimate,
+        "accepted_at": poker_session.accepted_at.isoformat() if poker_session.accepted_at else None,
+        "created_at": poker_session.created_at.isoformat(),
+        "estimates": [
+            {
+                "persona_name": est.persona_name,
+                "persona_role": est.persona_role,
+                "estimate_points": est.estimate_points,
+                "reasoning": est.reasoning,
+                "confidence": est.confidence
+            }
+            for est in persona_estimates
+        ]
+    }
+

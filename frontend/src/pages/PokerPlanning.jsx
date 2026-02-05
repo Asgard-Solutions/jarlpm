@@ -14,6 +14,7 @@ import {
   ChevronRight, ChevronLeft, AlertCircle, Trophy, Target
 } from 'lucide-react';
 import { epicAPI, featureAPI, userStoryAPI, pokerAPI } from '@/api';
+import PokerSessionHistory from '@/components/PokerSessionHistory';
 
 const FIBONACCI = [1, 2, 3, 5, 8, 13];
 
@@ -170,13 +171,21 @@ const PokerPlanning = () => {
     const currentStory = stories[currentStoryIndex];
     if (!currentStory) return;
     
+    // Get session_id from the summary if available
+    const sessionId = estimateSummary?.session_id || null;
+    
     // Save to database
     try {
-      await pokerAPI.saveEstimate(currentStory.story_id, points);
-      toast.success(`Saved ${points} story points for "${currentStory.title}"`);
+      await pokerAPI.saveEstimate(currentStory.story_id, points, sessionId);
+      toast.success(`✅ Saved ${points} story points for "${currentStory.title.substring(0, 30)}..."`, {
+        duration: 4000,
+      });
     } catch (error) {
       console.error('Failed to save estimate to database:', error);
-      toast.error('Failed to save estimate to database');
+      toast.error('Failed to save estimate to database', {
+        duration: 5000,
+      });
+      return; // Don't move to next story if save failed
     }
     
     const newEstimates = {
@@ -185,6 +194,7 @@ const PokerPlanning = () => {
         points,
         aiEstimates,
         summary: estimateSummary,
+        sessionId,
         estimatedAt: new Date().toISOString()
       }
     };
@@ -309,7 +319,13 @@ const PokerPlanning = () => {
               <Card className="bg-card border-border">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <Badge variant="outline">Story {currentStoryIndex + 1}</Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">Story {currentStoryIndex + 1}</Badge>
+                      <PokerSessionHistory 
+                        storyId={currentStory.story_id} 
+                        storyTitle={currentStory.title}
+                      />
+                    </div>
                     {estimatedStories[currentStory.story_id] && (
                       <Badge className="bg-green-500/10 text-green-500 border-green-500/30">
                         <Check className="h-3 w-3 mr-1" />

@@ -676,3 +676,67 @@ class BugConversationEvent(Base):
     __table_args__ = (
         Index('idx_bug_conversation_bug_id', 'bug_id'),
     )
+
+
+
+class LeanCanvas(Base):
+    """Lean Canvas business model tied to an Epic"""
+    __tablename__ = "lean_canvases"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    canvas_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("canvas_"))
+    epic_id: Mapped[str] = mapped_column(String(50), ForeignKey("epics.epic_id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[str] = mapped_column(String(50), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    
+    # Lean Canvas 9 sections
+    problem: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    solution: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    unique_value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    unfair_advantage: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    customer_segments: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    key_metrics: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    channels: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    cost_structure: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    revenue_streams: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Source tracking
+    source: Mapped[str] = mapped_column(String(50), default="manual", nullable=False)  # manual | ai_generated
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    __table_args__ = (
+        Index('idx_lean_canvas_epic_id', 'epic_id'),
+        Index('idx_lean_canvas_user_id', 'user_id'),
+        UniqueConstraint('epic_id', name='uq_lean_canvas_epic'),  # One canvas per epic
+    )
+
+
+
+class PRDDocument(Base):
+    """Product Requirements Document tied to an Epic"""
+    __tablename__ = "prd_documents"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    prd_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("prd_"))
+    epic_id: Mapped[str] = mapped_column(String(50), ForeignKey("epics.epic_id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[str] = mapped_column(String(50), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    
+    # PRD content - using 'sections' to match existing schema
+    title: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    sections: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Stores the full PRD content
+    source: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    generation_context: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Metadata
+    version: Mapped[str] = mapped_column(String(20), default="1.0", nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default="draft", nullable=False)  # draft | review | approved
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    __table_args__ = (
+        Index('idx_prd_epic_id', 'epic_id'),
+        Index('idx_prd_user_id', 'user_id'),
+        UniqueConstraint('epic_id', name='uq_prd_epic'),  # One PRD per epic
+    )

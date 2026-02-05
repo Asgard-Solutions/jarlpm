@@ -1035,3 +1035,131 @@ When an Epic is locked, users enter Feature Planning Mode:
 - Pages provide: Page title bar with back button + page-specific actions
 
 **Tests:** Screenshot verified single header, logout flow tested and working
+
+
+### 2026-02-05: Persist Poker Planning AI Reasoning (COMPLETE)
+**Feature:** Save detailed AI persona reasoning during poker planning sessions for later review
+
+**Database Changes:**
+- Added `poker_estimate_sessions` table:
+  - session_id, story_id, user_id
+  - min/max/average/suggested estimates (statistics)
+  - accepted_estimate, accepted_at (when user accepts)
+  - created_at
+- Added `poker_persona_estimates` table:
+  - estimate_id, session_id (FK)
+  - persona_name, persona_role
+  - estimate_points, reasoning, confidence
+  - created_at
+- Migration: `20260205_1830_add_poker_session_tables.py`
+
+**Backend Updates (`/app/backend/routes/poker.py`):**
+- Modified `/estimate` endpoint to save session and persona estimates to database
+- Summary now includes `session_id` for frontend reference
+- Added `session_id` parameter to `POST /api/poker/save-estimate` to link acceptance
+- New `GET /api/poker/sessions/{story_id}` - Get all poker sessions for a story
+- New `GET /api/poker/session/{session_id}` - Get specific session with full reasoning
+
+**Frontend Updates:**
+- `PokerPlanning.jsx`: Passes `session_id` to save-estimate call when accepting
+- `api/index.js`: Updated `saveEstimate()` to accept optional `sessionId`
+- Added `getSessions()` and `getSession()` API methods
+
+**Data Flow:**
+1. User runs AI estimation → Session + persona estimates saved to DB
+2. User accepts estimate → Story points saved + session marked as accepted
+3. Later: User can retrieve full reasoning via `/sessions/{story_id}` endpoint
+
+**Tests:** API endpoints verified via curl, backend running without errors
+
+### 2026-02-05: Poker Session History UI Component (COMPLETE)
+**Feature:** View past AI estimation sessions with full persona reasoning
+
+**New Component (`/app/frontend/src/components/PokerSessionHistory.jsx`):**
+- Dialog-based history viewer triggered by "View History" button
+- Collapsible session cards showing:
+  - Date/time of estimation
+  - Acceptance status badge (if estimate was accepted)
+  - Summary stats (suggested, average, min, max)
+- Expandable persona reasoning section:
+  - Each persona's estimate with avatar
+  - Full reasoning text
+  - Confidence level indicator
+- "Latest" badge on most recent session
+
+**Integration Points:**
+- **PokerPlanning.jsx:** Button appears next to story badge when story is selected
+- **Stories.jsx (StoryDetailDialog):** Button appears next to story points in header
+
+**User Flow:**
+1. User opens story detail or selects story in Poker Planning
+2. Clicks "View History" button (History icon)
+3. Dialog shows all past estimation sessions
+4. Click session to expand and see full persona reasoning
+5. Useful for retrospectives, audits, and understanding estimate rationale
+
+**Tests:** Frontend compiles successfully, UI visually verified
+
+### 2026-02-05: Lean Canvas Database Persistence (BUG FIX)
+**Issue:** Lean Canvas was saving to localStorage only, not to database. Canvas data was lost when selecting an Epic that already had a canvas created.
+
+**Database Changes:**
+- Added `lean_canvases` table:
+  - canvas_id, epic_id (unique constraint), user_id
+  - 9 canvas sections: problem, solution, unique_value, unfair_advantage, customer_segments, key_metrics, channels, cost_structure, revenue_streams
+  - source: manual | ai_generated
+  - created_at, updated_at
+- Migration: `20260205_1850_add_lean_canvas_table.py`
+
+**Backend Updates (`/app/backend/routes/lean_canvas.py`):**
+- Added `GET /api/lean-canvas/{epic_id}` - Get saved canvas for an epic
+- Added `POST /api/lean-canvas/save` - Save or update canvas (upsert behavior)
+- Response includes `exists: true/false` to indicate if canvas is persisted
+
+**Frontend Updates (`/app/frontend/src/pages/LeanCanvas.jsx`):**
+- Replaced localStorage with API calls
+- Added `loadingCanvas` state with spinner while fetching
+- Shows "Saved" badge when canvas exists in database
+- Button changes from "Save" to "Update" when editing existing canvas
+- AI-generated canvases marked with `source: ai_generated` when saved
+
+**API Updates (`/app/frontend/src/api/index.js`):**
+- Added `leanCanvasAPI.get(epicId)` 
+- Added `leanCanvasAPI.save(epicId, canvas, source)`
+
+**Tests:** API verified via curl, UI screenshot confirmed data loads correctly
+
+
+### 2026-02-05: List-First UX for Lean Canvas & PRD Pages (FEATURE)
+**User Request:** Both pages should show a list of existing items first, with a "Create New" option that only shows epics without an existing item.
+
+**Lean Canvas Changes:**
+- **List View:** Shows all existing canvases as cards with epic title, source (AI/Manual), and last updated date
+- **Editor View:** Opens when clicking a canvas card, with Back button to return to list
+- **Create New Dialog:** Shows only epics that don't have a canvas yet
+- **New Endpoints:**
+  - `GET /api/lean-canvas/list` - List all user's canvases
+  - `GET /api/lean-canvas/epics-without-canvas` - Get epics eligible for new canvas
+
+**PRD Changes:**
+- **Database Model:** Added `PRDDocument` model to persist PRDs (using `sections` column for content)
+- **List View:** Shows all PRDs with epic title, status badge, version, and last updated
+- **Editor View:** Markdown editor with Edit/Preview tabs, regenerate from epic data option
+- **Create New Dialog:** Shows only epics that don't have a PRD yet
+- **New Endpoints:**
+  - `GET /api/prd/list` - List all user's PRDs
+  - `GET /api/prd/epics-without-prd` - Get epics eligible for new PRD
+  - `GET /api/prd/{epic_id}` - Get saved PRD
+  - `POST /api/prd/save` - Save or update PRD
+  - `DELETE /api/prd/{epic_id}` - Delete PRD
+
+**UI Features (both pages):**
+- Click card to view/edit
+- "Back" button returns to list
+- "Saved" badge shows persistence status
+- "Update" vs "Save" button based on existing state
+- Loading spinners during data fetch
+
+**Tests:** All APIs verified via curl, UI screenshots confirm list and editor views working
+
+

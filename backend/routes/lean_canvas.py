@@ -13,7 +13,7 @@ from sqlalchemy import select
 from pydantic import BaseModel, Field
 
 from db import get_db
-from db.models import Epic, EpicSnapshot, Subscription, SubscriptionStatus
+from db.models import Epic, EpicSnapshot, Subscription, SubscriptionStatus, LeanCanvas
 from services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
@@ -39,18 +39,89 @@ class GenerateLeanCanvasRequest(BaseModel):
     epic_id: str
 
 
+class SaveLeanCanvasRequest(BaseModel):
+    """Request to save lean canvas"""
+    epic_id: str
+    canvas: LeanCanvasData
+    source: str = "manual"  # manual | ai_generated
+
+
 class LeanCanvasResponse(BaseModel):
     """Response with generated lean canvas"""
     epic_id: str
     epic_title: str
     canvas: LeanCanvasData
     generated_at: str
+    source: Optional[str] = None
 
 
 async def get_current_user_id(request: Request, session: AsyncSession) -> str:
     """Get current user ID from session cookie"""
     from routes.auth import get_current_user_id as auth_get_user
     return await auth_get_user(request, session)
+
+
+@router.get("/list")
+async def list_lean_canvases(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get all Lean Canvases for the current user"""
+    user_id = await get_current_user_id(request, session)
+    
+    # Get all canvases with epic info
+    result = await session.execute(
+        select(LeanCanvas, Epic)
+        .join(Epic, LeanCanvas.epic_id == Epic.epic_id)
+        .where(LeanCanvas.user_id == user_id)
+        .order_by(LeanCanvas.updated_at.desc())
+    )
+    rows = result.all()
+    
+    canvases = []
+    for canvas, epic in rows:
+        canvases.append({
+            "canvas_id": canvas.canvas_id,
+            "epic_id": canvas.epic_id,
+            "epic_title": epic.title,
+            "source": canvas.source,
+            "created_at": canvas.created_at.isoformat(),
+            "updated_at": canvas.updated_at.isoformat(),
+        })
+    
+    return {"canvases": canvases}
+
+
+@router.get("/epics-without-canvas")
+async def get_epics_without_canvas(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get all epics that don't have a Lean Canvas yet"""
+    user_id = await get_current_user_id(request, session)
+    
+    # Get epics that don't have a canvas
+    result = await session.execute(
+        select(Epic)
+        .outerjoin(LeanCanvas, Epic.epic_id == LeanCanvas.epic_id)
+        .where(
+            Epic.user_id == user_id,
+            LeanCanvas.id == None
+        )
+        .order_by(Epic.updated_at.desc())
+    )
+    epics = result.scalars().all()
+    
+    return {
+        "epics": [
+            {
+                "epic_id": e.epic_id,
+                "title": e.title,
+                "stage": e.current_stage,
+            }
+            for e in epics
+        ]
+    }
 
 
 LEAN_CANVAS_SYSTEM_PROMPT = """You are JarlPM, an expert business strategist and product manager.
@@ -186,3 +257,124 @@ Be specific and actionable - don't use generic placeholders."""
     except Exception as e:
         logger.error(f"Lean Canvas generation failed: {e}")
         raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
+
+
+
+@router.get("/{epic_id}")
+async def get_lean_canvas(
+    epic_id: str,
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get saved Lean Canvas for an Epic"""
+    user_id = await get_current_user_id(request, session)
+    
+    # Get epic to verify ownership and get title
+    epic_result = await session.execute(
+        select(Epic).where(
+            Epic.epic_id == epic_id,
+            Epic.user_id == user_id
+        )
+    )
+    epic = epic_result.scalar_one_or_none()
+    if not epic:
+        raise HTTPException(status_code=404, detail="Epic not found")
+    
+    # Get saved canvas
+    canvas_result = await session.execute(
+        select(LeanCanvas).where(LeanCanvas.epic_id == epic_id)
+    )
+    canvas = canvas_result.scalar_one_or_none()
+    
+    if not canvas:
+        return {
+            "epic_id": epic_id,
+            "epic_title": epic.title,
+            "canvas": None,
+            "exists": False
+        }
+    
+    return {
+        "epic_id": epic_id,
+        "epic_title": epic.title,
+        "canvas": {
+            "problem": canvas.problem or "",
+            "solution": canvas.solution or "",
+            "unique_value": canvas.unique_value or "",
+            "unfair_advantage": canvas.unfair_advantage or "",
+            "customer_segments": canvas.customer_segments or "",
+            "key_metrics": canvas.key_metrics or "",
+            "channels": canvas.channels or "",
+            "cost_structure": canvas.cost_structure or "",
+            "revenue_streams": canvas.revenue_streams or "",
+        },
+        "source": canvas.source,
+        "updated_at": canvas.updated_at.isoformat(),
+        "exists": True
+    }
+
+
+@router.post("/save")
+async def save_lean_canvas(
+    request: Request,
+    body: SaveLeanCanvasRequest,
+    session: AsyncSession = Depends(get_db)
+):
+    """Save or update Lean Canvas for an Epic"""
+    user_id = await get_current_user_id(request, session)
+    
+    # Verify epic ownership
+    epic_result = await session.execute(
+        select(Epic).where(
+            Epic.epic_id == body.epic_id,
+            Epic.user_id == user_id
+        )
+    )
+    epic = epic_result.scalar_one_or_none()
+    if not epic:
+        raise HTTPException(status_code=404, detail="Epic not found")
+    
+    # Check if canvas already exists
+    existing_result = await session.execute(
+        select(LeanCanvas).where(LeanCanvas.epic_id == body.epic_id)
+    )
+    existing_canvas = existing_result.scalar_one_or_none()
+    
+    if existing_canvas:
+        # Update existing canvas
+        existing_canvas.problem = body.canvas.problem
+        existing_canvas.solution = body.canvas.solution
+        existing_canvas.unique_value = body.canvas.unique_value
+        existing_canvas.unfair_advantage = body.canvas.unfair_advantage
+        existing_canvas.customer_segments = body.canvas.customer_segments
+        existing_canvas.key_metrics = body.canvas.key_metrics
+        existing_canvas.channels = body.canvas.channels
+        existing_canvas.cost_structure = body.canvas.cost_structure
+        existing_canvas.revenue_streams = body.canvas.revenue_streams
+        existing_canvas.source = body.source
+        existing_canvas.updated_at = datetime.now(timezone.utc)
+    else:
+        # Create new canvas
+        new_canvas = LeanCanvas(
+            epic_id=body.epic_id,
+            user_id=user_id,
+            problem=body.canvas.problem,
+            solution=body.canvas.solution,
+            unique_value=body.canvas.unique_value,
+            unfair_advantage=body.canvas.unfair_advantage,
+            customer_segments=body.canvas.customer_segments,
+            key_metrics=body.canvas.key_metrics,
+            channels=body.canvas.channels,
+            cost_structure=body.canvas.cost_structure,
+            revenue_streams=body.canvas.revenue_streams,
+            source=body.source
+        )
+        session.add(new_canvas)
+    
+    await session.commit()
+    
+    return {
+        "success": True,
+        "epic_id": body.epic_id,
+        "message": "Lean Canvas saved successfully"
+    }

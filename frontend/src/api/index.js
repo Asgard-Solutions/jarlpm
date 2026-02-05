@@ -346,10 +346,17 @@ export const pokerAPI = {
   },
   
   // Save estimate to database
-  saveEstimate: (storyId, storyPoints) => api.post('/poker/save-estimate', {
+  saveEstimate: (storyId, storyPoints, sessionId = null) => api.post('/poker/save-estimate', {
     story_id: storyId,
-    story_points: storyPoints
+    story_points: storyPoints,
+    session_id: sessionId
   }),
+  
+  // Get poker sessions for a story
+  getSessions: (storyId) => api.get(`/poker/sessions/${storyId}`),
+  
+  // Get specific poker session details
+  getSession: (sessionId) => api.get(`/poker/session/${sessionId}`),
 };
 
 // Initiative Library API
@@ -409,6 +416,45 @@ export const dashboardAPI = {
 export const leanCanvasAPI = {
   // Generate Lean Canvas from Epic using LLM
   generate: (epicId) => api.post('/lean-canvas/generate', { epic_id: epicId }),
+  
+  // List all Lean Canvases
+  list: () => api.get('/lean-canvas/list'),
+  
+  // Get epics without a canvas
+  getEpicsWithoutCanvas: () => api.get('/lean-canvas/epics-without-canvas'),
+  
+  // Get saved Lean Canvas for an Epic
+  get: (epicId) => api.get(`/lean-canvas/${epicId}`),
+  
+  // Save or update Lean Canvas
+  save: (epicId, canvas, source = 'manual') => api.post('/lean-canvas/save', {
+    epic_id: epicId,
+    canvas,
+    source
+  }),
+};
+
+export const prdAPI = {
+  // List all PRDs
+  list: () => api.get('/prd/list'),
+  
+  // Get epics without a PRD
+  getEpicsWithoutPRD: () => api.get('/prd/epics-without-prd'),
+  
+  // Get saved PRD for an Epic
+  get: (epicId) => api.get(`/prd/${epicId}`),
+  
+  // Save or update PRD
+  save: (epicId, content, title = null, version = '1.0', status = 'draft') => api.post('/prd/save', {
+    epic_id: epicId,
+    content,
+    title,
+    version,
+    status
+  }),
+  
+  // Delete PRD
+  delete: (epicId) => api.delete(`/prd/${epicId}`),
 };
 
 export default api;
