@@ -368,4 +368,16 @@ export const initiativeAPI = {
   getSummary: () => api.get('/initiatives/stats/summary'),
 };
 
+// Delivery Reality API
+export const deliveryRealityAPI = {
+  // Get global summary
+  getSummary: () => api.get('/delivery-reality/summary'),
+  
+  // List all initiatives with delivery reality
+  listInitiatives: () => api.get('/delivery-reality/initiatives'),
+  
+  // Get specific initiative delivery reality
+  getInitiative: (epicId) => api.get(`/delivery-reality/initiative/${epicId}`),
+};
+
 export default api;

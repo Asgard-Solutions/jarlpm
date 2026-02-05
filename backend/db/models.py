@@ -316,6 +316,10 @@ class Epic(Base):
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     current_stage: Mapped[str] = mapped_column(String(50), default=EpicStage.PROBLEM_CAPTURE.value, nullable=False)
     
+    # Initiative Library: Archive status (reversible soft-delete)
+    is_archived: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    archived_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    
     # Pending proposal (JSON for flexibility)
     pending_proposal: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     
@@ -345,6 +349,7 @@ class Epic(Base):
     __table_args__ = (
         Index('idx_epics_user_id', 'user_id'),
         Index('idx_epics_stage', 'current_stage'),
+        Index('idx_epics_archived', 'is_archived'),
         # Stage can only be valid enum values
         CheckConstraint(
             "current_stage IN ('problem_capture', 'problem_confirmed', 'outcome_capture', 'outcome_confirmed', 'epic_drafted', 'epic_locked')",

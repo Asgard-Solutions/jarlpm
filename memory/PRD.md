@@ -711,10 +711,9 @@ When an Epic is locked, users enter Feature Planning Mode:
 ## Backlog
 
 ### P0 - Critical
-- None! All critical items completed.
+- None! All P0 items completed (Initiative Library + Delivery Reality View).
 
 ### P1 - Upcoming
-- **Delivery Reality View:** Build a UI that uses delivery context (team size, velocity) and the generated plan's story points to show capacity-per-sprint estimate, scope-fit indicator (on-track/at-risk), and auto-suggested scope cuts
 - Configure Stripe webhook in Stripe Dashboard (endpoint: /api/webhook/stripe)
 - Test full subscription flow with real Stripe test keys
 - Sprint Planning (Kanban board) implementation
@@ -723,6 +722,7 @@ When an Epic is locked, users enter Feature Planning Mode:
 - **Decision & Assumption Tracking:** Persist assumptions and risks from "Confidence & Risks" panel, build workflow to track validation status
 - **Collaboration Loop:** Share read-only links to initiatives, basic commenting system
 - **Jira/Linear Push Integration:** Deep integration to push plans directly into user's Jira or Linear project
+- **points_per_dev_per_sprint field:** Add to ProductDeliveryContext model to allow user override of default 8
 - Google OAuth authentication (nice-to-have)
 - Team collaboration features
 
@@ -882,28 +882,69 @@ When an Epic is locked, users enter Feature Planning Mode:
 ### 2026-02-05: Initiative Library (COMPLETE)
 **Central hub to view, search, and manage all saved initiatives**
 - **Backend Routes (`/app/backend/routes/initiatives.py`):**
-  - `GET /api/initiatives` - List with pagination, filtering by status, search
-  - `GET /api/initiatives/stats/summary` - Summary counts (total, draft, active, completed)
+  - `GET /api/initiatives` - List with pagination, SQL-based search and status filtering
+  - `GET /api/initiatives/stats/summary` - Summary counts (total, draft, active, completed, archived)
   - `GET /api/initiatives/{epic_id}` - Full initiative details
   - `POST /api/initiatives/{epic_id}/duplicate` - Clone an initiative
-  - `PATCH /api/initiatives/{epic_id}/archive` - Soft-delete (reversible)
+  - `PATCH /api/initiatives/{epic_id}/archive` - Soft-delete (reversible, sets is_archived=true)
   - `PATCH /api/initiatives/{epic_id}/unarchive` - Restore from archive
   - `DELETE /api/initiatives/{epic_id}` - Permanent delete
+- **Database Changes:**
+  - Added `is_archived` (Boolean, default false) to Epic model
+  - Added `archived_at` (DateTime) to Epic model
+  - Added `idx_epics_archived` index
 - **Status Mapping:**
   - `draft` = Early epic stages (problem_capture, problem_confirmed, outcome_capture, outcome_confirmed)
   - `active` = epic_drafted stage
   - `completed` = epic_locked stage
-  - `archived` = Tracked separately (reversible soft-delete)
+  - `archived` = is_archived=true (reversible soft-delete)
 - **Frontend Page (`/app/frontend/src/pages/Initiatives.jsx`):**
   - Table view with columns: Name, Status, Updated, Stories/Points, Actions
-  - Summary cards: Total, Draft, Active, Completed counts
-  - Search input: Filters by title, tagline, or problem statement
-  - Status filter dropdown
-  - Actions menu: View, Duplicate, Archive, Delete
+  - 5 Summary cards: Total, Draft, Active, Completed, Archived counts
+  - **SQL-based search**: Filters by title or problem statement in database (correct pagination)
+  - **Archived filter**: Status dropdown includes Archived option, works correctly
+  - Actions menu: View, Duplicate, Archive/Restore (conditional), Delete
   - Delete confirmation dialog with archive tip
   - Pagination for large lists
 - **Navigation:**
   - Route `/initiatives` added to App.jsx
   - "Initiatives" link added to Sidebar under Planning section
-- **Bug Fix:** DELETE endpoint now sets `jarlpm.allow_cascade_delete` session variable to bypass append-only constraints on transcript tables
-- **Tests:** 22/22 backend tests passed (after bug fix)
+- **Bug Fixes:**
+  - DELETE endpoint sets `jarlpm.allow_cascade_delete` session variable (scoped to transaction)
+  - Search is now SQL-based, not client-side (correct pagination/totals)
+  - Archived filter actually filters for is_archived=true
+- **Tests:** 22/22 backend tests passed
+
+### 2026-02-05: Delivery Reality View (COMPLETE)
+**Senior-PM assistant showing feasibility, capacity, and scope recommendations**
+- **Backend Routes (`/app/backend/routes/delivery_reality.py`):**
+  - `GET /api/delivery-reality/summary` - Global summary with delivery context, status breakdown, total points
+  - `GET /api/delivery-reality/initiatives` - List all initiatives with delivery assessment
+  - `GET /api/delivery-reality/initiative/{epic_id}` - Per-initiative detail with recommended deferrals
+- **Capacity Model:**
+  - `points_per_dev_per_sprint` = 8 (default)
+  - `sprint_capacity` = num_developers * points_per_dev_per_sprint
+  - `two_sprint_capacity` = sprint_capacity * 2
+  - `delta` = two_sprint_capacity - total_points
+- **Assessment Logic:**
+  - `on_track`: delta >= 0
+  - `at_risk`: delta < 0 but |delta| <= 25% of sprint_capacity
+  - `overloaded`: delta < -25% of sprint_capacity
+- **Scope Cut Algorithm (deterministic, no AI):**
+  1. Sort stories by priority ASC (nice-to-have first) then points DESC
+  2. Select stories to defer until deferred_points >= |delta|
+  3. Return recommended_defer list with story details
+- **Frontend Page (`/app/frontend/src/pages/DeliveryReality.jsx`):**
+  - Delivery Context card with devs, sprint length, capacity metrics
+  - Warning banner when no team capacity configured with "Configure" button
+  - Status summary cards: Active Initiatives, On Track, At Risk, Overloaded
+  - Initiative table: Name, Stories, Total Points, Capacity, Delta, Status badge
+  - Detail dialog on row click:
+    - Capacity meter (progress bar)
+    - Points breakdown by priority (Must/Should/Nice to Have)
+    - Recommended deferrals table with checkboxes
+    - New totals after deferral calculation
+- **Navigation:**
+  - Route `/delivery-reality` and `/delivery-reality/:epicId` added
+  - "Delivery Reality" link added to Sidebar under Delivery section
+- **Tests:** 23/23 backend tests passed, 100% frontend tests passed

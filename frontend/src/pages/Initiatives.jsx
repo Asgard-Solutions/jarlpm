@@ -262,7 +262,7 @@ const Initiatives = () => {
 
       {/* Summary Cards */}
       {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="bg-card border rounded-lg p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-sm">
               <FolderOpen className="h-4 w-4" />
@@ -291,6 +291,13 @@ const Initiatives = () => {
             </div>
             <div className="text-2xl font-bold mt-1">{summary.completed}</div>
           </div>
+          <div className="bg-card border rounded-lg p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Archive className="h-4 w-4" />
+              Archived
+            </div>
+            <div className="text-2xl font-bold mt-1">{summary.archived || 0}</div>
+          </div>
         </div>
       )}
 
@@ -315,6 +322,7 @@ const Initiatives = () => {
             <SelectItem value="draft">Draft</SelectItem>
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="archived">Archived</SelectItem>
           </SelectContent>
         </Select>
         <Button 
@@ -426,10 +434,17 @@ const Initiatives = () => {
                           Duplicate
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleArchive(initiative)}>
-                          <Archive className="mr-2 h-4 w-4" />
-                          Archive
-                        </DropdownMenuItem>
+                        {initiative.status === 'archived' ? (
+                          <DropdownMenuItem onClick={() => handleUnarchive(initiative)}>
+                            <ArchiveRestore className="mr-2 h-4 w-4" />
+                            Restore
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onClick={() => handleArchive(initiative)}>
+                            <Archive className="mr-2 h-4 w-4" />
+                            Archive
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem 
                           onClick={() => setDeleteDialog({ open: true, initiative })}
                           className="text-destructive focus:text-destructive"

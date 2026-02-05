@@ -103,8 +103,10 @@ class InitiativeDetail(BaseModel):
     updated_at: datetime
 
 
-def map_stage_to_status(stage: str) -> str:
-    """Map Epic current_stage to Initiative status for frontend"""
+def map_stage_to_status(stage: str, is_archived: bool = False) -> str:
+    """Map Epic current_stage and is_archived to Initiative status for frontend"""
+    if is_archived:
+        return "archived"
     status_map = {
         "problem_capture": "draft",
         "problem_confirmed": "draft",
@@ -122,7 +124,6 @@ def map_status_to_stages(status: str) -> List[str]:
         "draft": ["problem_capture", "problem_confirmed", "outcome_capture", "outcome_confirmed"],
         "active": ["epic_drafted"],
         "completed": ["epic_locked"],
-        "archived": []  # Archived is tracked separately
     }
     return stage_map.get(status, [])
 
@@ -141,20 +142,47 @@ async def list_initiatives(
     """
     List all initiatives for the current user with pagination and filtering.
     Default sort: Most recently updated first.
+    Search is performed in SQL for correct pagination.
     """
     user_id = await get_current_user_id(request, session)
     
-    # Base query
-    base_filter = Epic.user_id == user_id
+    # Base filter - user ownership
+    filters = [Epic.user_id == user_id]
     
-    # Status filter - map to epic stages
-    if status:
+    # Status filter
+    if status == "archived":
+        # Filter for archived initiatives only
+        filters.append(Epic.is_archived == True)
+    elif status:
+        # Filter for non-archived with specific stage
+        filters.append(Epic.is_archived == False)
         stages = map_status_to_stages(status)
         if stages:
-            base_filter = and_(base_filter, Epic.current_stage.in_(stages))
+            filters.append(Epic.current_stage.in_(stages))
+    else:
+        # Default: exclude archived
+        filters.append(Epic.is_archived == False)
     
-    # Count total
-    count_query = select(func.count(Epic.id)).where(base_filter)
+    # Search filter - join with EpicSnapshot and search in SQL
+    if search:
+        search_term = f"%{search.lower()}%"
+        # We need to do an outerjoin with EpicSnapshot for problem_statement search
+        search_filter = or_(
+            func.lower(Epic.title).like(search_term),
+            func.lower(EpicSnapshot.problem_statement).like(search_term)
+        )
+        filters.append(search_filter)
+    
+    # Build count query with search
+    if search:
+        count_query = (
+            select(func.count(Epic.id))
+            .outerjoin(EpicSnapshot, Epic.epic_id == EpicSnapshot.epic_id)
+            .where(and_(*filters))
+        )
+    else:
+        count_query = select(func.count(Epic.id)).where(and_(*filters))
+    
     total_result = await session.execute(count_query)
     total = total_result.scalar() or 0
     
@@ -164,13 +192,24 @@ async def list_initiatives(
     
     # Fetch initiatives with pagination
     offset = (page - 1) * page_size
-    query = (
-        select(Epic)
-        .where(base_filter)
-        .order_by(order_func(sort_column))
-        .offset(offset)
-        .limit(page_size)
-    )
+    if search:
+        query = (
+            select(Epic)
+            .outerjoin(EpicSnapshot, Epic.epic_id == EpicSnapshot.epic_id)
+            .where(and_(*filters))
+            .order_by(order_func(sort_column))
+            .offset(offset)
+            .limit(page_size)
+        )
+    else:
+        query = (
+            select(Epic)
+            .where(and_(*filters))
+            .order_by(order_func(sort_column))
+            .offset(offset)
+            .limit(page_size)
+        )
+    
     result = await session.execute(query)
     epics = result.scalars().all()
     
@@ -201,8 +240,8 @@ async def list_initiatives(
         problem_text = snapshot.problem_statement if snapshot and snapshot.problem_statement else None
         tagline = problem_text[:100] + "..." if problem_text and len(problem_text) > 100 else problem_text
         
-        # Map stage to display status
-        display_status = map_stage_to_status(epic.current_stage)
+        # Map stage to display status (respects is_archived)
+        display_status = map_stage_to_status(epic.current_stage, epic.is_archived)
         
         initiatives.append(InitiativeSummary(
             epic_id=epic.epic_id,
@@ -216,18 +255,6 @@ async def list_initiatives(
             created_at=epic.created_at,
             updated_at=epic.updated_at
         ))
-    
-    # Apply search filter client-side to include problem statement
-    # (since we need to join with snapshot)
-    if search:
-        search_lower = search.lower()
-        initiatives = [
-            i for i in initiatives
-            if search_lower in (i.title or "").lower()
-            or search_lower in (i.tagline or "").lower()
-            or search_lower in (i.problem_statement or "").lower()
-        ]
-        total = len(initiatives)
     
     return InitiativeListResponse(
         initiatives=initiatives,
@@ -302,8 +329,8 @@ async def get_initiative(
             ]
         })
     
-    # Map status
-    display_status = map_stage_to_status(epic.current_stage)
+    # Map status (respects is_archived)
+    display_status = map_stage_to_status(epic.current_stage, epic.is_archived)
     
     return InitiativeDetail(
         epic_id=epic.epic_id,
@@ -478,6 +505,7 @@ async def archive_initiative(
 ):
     """
     Archive an initiative (soft delete - reversible).
+    Sets is_archived=True and records archived_at timestamp.
     """
     user_id = await get_current_user_id(request, session)
     
@@ -489,8 +517,8 @@ async def archive_initiative(
     if not epic:
         raise HTTPException(status_code=404, detail="Initiative not found")
     
-    # For now, we'll track this via updated_at timestamp
-    # In future, add a dedicated "archived" field
+    epic.is_archived = True
+    epic.archived_at = datetime.now(timezone.utc)
     epic.updated_at = datetime.now(timezone.utc)
     await session.commit()
     
@@ -505,6 +533,7 @@ async def unarchive_initiative(
 ):
     """
     Unarchive an initiative (restore from soft delete).
+    Sets is_archived=False and clears archived_at.
     """
     user_id = await get_current_user_id(request, session)
     
@@ -516,6 +545,8 @@ async def unarchive_initiative(
     if not epic:
         raise HTTPException(status_code=404, detail="Initiative not found")
     
+    epic.is_archived = False
+    epic.archived_at = None
     epic.updated_at = datetime.now(timezone.utc)
     await session.commit()
     
@@ -563,38 +594,56 @@ async def get_initiatives_summary(
     """
     user_id = await get_current_user_id(request, session)
     
-    # Count by stage
-    total_q = select(func.count(Epic.id)).where(Epic.user_id == user_id)
+    # Total (non-archived)
+    total_q = select(func.count(Epic.id)).where(
+        Epic.user_id == user_id,
+        Epic.is_archived == False
+    )
     total_result = await session.execute(total_q)
     total = total_result.scalar() or 0
     
+    # Draft (non-archived)
     draft_stages = ["problem_capture", "problem_confirmed", "outcome_capture", "outcome_confirmed"]
     draft_q = select(func.count(Epic.id)).where(
         Epic.user_id == user_id,
+        Epic.is_archived == False,
         Epic.current_stage.in_(draft_stages)
     )
     draft_result = await session.execute(draft_q)
     draft_count = draft_result.scalar() or 0
     
+    # Active (non-archived)
     active_q = select(func.count(Epic.id)).where(
         Epic.user_id == user_id,
+        Epic.is_archived == False,
         Epic.current_stage == "epic_drafted"
     )
     active_result = await session.execute(active_q)
     active_count = active_result.scalar() or 0
     
+    # Completed (non-archived)
     completed_q = select(func.count(Epic.id)).where(
         Epic.user_id == user_id,
+        Epic.is_archived == False,
         Epic.current_stage == "epic_locked"
     )
     completed_result = await session.execute(completed_q)
     completed_count = completed_result.scalar() or 0
     
+    # Archived
+    archived_q = select(func.count(Epic.id)).where(
+        Epic.user_id == user_id,
+        Epic.is_archived == True
+    )
+    archived_result = await session.execute(archived_q)
+    archived_count = archived_result.scalar() or 0
+    
     return {
         "total": total,
         "draft": draft_count,
         "active": active_count,
-        "completed": completed_count
+        "completed": completed_count,
+        "archived": archived_count
     }
 
 
