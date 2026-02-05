@@ -98,6 +98,7 @@ async def get_delivery_context(
         num_developers=context.num_developers,
         num_qa=context.num_qa,
         delivery_platform=context.delivery_platform,
+        points_per_dev_per_sprint=context.points_per_dev_per_sprint or 8,
         quality_mode=context.quality_mode or "standard",
         created_at=context.created_at,
         updated_at=context.updated_at
@@ -133,6 +134,7 @@ async def update_delivery_context(
             num_developers=body.num_developers,
             num_qa=body.num_qa,
             delivery_platform=platform,
+            points_per_dev_per_sprint=body.points_per_dev_per_sprint or 8,
             quality_mode=body.quality_mode or "standard"
         )
         session.add(context)
@@ -145,6 +147,7 @@ async def update_delivery_context(
         context.num_developers = body.num_developers
         context.num_qa = body.num_qa
         context.delivery_platform = platform
+        context.points_per_dev_per_sprint = body.points_per_dev_per_sprint or 8
         context.quality_mode = body.quality_mode or "standard"
         context.updated_at = datetime.now(timezone.utc)
     
