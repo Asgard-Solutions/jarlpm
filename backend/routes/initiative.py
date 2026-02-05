@@ -1427,8 +1427,7 @@ async def save_initiative(
             epic_id=generate_id("epic_"),
             user_id=user_id,
             title=validated.product_name or validated.epic.title,
-            description=validated.epic.description,
-            status="in_progress",
+            current_stage=EpicStage.EPIC_LOCKED.value,  # New initiatives start as locked
             created_at=now,
             updated_at=now
         )
