@@ -274,7 +274,8 @@ Provide your estimate in the specified JSON format."""
                 logger.error(f"Error getting estimate from {persona['name']}: {e}")
                 yield f"data: {json.dumps({'type': 'persona_error', 'persona_id': persona['id'], 'error': str(e)})}\n\n"
         
-        # Calculate summary statistics
+        # Calculate summary statistics and save session
+        session_id = None
         if estimates:
             valid_estimates = [e["estimate"] for e in estimates if isinstance(e["estimate"], int)]
             if valid_estimates:
@@ -288,13 +289,46 @@ Provide your estimate in the specified JSON format."""
                 variance = sum((e - avg) ** 2 for e in valid_estimates) / len(valid_estimates)
                 consensus = "high" if variance < 2 else "medium" if variance < 5 else "low"
                 
+                # Save session and estimates to database
+                try:
+                    poker_session = PokerEstimateSession(
+                        story_id=body.story_id,
+                        user_id=user_id,
+                        min_estimate=min(valid_estimates),
+                        max_estimate=max(valid_estimates),
+                        average_estimate=round(avg, 2),
+                        suggested_estimate=most_common
+                    )
+                    session.add(poker_session)
+                    await session.flush()  # Get the session_id
+                    
+                    # Save individual persona estimates
+                    for est in estimates:
+                        persona_est = PokerPersonaEstimate(
+                            session_id=poker_session.session_id,
+                            persona_name=est["name"],
+                            persona_role=est["role"],
+                            estimate_points=est["estimate"],
+                            reasoning=est["reasoning"],
+                            confidence=est.get("confidence", "medium")
+                        )
+                        session.add(persona_est)
+                    
+                    await session.commit()
+                    session_id = poker_session.session_id
+                    logger.info(f"Saved poker session {session_id} with {len(estimates)} estimates")
+                except Exception as save_error:
+                    logger.error(f"Failed to save poker session: {save_error}")
+                    # Don't fail the whole operation if save fails
+                
                 summary = {
                     "estimates": estimates,
                     "average": round(avg, 1),
                     "suggested": most_common,
                     "min": min(valid_estimates),
                     "max": max(valid_estimates),
-                    "consensus": consensus
+                    "consensus": consensus,
+                    "session_id": session_id
                 }
                 
                 yield f"data: {json.dumps({'type': 'summary', 'summary': summary})}\n\n"
