@@ -95,6 +95,7 @@ const LeanCanvas = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [epics, setEpics] = useState([]);
   const [selectedEpic, setSelectedEpic] = useState('');
   const [canvas, setCanvas] = useState({});
