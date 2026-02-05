@@ -296,7 +296,7 @@ Generate {count} personas that represent the key user types for this product. Re
                     select(LLMProviderConfig).where(
                         LLMProviderConfig.user_id == user_id,
                         LLMProviderConfig.provider == "openai",
-                        LLMProviderConfig.is_active == True
+                        LLMProviderConfig.is_active.is_(True)
                     )
                 )
                 config = result.scalar_one_or_none()
