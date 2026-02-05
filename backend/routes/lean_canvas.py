@@ -117,7 +117,7 @@ async def get_epics_without_canvas(
             {
                 "epic_id": e.epic_id,
                 "title": e.title,
-                "stage": e.stage,
+                "stage": e.current_stage,
             }
             for e in epics
         ]
