@@ -346,10 +346,17 @@ export const pokerAPI = {
   },
   
   // Save estimate to database
-  saveEstimate: (storyId, storyPoints) => api.post('/poker/save-estimate', {
+  saveEstimate: (storyId, storyPoints, sessionId = null) => api.post('/poker/save-estimate', {
     story_id: storyId,
-    story_points: storyPoints
+    story_points: storyPoints,
+    session_id: sessionId
   }),
+  
+  // Get poker sessions for a story
+  getSessions: (storyId) => api.get(`/poker/sessions/${storyId}`),
+  
+  // Get specific poker session details
+  getSession: (sessionId) => api.get(`/poker/session/${sessionId}`),
 };
 
 // Initiative Library API
