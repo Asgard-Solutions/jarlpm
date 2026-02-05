@@ -391,4 +391,10 @@ export const dashboardAPI = {
   getData: () => api.get('/dashboard'),
 };
 
+// Lean Canvas API
+export const leanCanvasAPI = {
+  // Generate Lean Canvas from Epic using LLM
+  generate: (epicId) => api.post('/lean-canvas/generate', { epic_id: epicId }),
+};
+
 export default api;
