@@ -470,12 +470,18 @@ Return only valid JSON. No markdown fences, no commentary."""
 PLANNING_SYSTEM = """You are JarlPM. Given features and stories, assign story points and create a sprint plan.
 {context}
 
-OUTPUT: Valid JSON only.
+OUTPUT FORMAT:
+- Return ONLY valid JSON, nothing else
+- No markdown code fences (no ```json)
+- No commentary before or after the JSON
+- Use double quotes for all strings
+- No trailing commas
 
+SCHEMA:
 {{
   "estimated_stories": [
     {{
-      "story_id": "the story id",
+      "story_id": "the story id from input",
       "title": "story title (for reference)",
       "points": 3
     }}
@@ -502,12 +508,19 @@ FIBONACCI SCALE:
 - 8: Very Large (3-5 days)
 - 13: Huge (1 week, consider splitting)
 
-RULES:
+HARD CONSTRAINTS:
+- Points MUST be Fibonacci: 1, 2, 3, 5, 8, or 13 only
 - Respect team velocity: target {velocity} points per sprint
 - Sprint length: {sprint_length} days
-- Must-have stories go in Sprint 1
-- Nice-to-have stories go in Sprint 2
-- Balance the sprints for sustainable pace"""
+- CRITICAL: story_ids in sprint_plan MUST be a subset of the story_ids provided in FEATURES & STORIES
+- Do NOT invent new story IDs - only use the exact IDs given to you
+- Every story from the input MUST appear in estimated_stories
+
+SPRINT ALLOCATION RULES:
+- Must-have stories → Sprint 1 (prioritize)
+- Should-have stories → Split between sprints based on capacity
+- Nice-to-have stories → Sprint 2 (if capacity allows)
+- Balance sprints for sustainable pace (avoid one overloaded sprint)"""
 
 
 PLANNING_USER = """Estimate story points and create a sprint plan for:
@@ -520,10 +533,13 @@ TEAM CAPACITY:
 - Team Velocity: ~{velocity} points/sprint
 - Team: {num_devs} developers, {num_qa} QA
 
-FEATURES & STORIES:
+FEATURES & STORIES (use these exact story_ids):
 {stories_list}
 
-Assign Fibonacci points (1,2,3,5,8,13) to each story. Organize into 2 sprints respecting team capacity. Return only valid JSON."""
+Assign Fibonacci points (1,2,3,5,8,13) to each story.
+Organize into 2 sprints respecting team capacity.
+CRITICAL: Only use story_ids from the list above - do not invent new IDs.
+Return only valid JSON. No markdown fences, no commentary."""
 
 
 # ============================================
