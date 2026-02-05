@@ -915,7 +915,23 @@ When an Epic is locked, users enter Feature Planning Mode:
   - Archived filter actually filters for is_archived=true
 - **Tests:** 22/22 backend tests passed
 
-### 2026-02-05: Delivery Reality View (COMPLETE)
+### 2026-02-05: Dashboard Command Center (COMPLETE)
+**Answers "what do I do next?" in 10 seconds**
+- **Backend Route (`/app/backend/routes/dashboard.py`):**
+  - `GET /api/dashboard` - Single endpoint returning all dashboard data
+  - Returns: at_risk_initiatives, focus_list, kpis, recent_activity, setup status
+- **Components:**
+  1. **Setup Alerts**: Warns if LLM or capacity not configured with Configure button
+  2. **At Risk / Overloaded Inbox**: Shows initiatives over capacity, sorted by worst delta, with Fix button linking to Delivery Reality
+  3. **Quick Start**: "What problem are you solving?" input → Generate button navigates to /new with pre-filled problem
+  4. **Focus List**: Top 5 initiatives by must-have points, clickable to epic detail
+  5. **Portfolio KPIs**: Active initiatives, Completed (30d), Points in flight, Capacity utilization % with progress bar
+  6. **Recent Activity**: Last 10 events (created, locked, scope_plan_saved) with timestamps
+- **Frontend Page (`/app/frontend/src/pages/Dashboard.jsx`):**
+  - Responsive 3-column grid (2 left + 1 right on desktop)
+  - Clean, minimal design without vanity charts
+  - Personalized greeting using user's name
+- **Tests:** API returns all expected fields
 **Senior-PM assistant showing feasibility, capacity, and scope recommendations**
 - **Backend Routes (`/app/backend/routes/delivery_reality.py`):**
   - `GET /api/delivery-reality/summary` - Global summary with delivery context, status breakdown, total points
