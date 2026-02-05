@@ -76,6 +76,16 @@ const Dashboard = () => {
     loadDashboard();
   }, [loadDashboard]);
 
+  const handleCreateEpic = async () => {
+    try {
+      const response = await epicAPI.create('New Epic');
+      navigate(`/epic/${response.data.epic_id}`);
+    } catch (error) {
+      console.error('Failed to create epic:', error);
+      toast.error('Failed to create epic');
+    }
+  };
+
   const handleQuickGenerate = async () => {
     if (!problemInput.trim()) {
       toast.error('Please enter a problem statement');
@@ -123,10 +133,16 @@ const Dashboard = () => {
             Here's what needs your attention today
           </p>
         </div>
-        <Button onClick={() => navigate('/new')} className="gap-2">
-          <Sparkles className="h-4 w-4" />
-          New Initiative
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleCreateEpic} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Create Epic
+          </Button>
+          <Button onClick={() => navigate('/new')} className="gap-2">
+            <Sparkles className="h-4 w-4" />
+            AI Initiative
+          </Button>
+        </div>
       </div>
 
       {/* Setup Alerts */}

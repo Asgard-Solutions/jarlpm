@@ -1435,18 +1435,15 @@ async def save_initiative(
         
         # Create snapshot with PRD data
         snapshot = EpicSnapshot(
-            snapshot_id=generate_id("snap_"),
             epic_id=epic.epic_id,
-            version=1,
             problem_statement=validated.prd.problem_statement,
-            vision=validated.epic.vision,
             desired_outcome=validated.prd.desired_outcome,
-            target_users=validated.prd.target_users,
-            out_of_scope=validated.prd.out_of_scope,
-            risks=validated.prd.risks,
-            assumptions=[],
-            success_metrics=validated.prd.key_metrics,
-            created_at=now
+            epic_summary=f"{validated.epic.vision}\n\nTarget Users: {validated.prd.target_users}\n\nOut of Scope: {', '.join(validated.prd.out_of_scope)}\n\nRisks: {', '.join(validated.prd.risks)}\n\nKey Metrics: {', '.join(validated.prd.key_metrics)}",
+            acceptance_criteria=[],  # Acceptance criteria at epic level
+            # Lock the epic since it's being created from a complete initiative
+            problem_confirmed_at=now,
+            outcome_confirmed_at=now,
+            epic_locked_at=now,
         )
         session.add(snapshot)
         
@@ -1461,11 +1458,12 @@ async def save_initiative(
             feature = Feature(
                 feature_id=feature_db_id,
                 epic_id=epic.epic_id,
-                name=feat_data.name,
+                title=feat_data.name,
                 description=feat_data.description,
-                priority=feat_data.priority,
-                status="planned",
-                order_index=i,
+                acceptance_criteria=[],
+                current_stage="approved",  # Features from initiative are pre-approved
+                source="ai_generated",
+                priority=i,
                 created_at=now,
                 updated_at=now
             )
@@ -1489,8 +1487,9 @@ async def save_initiative(
                     dependencies=story_data.dependencies,
                     risks=story_data.risks,
                     current_stage="draft",
+                    source="ai_generated",
                     story_points=story_data.points,
-                    priority=j,  # Use priority for ordering
+                    priority=j,
                     created_at=now,
                     updated_at=now
                 )
