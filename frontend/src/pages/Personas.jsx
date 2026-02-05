@@ -11,11 +11,13 @@ import { Label } from '@/components/ui/label';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useAuthStore } from '@/store';
 import { personaAPI, epicAPI } from '@/api';
-import { 
+import {
   Users, ArrowLeft, Settings, Search, Loader2, Trash2,
   User, Target, AlertTriangle, Sparkles, Quote, MapPin,
   Briefcase, RefreshCw, Edit3, CheckCircle2, X, ImageIcon
 } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
+import EmptyState from '@/components/EmptyState';
 
 const Personas = () => {
   const navigate = useNavigate();
@@ -285,20 +287,17 @@ const Personas = () => {
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
           ) : filteredPersonas.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-12 text-center">
-                <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No personas yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  {searchQuery || epicFilter !== 'all'
-                    ? 'Try adjusting your filters'
-                    : 'Generate personas from a completed Epic to get started'}
-                </p>
-                <Button onClick={() => navigate('/dashboard')} variant="outline">
-                  Go to Dashboard
-                </Button>
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={Users}
+              title="No personas yet"
+              description={
+                searchQuery || epicFilter !== 'all'
+                  ? 'No personas match your filters. Try adjusting search or epic filter.'
+                  : 'Generate personas from a completed Epic to get started.'
+              }
+              actionLabel="Go to Dashboard"
+              onAction={() => navigate('/dashboard')}
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredPersonas.map((persona) => (

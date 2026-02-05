@@ -13,6 +13,8 @@ import {
   ChevronRight, Plus, ArrowRight
 } from 'lucide-react';
 import { epicAPI, storyAPI, deliveryContextAPI } from '@/api';
+import PageHeader from '@/components/PageHeader';
+import EmptyState from '@/components/EmptyState';
 
 const STATUS_COLORS = {
   draft: 'bg-gray-500/10 text-gray-500 border-gray-500/30',
@@ -123,17 +125,16 @@ const Sprints = () => {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Sprints</h1>
-          <p className="text-muted-foreground mt-1">Plan and track sprint progress</p>
-        </div>
-        <Button onClick={() => navigate('/settings')} variant="outline">
-          <Calendar className="h-4 w-4 mr-2" />
-          Configure Sprints
-        </Button>
-      </div>
+      <PageHeader
+        title="Sprints"
+        description="Plan and track sprint progress"
+        actions={
+          <Button onClick={() => navigate('/settings')} variant="outline" className="gap-2">
+            <Calendar className="h-4 w-4" />
+            Configure
+          </Button>
+        }
+      />
 
       {/* Sprint Info Card */}
       {sprintInfo ? (
@@ -163,18 +164,13 @@ const Sprints = () => {
           </CardContent>
         </Card>
       ) : (
-        <Card className="bg-card border-border">
-          <CardContent className="p-6 text-center">
-            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-foreground mb-2">Sprint Not Configured</h3>
-            <p className="text-muted-foreground mb-4">
-              Set up your sprint cycle in Settings to enable sprint tracking.
-            </p>
-            <Button onClick={() => navigate('/settings')}>
-              Configure Sprint Settings
-            </Button>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={AlertCircle}
+          title="Sprint not configured"
+          description="Set your sprint start date and cycle length in Settings to enable sprint tracking."
+          actionLabel="Configure sprints"
+          onAction={() => navigate('/settings')}
+        />
       )}
 
       {/* Stats Row */}
