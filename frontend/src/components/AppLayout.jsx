@@ -18,7 +18,7 @@ import { User, LogOut, Settings } from 'lucide-react';
 
 const AppLayout = ({ children }) => {
   const navigate = useNavigate();
-  const { user, clearUser } = useAuthStore();
+  const { user, logout: clearAuth } = useAuthStore();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebarCollapsed');
     return saved ? JSON.parse(saved) : false;
@@ -34,7 +34,7 @@ const AppLayout = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      clearUser();
+      clearAuth();
       navigate('/');
     }
   };
