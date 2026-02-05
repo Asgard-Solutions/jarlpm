@@ -61,6 +61,69 @@ async def get_current_user_id(request: Request, session: AsyncSession) -> str:
     return await auth_get_user(request, session)
 
 
+@router.get("/list")
+async def list_lean_canvases(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get all Lean Canvases for the current user"""
+    user_id = await get_current_user_id(request, session)
+    
+    # Get all canvases with epic info
+    result = await session.execute(
+        select(LeanCanvas, Epic)
+        .join(Epic, LeanCanvas.epic_id == Epic.epic_id)
+        .where(LeanCanvas.user_id == user_id)
+        .order_by(LeanCanvas.updated_at.desc())
+    )
+    rows = result.all()
+    
+    canvases = []
+    for canvas, epic in rows:
+        canvases.append({
+            "canvas_id": canvas.canvas_id,
+            "epic_id": canvas.epic_id,
+            "epic_title": epic.title,
+            "source": canvas.source,
+            "created_at": canvas.created_at.isoformat(),
+            "updated_at": canvas.updated_at.isoformat(),
+        })
+    
+    return {"canvases": canvases}
+
+
+@router.get("/epics-without-canvas")
+async def get_epics_without_canvas(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get all epics that don't have a Lean Canvas yet"""
+    user_id = await get_current_user_id(request, session)
+    
+    # Get epics that don't have a canvas
+    result = await session.execute(
+        select(Epic)
+        .outerjoin(LeanCanvas, Epic.epic_id == LeanCanvas.epic_id)
+        .where(
+            Epic.user_id == user_id,
+            LeanCanvas.id == None
+        )
+        .order_by(Epic.updated_at.desc())
+    )
+    epics = result.scalars().all()
+    
+    return {
+        "epics": [
+            {
+                "epic_id": e.epic_id,
+                "title": e.title,
+                "stage": e.stage,
+            }
+            for e in epics
+        ]
+    }
+
+
 LEAN_CANVAS_SYSTEM_PROMPT = """You are JarlPM, an expert business strategist and product manager.
 Your task is to generate a comprehensive Lean Canvas based on the provided epic/product information.
 
