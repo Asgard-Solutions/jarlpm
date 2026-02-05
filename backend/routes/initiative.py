@@ -645,21 +645,7 @@ HARD CONSTRAINTS:
 - confidence_score: integer 0-100
 - top_risks: exactly 3 items
 - key_assumptions: exactly 3 items
-- validate_first: exactly 3 items"""
-    ],
-    "success_factors": [
-      "Critical success factor 1",
-      "Critical success factor 2"
-    ]
-  }}
-}}
-
-CHECKS TO PERFORM:
-1. METRICS: Are they industry-appropriate and measurable? (bad: "user satisfaction", good: "NPS score > 40")
-2. ACCEPTANCE CRITERIA: Are they testable? Must be Given/When/Then with observable outcomes
-3. STORY SIZE: Flag stories > 8 points - suggest splits into smaller stories
-4. NFRs: Check for missing security, performance, accessibility, error handling stories
-5. SCOPE: Is total points realistic for team velocity of {velocity} points/sprint?
+- validate_first: exactly 3 items
 
 Be constructive. Auto-fix what you can, warn about the rest."""
 
