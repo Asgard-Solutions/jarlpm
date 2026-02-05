@@ -350,6 +350,7 @@ Provide your estimate in the specified JSON format."""
 class SaveEstimateRequest(BaseModel):
     story_id: str
     story_points: int
+    session_id: Optional[str] = None  # Link to poker session if available
 
 
 @router.post("/save-estimate")
@@ -359,10 +360,9 @@ async def save_estimate(
     session: AsyncSession = Depends(get_db)
 ):
     """Save the accepted story point estimate to the database"""
-    from db.user_story_models import UserStory
     
-    # Verify user is authenticated (we don't need the ID, just auth check)
-    await get_current_user_id(request, session)
+    # Verify user is authenticated
+    user_id = await get_current_user_id(request, session)
     
     # Find the story
     result = await session.execute(
@@ -377,13 +377,24 @@ async def save_estimate(
     story.story_points = body.story_points
     story.updated_at = datetime.now(timezone.utc)
     
+    # If session_id provided, mark that session as accepted
+    if body.session_id:
+        session_result = await session.execute(
+            select(PokerEstimateSession).where(PokerEstimateSession.session_id == body.session_id)
+        )
+        poker_session = session_result.scalar_one_or_none()
+        if poker_session:
+            poker_session.accepted_estimate = body.story_points
+            poker_session.accepted_at = datetime.now(timezone.utc)
+    
     await session.commit()
     await session.refresh(story)
     
     return {
         "success": True,
         "story_id": body.story_id,
-        "story_points": body.story_points
+        "story_points": body.story_points,
+        "session_id": body.session_id
     }
 
 
