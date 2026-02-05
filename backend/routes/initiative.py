@@ -393,25 +393,31 @@ Return only valid JSON matching the schema. No markdown fences, no commentary.""
 DECOMP_SYSTEM = """You are JarlPM. Given a PRD, decompose it into features and user stories.
 {context}
 
-OUTPUT: Valid JSON only.
+OUTPUT FORMAT:
+- Return ONLY valid JSON, nothing else
+- No markdown code fences (no ```json)
+- No commentary before or after the JSON
+- Use double quotes for all strings
+- No trailing commas
 
+SCHEMA:
 {{
   "features": [
     {{
-      "name": "Feature name",
-      "description": "What it does",
+      "name": "Feature name (2-5 words)",
+      "description": "What it does (1-2 sentences)",
       "priority": "must-have | should-have | nice-to-have",
       "stories": [
         {{
           "title": "Short, actionable title (5-10 words)",
-          "persona": "a [user type]",
+          "persona": "a [specific user type]",
           "action": "[what they want to do]",
           "benefit": "[why they want it]",
           "acceptance_criteria": [
             "Given X, When Y, Then Z",
             "Given A, When B, Then C"
           ],
-          "labels": ["backend", "frontend", "api", "auth", "database", "integration", "mvp", "ui"],
+          "labels": ["backend", "frontend", "api"],
           "priority": "must-have | should-have | nice-to-have",
           "dependencies": ["Description of what this story depends on"],
           "risks": ["Potential risks or blockers for this story"]
@@ -421,16 +427,22 @@ OUTPUT: Valid JSON only.
   ]
 }}
 
-RULES:
-- 3-5 features for MVP
+HARD CONSTRAINTS:
+- 3-5 features for MVP (no more, no less)
 - 2-4 stories per feature
-- Each story has 2-4 acceptance criteria in Given/When/Then (Gherkin) format
-- Labels: Choose from [backend, frontend, api, auth, database, integration, mvp, ui, performance, security]
-- Priorities: at least 1 must-have feature, stories inherit feature priority unless overridden
+- Each story MUST have exactly 2-4 acceptance criteria in Gherkin format (Given/When/Then)
+- Each AC must contain the tokens: Given, When, Then
+- Labels: choose from [backend, frontend, api, auth, database, integration, mvp, ui, performance, security, nfr]
+- At least 1 feature must be must-have
 - Stories should be small enough to complete in 1-3 days
-- Dependencies: Reference other stories by title or external dependencies
-- Risks: Include technical risks, integration risks, or unknowns
-- Use platform-appropriate story format"""
+- REQUIRED: Include at least 1 NFR story (security/performance/reliability/accessibility) in MVP features
+
+PRIORITY RULES:
+- must-have: Required for launch, no workarounds
+- should-have: Important, but can launch without
+- nice-to-have: Enhances UX, defer if needed
+
+Use platform-appropriate story format."""
 
 
 DECOMP_USER = """Decompose this PRD into features and user stories:
@@ -446,7 +458,9 @@ OUT OF SCOPE: {out_of_scope}
 
 {dod_section}
 
-Generate features with detailed user stories and acceptance criteria. Return only valid JSON."""
+Generate features with detailed user stories and acceptance criteria. 
+IMPORTANT: Include at least 1 NFR story for security, performance, or reliability.
+Return only valid JSON. No markdown fences, no commentary."""
 
 
 # ============================================
