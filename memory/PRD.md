@@ -714,11 +714,15 @@ When an Epic is locked, users enter Feature Planning Mode:
 - None! All critical items completed.
 
 ### P1 - Upcoming
+- **Delivery Reality View:** Build a UI that uses delivery context (team size, velocity) and the generated plan's story points to show capacity-per-sprint estimate, scope-fit indicator (on-track/at-risk), and auto-suggested scope cuts
 - Configure Stripe webhook in Stripe Dashboard (endpoint: /api/webhook/stripe)
 - Test full subscription flow with real Stripe test keys
 - Sprint Planning (Kanban board) implementation
 
 ### P2 - Future
+- **Decision & Assumption Tracking:** Persist assumptions and risks from "Confidence & Risks" panel, build workflow to track validation status
+- **Collaboration Loop:** Share read-only links to initiatives, basic commenting system
+- **Jira/Linear Push Integration:** Deep integration to push plans directly into user's Jira or Linear project
 - Google OAuth authentication (nice-to-have)
 - Team collaboration features
 
@@ -874,3 +878,32 @@ When an Epic is locked, users enter Feature Planning Mode:
   - `[Pass1-PRD] ✓ Valid after 1 repair(s)` or `[Pass1-PRD] ✗ Failed validation`
 - Repair attempts logged: `[Pass2-Decomp] Attempting repair...`
 - Quality pass logged: `[Pass3-Planning] Running quality pass (2-pass mode)`
+
+### 2026-02-05: Initiative Library (COMPLETE)
+**Central hub to view, search, and manage all saved initiatives**
+- **Backend Routes (`/app/backend/routes/initiatives.py`):**
+  - `GET /api/initiatives` - List with pagination, filtering by status, search
+  - `GET /api/initiatives/stats/summary` - Summary counts (total, draft, active, completed)
+  - `GET /api/initiatives/{epic_id}` - Full initiative details
+  - `POST /api/initiatives/{epic_id}/duplicate` - Clone an initiative
+  - `PATCH /api/initiatives/{epic_id}/archive` - Soft-delete (reversible)
+  - `PATCH /api/initiatives/{epic_id}/unarchive` - Restore from archive
+  - `DELETE /api/initiatives/{epic_id}` - Permanent delete
+- **Status Mapping:**
+  - `draft` = Early epic stages (problem_capture, problem_confirmed, outcome_capture, outcome_confirmed)
+  - `active` = epic_drafted stage
+  - `completed` = epic_locked stage
+  - `archived` = Tracked separately (reversible soft-delete)
+- **Frontend Page (`/app/frontend/src/pages/Initiatives.jsx`):**
+  - Table view with columns: Name, Status, Updated, Stories/Points, Actions
+  - Summary cards: Total, Draft, Active, Completed counts
+  - Search input: Filters by title, tagline, or problem statement
+  - Status filter dropdown
+  - Actions menu: View, Duplicate, Archive, Delete
+  - Delete confirmation dialog with archive tip
+  - Pagination for large lists
+- **Navigation:**
+  - Route `/initiatives` added to App.jsx
+  - "Initiatives" link added to Sidebar under Planning section
+- **Bug Fix:** DELETE endpoint now sets `jarlpm.allow_cascade_delete` session variable to bypass append-only constraints on transcript tables
+- **Tests:** 22/22 backend tests passed (after bug fix)

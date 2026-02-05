@@ -36,6 +36,7 @@ from routes.scoring import router as scoring_router
 from routes.export import router as export_router
 from routes.poker import router as poker_router
 from routes.initiative import router as initiative_router
+from routes.initiatives import router as initiatives_router
 
 api_router.include_router(auth_router)
 api_router.include_router(subscription_router)
@@ -50,6 +51,7 @@ api_router.include_router(scoring_router)
 api_router.include_router(export_router)
 api_router.include_router(poker_router)
 api_router.include_router(initiative_router)
+api_router.include_router(initiatives_router)
 
 # Health check endpoint
 @api_router.get("/")
