@@ -23,7 +23,7 @@ router = APIRouter(prefix="/prd", tags=["prd"])
 class SavePRDRequest(BaseModel):
     """Request to save PRD"""
     epic_id: str
-    content: str
+    content: str  # Frontend sends as 'content', we'll store in 'sections'
     title: Optional[str] = None
     version: str = "1.0"
     status: str = "draft"
