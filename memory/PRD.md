@@ -1129,3 +1129,37 @@ When an Epic is locked, users enter Feature Planning Mode:
 
 **Tests:** API verified via curl, UI screenshot confirmed data loads correctly
 
+
+### 2026-02-05: List-First UX for Lean Canvas & PRD Pages (FEATURE)
+**User Request:** Both pages should show a list of existing items first, with a "Create New" option that only shows epics without an existing item.
+
+**Lean Canvas Changes:**
+- **List View:** Shows all existing canvases as cards with epic title, source (AI/Manual), and last updated date
+- **Editor View:** Opens when clicking a canvas card, with Back button to return to list
+- **Create New Dialog:** Shows only epics that don't have a canvas yet
+- **New Endpoints:**
+  - `GET /api/lean-canvas/list` - List all user's canvases
+  - `GET /api/lean-canvas/epics-without-canvas` - Get epics eligible for new canvas
+
+**PRD Changes:**
+- **Database Model:** Added `PRDDocument` model to persist PRDs (using `sections` column for content)
+- **List View:** Shows all PRDs with epic title, status badge, version, and last updated
+- **Editor View:** Markdown editor with Edit/Preview tabs, regenerate from epic data option
+- **Create New Dialog:** Shows only epics that don't have a PRD yet
+- **New Endpoints:**
+  - `GET /api/prd/list` - List all user's PRDs
+  - `GET /api/prd/epics-without-prd` - Get epics eligible for new PRD
+  - `GET /api/prd/{epic_id}` - Get saved PRD
+  - `POST /api/prd/save` - Save or update PRD
+  - `DELETE /api/prd/{epic_id}` - Delete PRD
+
+**UI Features (both pages):**
+- Click card to view/edit
+- "Back" button returns to list
+- "Saved" badge shows persistence status
+- "Update" vs "Save" button based on existing state
+- Loading spinners during data fetch
+
+**Tests:** All APIs verified via curl, UI screenshots confirm list and editor views working
+
+
