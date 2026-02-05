@@ -1100,3 +1100,32 @@ When an Epic is locked, users enter Feature Planning Mode:
 
 **Tests:** Frontend compiles successfully, UI visually verified
 
+### 2026-02-05: Lean Canvas Database Persistence (BUG FIX)
+**Issue:** Lean Canvas was saving to localStorage only, not to database. Canvas data was lost when selecting an Epic that already had a canvas created.
+
+**Database Changes:**
+- Added `lean_canvases` table:
+  - canvas_id, epic_id (unique constraint), user_id
+  - 9 canvas sections: problem, solution, unique_value, unfair_advantage, customer_segments, key_metrics, channels, cost_structure, revenue_streams
+  - source: manual | ai_generated
+  - created_at, updated_at
+- Migration: `20260205_1850_add_lean_canvas_table.py`
+
+**Backend Updates (`/app/backend/routes/lean_canvas.py`):**
+- Added `GET /api/lean-canvas/{epic_id}` - Get saved canvas for an epic
+- Added `POST /api/lean-canvas/save` - Save or update canvas (upsert behavior)
+- Response includes `exists: true/false` to indicate if canvas is persisted
+
+**Frontend Updates (`/app/frontend/src/pages/LeanCanvas.jsx`):**
+- Replaced localStorage with API calls
+- Added `loadingCanvas` state with spinner while fetching
+- Shows "Saved" badge when canvas exists in database
+- Button changes from "Save" to "Update" when editing existing canvas
+- AI-generated canvases marked with `source: ai_generated` when saved
+
+**API Updates (`/app/frontend/src/api/index.js`):**
+- Added `leanCanvasAPI.get(epicId)` 
+- Added `leanCanvasAPI.save(epicId, canvas, source)`
+
+**Tests:** API verified via curl, UI screenshot confirmed data loads correctly
+
