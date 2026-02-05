@@ -8,12 +8,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { toast } from 'sonner';
 import { 
   Loader2, LayoutGrid, Save, Download, Plus, Trash2, 
   Users, Lightbulb, DollarSign, Target, Gift, BarChart3,
-  Zap, TrendingUp, ShieldCheck
+  Zap, TrendingUp, ShieldCheck, Sparkles
 } from 'lucide-react';
-import { epicAPI } from '@/api';
+import { epicAPI, leanCanvasAPI } from '@/api';
 
 const CANVAS_SECTIONS = [
   { 
@@ -94,6 +95,7 @@ const LeanCanvas = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [epics, setEpics] = useState([]);
   const [selectedEpic, setSelectedEpic] = useState('');
   const [canvas, setCanvas] = useState({});
@@ -211,6 +213,40 @@ const LeanCanvas = () => {
     URL.revokeObjectURL(url);
   };
 
+  const handleAIGenerate = async () => {
+    if (!selectedEpic) {
+      toast.error('Please select an epic first');
+      return;
+    }
+    
+    setGenerating(true);
+    try {
+      const response = await leanCanvasAPI.generate(selectedEpic);
+      const generatedCanvas = response.data.canvas;
+      
+      // Update canvas with generated data
+      setCanvas({
+        problem: generatedCanvas.problem || '',
+        solution: generatedCanvas.solution || '',
+        unique_value: generatedCanvas.unique_value || '',
+        unfair_advantage: generatedCanvas.unfair_advantage || '',
+        customer_segments: generatedCanvas.customer_segments || '',
+        key_metrics: generatedCanvas.key_metrics || '',
+        channels: generatedCanvas.channels || '',
+        cost_structure: generatedCanvas.cost_structure || '',
+        revenue_streams: generatedCanvas.revenue_streams || '',
+      });
+      
+      toast.success('Lean Canvas generated successfully!');
+    } catch (error) {
+      console.error('Failed to generate lean canvas:', error);
+      const message = error.response?.data?.detail || 'Failed to generate Lean Canvas';
+      toast.error(message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-20">
@@ -249,6 +285,18 @@ const LeanCanvas = () => {
             </div>
             {selectedEpic && (
               <div className="flex gap-2">
+                <Button 
+                  onClick={handleAIGenerate} 
+                  disabled={generating}
+                  className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white"
+                >
+                  {generating ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-2" />
+                  )}
+                  {generating ? 'Generating...' : 'AI Generate'}
+                </Button>
                 <Button variant="outline" onClick={handleExport}>
                   <Download className="h-4 w-4 mr-2" />
                   Export

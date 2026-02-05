@@ -39,6 +39,7 @@ from routes.initiative import router as initiative_router
 from routes.initiatives import router as initiatives_router
 from routes.delivery_reality import router as delivery_reality_router
 from routes.dashboard import router as dashboard_router
+from routes.lean_canvas import router as lean_canvas_router
 
 api_router.include_router(auth_router)
 api_router.include_router(subscription_router)
@@ -56,6 +57,7 @@ api_router.include_router(initiative_router)
 api_router.include_router(initiatives_router)
 api_router.include_router(delivery_reality_router)
 api_router.include_router(dashboard_router)
+api_router.include_router(lean_canvas_router)
 
 # Health check endpoint
 @api_router.get("/")

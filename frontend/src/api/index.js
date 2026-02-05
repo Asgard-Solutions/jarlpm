@@ -305,6 +305,10 @@ export const scoringAPI = {
       credentials: 'include',
     });
   },
+  
+  // Bulk scoring for Epic features
+  bulkScoreEpic: (epicId) => api.post(`/scoring/epic/${epicId}/bulk-score`),
+  applyBulkScores: (epicId, suggestions) => api.post(`/scoring/epic/${epicId}/apply-scores`, suggestions),
 };
 
 // AI Poker Planning API
@@ -389,6 +393,12 @@ export const deliveryRealityAPI = {
 export const dashboardAPI = {
   // Get complete dashboard data
   getData: () => api.get('/dashboard'),
+};
+
+// Lean Canvas API
+export const leanCanvasAPI = {
+  // Generate Lean Canvas from Epic using LLM
+  generate: (epicId) => api.post('/lean-canvas/generate', { epic_id: epicId }),
 };
 
 export default api;

@@ -5,13 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Gauge, ArrowUpDown, Filter, ExternalLink } from 'lucide-react';
+import { Loader2, Gauge, ArrowUpDown, Filter, ExternalLink, Sparkles, Check } from 'lucide-react';
 import { MoSCoWBadge, RICEBadge } from '@/components/ScoringComponents';
-import { epicAPI, featureAPI, storyAPI } from '@/api';
+import { epicAPI, featureAPI, storyAPI, scoringAPI } from '@/api';
+import { toast } from 'sonner';
 
 const Scoring = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
   const [epics, setEpics] = useState([]);
   const [features, setFeatures] = useState([]);
   const [stories, setStories] = useState([]);
@@ -27,16 +31,17 @@ const Scoring = () => {
     setLoading(true);
     try {
       const [epicsRes, storiesRes] = await Promise.all([
-        epicAPI.getEpics(),
+        epicAPI.list(),
         storyAPI.getAllStories(),
       ]);
       
-      setEpics(epicsRes.data || []);
+      setEpics(epicsRes.data?.epics || epicsRes.data || []);
       setStories(storiesRes.data || []);
       
       // Load features for all epics
       const allFeatures = [];
-      for (const epic of epicsRes.data || []) {
+      const epicsList = epicsRes.data?.epics || epicsRes.data || [];
+      for (const epic of epicsList) {
         try {
           const featuresRes = await featureAPI.getFeatures(epic.epic_id);
           allFeatures.push(...(featuresRes.data || []));
@@ -49,6 +54,44 @@ const Scoring = () => {
       console.error('Failed to load data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAIGenerate = async () => {
+    if (selectedEpic === 'all') {
+      toast.error('Please select a specific epic to generate scores');
+      return;
+    }
+    
+    setGenerating(true);
+    setSuggestions([]);
+    try {
+      const response = await scoringAPI.bulkScoreEpic(selectedEpic);
+      setSuggestions(response.data.suggestions || []);
+      toast.success(`Generated scores for ${response.data.suggestions?.length || 0} features`);
+    } catch (error) {
+      console.error('Failed to generate scores:', error);
+      const message = error.response?.data?.detail || 'Failed to generate scores';
+      toast.error(message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleApplyScores = async () => {
+    if (!suggestions.length) return;
+    
+    setApplying(true);
+    try {
+      const response = await scoringAPI.applyBulkScores(selectedEpic, suggestions);
+      toast.success(`Applied scores to ${response.data.applied} features`);
+      setSuggestions([]);
+      await loadData(); // Reload to show updated scores
+    } catch (error) {
+      console.error('Failed to apply scores:', error);
+      toast.error('Failed to apply scores');
+    } finally {
+      setApplying(false);
     }
   };
 
@@ -153,9 +196,40 @@ const Scoring = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Scoring</h1>
-        <p className="text-muted-foreground mt-1">MoSCoW prioritization and RICE scoring</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Scoring</h1>
+          <p className="text-muted-foreground mt-1">MoSCoW prioritization and RICE scoring</p>
+        </div>
+        <div className="flex gap-2">
+          {suggestions.length > 0 && (
+            <Button 
+              onClick={handleApplyScores} 
+              disabled={applying}
+              variant="outline"
+              className="border-green-500 text-green-500 hover:bg-green-500/10"
+            >
+              {applying ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Check className="h-4 w-4 mr-2" />
+              )}
+              Apply {suggestions.length} Scores
+            </Button>
+          )}
+          <Button 
+            onClick={handleAIGenerate} 
+            disabled={generating || selectedEpic === 'all'}
+            className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white"
+          >
+            {generating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4 mr-2" />
+            )}
+            {generating ? 'Generating...' : 'AI Score Epic'}
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -260,6 +334,37 @@ const Scoring = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* AI Suggestions Preview */}
+      {suggestions.length > 0 && (
+        <Card className="bg-violet-500/5 border-violet-500/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-violet-500" />
+              AI-Generated Scores (Review before applying)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {suggestions.map((s) => (
+                <div key={s.feature_id} className="flex items-center justify-between p-3 bg-background rounded-lg border">
+                  <span className="font-medium">{s.title}</span>
+                  <div className="flex items-center gap-3">
+                    <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/30">
+                      {s.moscow?.score?.replace('_', ' ')}
+                    </Badge>
+                    <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">
+                      RICE: {s.rice?.reach && s.rice?.impact && s.rice?.confidence && s.rice?.effort 
+                        ? ((s.rice.reach * s.rice.impact * s.rice.confidence) / s.rice.effort).toFixed(1)
+                        : 'N/A'}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Content */}
       {loading ? (
