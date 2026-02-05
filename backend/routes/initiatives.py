@@ -594,38 +594,56 @@ async def get_initiatives_summary(
     """
     user_id = await get_current_user_id(request, session)
     
-    # Count by stage
-    total_q = select(func.count(Epic.id)).where(Epic.user_id == user_id)
+    # Total (non-archived)
+    total_q = select(func.count(Epic.id)).where(
+        Epic.user_id == user_id,
+        Epic.is_archived == False
+    )
     total_result = await session.execute(total_q)
     total = total_result.scalar() or 0
     
+    # Draft (non-archived)
     draft_stages = ["problem_capture", "problem_confirmed", "outcome_capture", "outcome_confirmed"]
     draft_q = select(func.count(Epic.id)).where(
         Epic.user_id == user_id,
+        Epic.is_archived == False,
         Epic.current_stage.in_(draft_stages)
     )
     draft_result = await session.execute(draft_q)
     draft_count = draft_result.scalar() or 0
     
+    # Active (non-archived)
     active_q = select(func.count(Epic.id)).where(
         Epic.user_id == user_id,
+        Epic.is_archived == False,
         Epic.current_stage == "epic_drafted"
     )
     active_result = await session.execute(active_q)
     active_count = active_result.scalar() or 0
     
+    # Completed (non-archived)
     completed_q = select(func.count(Epic.id)).where(
         Epic.user_id == user_id,
+        Epic.is_archived == False,
         Epic.current_stage == "epic_locked"
     )
     completed_result = await session.execute(completed_q)
     completed_count = completed_result.scalar() or 0
     
+    # Archived
+    archived_q = select(func.count(Epic.id)).where(
+        Epic.user_id == user_id,
+        Epic.is_archived == True
+    )
+    archived_result = await session.execute(archived_q)
+    archived_count = archived_result.scalar() or 0
+    
     return {
         "total": total,
         "draft": draft_count,
         "active": active_count,
-        "completed": completed_count
+        "completed": completed_count,
+        "archived": archived_count
     }
 
 
