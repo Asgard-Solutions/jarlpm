@@ -315,12 +315,12 @@ Generate {count} personas that represent the key user types for this product. Re
             enhanced_prompt = f"Professional headshot portrait photograph. {portrait_prompt}. Clean background, soft lighting, friendly expression, high quality, realistic."
             
             # Generate image using gpt-image-1
-            # Note: gpt-image-1 doesn't support response_format parameter, returns URL by default
+            # Note: gpt-image-1 uses quality values: 'low', 'medium', 'high', 'auto'
             response = await client.images.generate(
                 model="gpt-image-1",
                 prompt=enhanced_prompt,
                 size="1024x1024",
-                quality="standard",
+                quality="high",
                 n=1
             )
             
