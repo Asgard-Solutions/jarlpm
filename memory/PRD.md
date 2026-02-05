@@ -1035,3 +1035,40 @@ When an Epic is locked, users enter Feature Planning Mode:
 - Pages provide: Page title bar with back button + page-specific actions
 
 **Tests:** Screenshot verified single header, logout flow tested and working
+
+
+### 2026-02-05: Persist Poker Planning AI Reasoning (COMPLETE)
+**Feature:** Save detailed AI persona reasoning during poker planning sessions for later review
+
+**Database Changes:**
+- Added `poker_estimate_sessions` table:
+  - session_id, story_id, user_id
+  - min/max/average/suggested estimates (statistics)
+  - accepted_estimate, accepted_at (when user accepts)
+  - created_at
+- Added `poker_persona_estimates` table:
+  - estimate_id, session_id (FK)
+  - persona_name, persona_role
+  - estimate_points, reasoning, confidence
+  - created_at
+- Migration: `20260205_1830_add_poker_session_tables.py`
+
+**Backend Updates (`/app/backend/routes/poker.py`):**
+- Modified `/estimate` endpoint to save session and persona estimates to database
+- Summary now includes `session_id` for frontend reference
+- Added `session_id` parameter to `POST /api/poker/save-estimate` to link acceptance
+- New `GET /api/poker/sessions/{story_id}` - Get all poker sessions for a story
+- New `GET /api/poker/session/{session_id}` - Get specific session with full reasoning
+
+**Frontend Updates:**
+- `PokerPlanning.jsx`: Passes `session_id` to save-estimate call when accepting
+- `api/index.js`: Updated `saveEstimate()` to accept optional `sessionId`
+- Added `getSessions()` and `getSession()` API methods
+
+**Data Flow:**
+1. User runs AI estimation → Session + persona estimates saved to DB
+2. User accepts estimate → Story points saved + session marked as accepted
+3. Later: User can retrieve full reasoning via `/sessions/{story_id}` endpoint
+
+**Tests:** API endpoints verified via curl, backend running without errors
+
