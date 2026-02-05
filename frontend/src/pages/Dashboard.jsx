@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
+import PageHeader from '@/components/PageHeader';
+import EmptyState from '@/components/EmptyState';
 import {
   AlertTriangle,
   AlertCircle,
@@ -124,26 +126,22 @@ const Dashboard = () => {
   return (
     <div className="space-y-6" data-testid="dashboard-page">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Welcome back{user?.name ? `, ${user.name.split(' ')[0]}` : ''}
-          </h1>
-          <p className="text-muted-foreground">
-            Here's what needs your attention today
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleCreateEpic} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Create Epic
-          </Button>
-          <Button onClick={() => navigate('/new')} className="gap-2">
-            <Sparkles className="h-4 w-4" />
-            AI Initiative
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title={`Welcome back${user?.name ? `, ${user.name.split(' ')[0]}` : ''}`}
+        description="Here's what needs your attention today"
+        actions={
+          <>
+            <Button variant="outline" onClick={handleCreateEpic} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Create Epic
+            </Button>
+            <Button onClick={() => navigate('/new')} className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              AI Initiative
+            </Button>
+          </>
+        }
+      />
 
       {/* Setup Alerts */}
       {(!has_llm_configured || !has_capacity_configured) && (
@@ -325,13 +323,13 @@ const Dashboard = () => {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                  <p>No initiatives in progress</p>
-                  <Button variant="link" onClick={() => navigate('/new')} className="mt-2">
-                    Create your first initiative
-                  </Button>
-                </div>
+                <EmptyState
+                  icon={FileText}
+                  title="No initiatives in progress"
+                  description="Create an initiative or start by capturing a problem to solve."
+                  actionLabel="Create initiative"
+                  onAction={() => navigate('/new')}
+                />
               )}
             </CardContent>
           </Card>

@@ -13,6 +13,8 @@ import {
   Zap, TrendingUp, ShieldCheck, Sparkles, Calendar, Edit3
 } from 'lucide-react';
 import { epicAPI, leanCanvasAPI } from '@/api';
+import PageHeader from '@/components/PageHeader';
+import EmptyState from '@/components/EmptyState';
 
 const CANVAS_SECTIONS = [
   { 
@@ -271,79 +273,72 @@ const LeanCanvas = () => {
   if (view === 'list') {
     return (
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Lean Canvas</h1>
-            <p className="text-muted-foreground mt-1">Business model canvases for your epics</p>
-          </div>
-          
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogTrigger asChild>
-              <Button disabled={availableEpics.length === 0} data-testid="create-new-canvas">
-                <Plus className="h-4 w-4 mr-2" />
-                Create New
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New Lean Canvas</DialogTitle>
-                <DialogDescription>
-                  Select an epic to create a Lean Canvas for.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4">
-                <Select value={newCanvasEpic} onValueChange={setNewCanvasEpic}>
-                  <SelectTrigger data-testid="select-epic-for-canvas">
-                    <SelectValue placeholder="Select an epic..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableEpics.map((epic) => (
-                      <SelectItem key={epic.epic_id} value={epic.epic_id}>
-                        {epic.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {availableEpics.length === 0 && (
-                  <p className="text-sm text-muted-foreground mt-2">
-                    All epics already have a Lean Canvas.
-                  </p>
-                )}
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-                <Button onClick={createNewCanvas} disabled={!newCanvasEpic}>Create</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
+        <PageHeader
+          title="Lean Canvas"
+          description="Business model canvases for your epics."
+          actions={
+            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+              <DialogTrigger asChild>
+                <Button disabled={availableEpics.length === 0} data-testid="create-new-canvas">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create canvas
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New Lean Canvas</DialogTitle>
+                  <DialogDescription>
+                    Select an epic to create a Lean Canvas for.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                  <Select value={newCanvasEpic} onValueChange={setNewCanvasEpic}>
+                    <SelectTrigger data-testid="select-epic-for-canvas">
+                      <SelectValue placeholder="Select an epic..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableEpics.map((epic) => (
+                        <SelectItem key={epic.epic_id} value={epic.epic_id}>
+                          {epic.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {availableEpics.length === 0 && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      All epics already have a Lean Canvas.
+                    </p>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
+                  <Button onClick={createNewCanvas} disabled={!newCanvasEpic}>Create</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          }
+        />
+
+        {/* duplicate create dialog removed */}
+
+        {/* end removed duplicate dialog */}
 
         {loading ? (
           <div className="flex justify-center py-20">
             <Loader2 className="h-8 w-8 text-primary animate-spin" />
           </div>
         ) : canvasList.length === 0 ? (
-          <Card className="bg-card border-border">
-            <CardContent className="p-12 text-center">
-              <LayoutGrid className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-medium text-foreground mb-2">
-                No Lean Canvases Yet
-              </h3>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Create your first Lean Canvas to map out your business model.
-              </p>
-              {availableEpics.length > 0 ? (
-                <Button onClick={() => setShowCreateDialog(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Canvas
-                </Button>
-              ) : (
-                <Button onClick={() => navigate('/dashboard')}>
-                  Create an Epic First
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={LayoutGrid}
+            title="No Lean Canvases yet"
+            description={
+              availableEpics.length > 0
+                ? 'Create a Lean Canvas to map your business model and assumptions.'
+                : 'Create an Epic first, then start a Lean Canvas from it.'
+            }
+            actionLabel={availableEpics.length > 0 ? 'Create canvas' : 'Go to Dashboard'}
+            onAction={() => (availableEpics.length > 0 ? setShowCreateDialog(true) : navigate('/dashboard'))}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {canvasList.map((item) => (
@@ -381,50 +376,83 @@ const LeanCanvas = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={backToList}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">{selectedEpicTitle}</h1>
-            <p className="text-muted-foreground">Lean Canvas</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            onClick={handleAIGenerate}
-            disabled={generating}
-          >
-            {generating ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+      <PageHeader
+        title={selectedEpicTitle}
+        description="Lean Canvas"
+        actions={
+          <>
+            <Button variant="ghost" onClick={backToList} className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+            <Button variant="outline" onClick={handleAIGenerate} disabled={generating} className="gap-2">
+              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              AI Generate
+            </Button>
+            <Button variant="outline" onClick={handleExport} className="gap-2">
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+            <Button onClick={handleSave} disabled={saving || loadingCanvas} className="gap-2">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {hasExistingCanvas ? 'Update' : 'Save'}
+            </Button>
+            {hasExistingCanvas ? (
+              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">Saved</Badge>
             ) : (
-              <Sparkles className="h-4 w-4 mr-2" />
+              <Badge variant="outline" className="bg-muted">Draft</Badge>
             )}
-            AI Generate
-          </Button>
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-          <Button onClick={handleSave} disabled={saving || loadingCanvas}>
-            {saving ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4 mr-2" />
-            )}
-            {hasExistingCanvas ? 'Update' : 'Save'}
-          </Button>
-          {hasExistingCanvas && (
-            <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/30">
-              Saved
-            </Badge>
-          )}
-        </div>
-      </div>
+          </>
+        }
+      />
+
+      {/* Progress + Jump */}
+      <Card className="bg-card border-border">
+        <CardContent className="py-4">
+          {(() => {
+            const filled = CANVAS_SECTIONS.filter((s) => (canvas?.[s.id] || '').trim().length > 0).length;
+            const total = CANVAS_SECTIONS.length;
+            const pct = total ? Math.round((filled / total) * 100) : 0;
+            return (
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium">Completion</div>
+                  <div className="text-sm text-muted-foreground">{filled}/{total} sections filled</div>
+                </div>
+                <div className="flex-1 sm:max-w-md">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                        <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                    <div className="text-sm text-muted-foreground w-12 text-right">{pct}%</div>
+                  </div>
+                </div>
+                <div className="sm:w-72">
+                  <Select
+                    onValueChange={(val) => {
+                      const el = document.getElementById(`canvas-${val}`);
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Jump to section…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CANVAS_SECTIONS.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
 
       {/* Canvas Grid */}
       {loadingCanvas ? (
@@ -519,7 +547,7 @@ const CanvasSection = ({ section, value, onChange, tall = false }) => {
   const Icon = section.icon;
   
   return (
-    <Card className={`bg-card border-border ${tall ? 'h-full' : ''}`}>
+    <Card id={`canvas-${section.id}`} className={`bg-card border-border scroll-mt-24 ${tall ? 'h-full' : ''}`}>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           <div className={`p-1.5 rounded ${section.bgColor}`}>

@@ -1236,6 +1236,86 @@ const Epic = () => {
         </div>
 
         <div className="w-80 flex-shrink-0 border-l border-border bg-card/50 hidden lg:flex lg:flex-col overflow-hidden" data-testid="sidebar">
+          {/* Next best action */}
+          <div className="p-4 border-b border-border">
+            {pendingProposal ? (
+              <Card className="border-amber-500/30 bg-amber-500/5">
+                <CardContent className="py-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+                    <div className="min-w-0">
+                      <div className="font-medium">Pending proposal</div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        Confirm or reject the AI proposal to progress this epic.
+                      </div>
+                      <div className="mt-3">
+                        <Button
+                          size="sm"
+                          className="gap-2"
+                          onClick={() => {
+                            const el = document.querySelector('[data-testid="pending-proposal"]');
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }}
+                        >
+                          Review proposal
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="py-4">
+                  <div className="flex items-start gap-3">
+                    <Target className="w-5 h-5 text-primary mt-0.5" />
+                    <div className="min-w-0">
+                      <div className="font-medium">Next best action</div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        {epic.current_stage === 'problem_capture' && 'Capture a crisp problem statement. Ask the AI to propose a concrete version.'}
+                        {epic.current_stage === 'problem_confirmed' && 'Define a measurable desired outcome and success metrics.'}
+                        {epic.current_stage === 'outcome_capture' && 'Define a measurable desired outcome and success metrics.'}
+                        {epic.current_stage === 'outcome_confirmed' && 'Draft the epic summary and acceptance criteria.'}
+                        {epic.current_stage === 'epic_drafted' && 'Finalize the epic summary and acceptance criteria, then lock the epic.'}
+                        {epic.current_stage === 'epic_locked' && 'Epic is locked — move to Feature Planning Mode.'}
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {epic.current_stage !== 'epic_locked' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const templates = {
+                                problem_capture: 'Propose a concise problem statement (2-3 sentences) and 3 measurable success metrics.',
+                                problem_confirmed: 'Propose a measurable desired outcome and 3-5 measurable key metrics with numeric targets.',
+                                outcome_capture: 'Propose a measurable desired outcome and 3-5 measurable key metrics with numeric targets.',
+                                outcome_confirmed: 'Draft the epic summary and 5-8 acceptance criteria. Keep criteria testable.',
+                                epic_drafted: 'Review the epic for gaps: missing NFRs, unclear acceptance criteria, or stories that are too large. Propose fixes.',
+                              };
+                              setMessage(templates[epic.current_stage] || 'Help me refine this epic for implementation readiness.');
+                              const input = document.querySelector('[data-testid="chat-input"]');
+                              if (input) input.focus();
+                            }}
+                          >
+                            Ask AI
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          onClick={() => navigate('/delivery-reality/' + epic.epic_id)}
+                          className="gap-2"
+                        >
+                          Delivery Reality
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
           <Tabs defaultValue="snapshot" className="flex-1 flex flex-col overflow-hidden">
             <TabsList className="flex-shrink-0 bg-transparent border-b border-border rounded-none p-0 h-auto">
               <TabsTrigger value="snapshot" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent py-3"><FileText className="w-4 h-4 mr-2" /> Snapshot</TabsTrigger>

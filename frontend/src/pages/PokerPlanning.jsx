@@ -15,6 +15,9 @@ import {
 } from 'lucide-react';
 import { epicAPI, featureAPI, userStoryAPI, pokerAPI } from '@/api';
 import PokerSessionHistory from '@/components/PokerSessionHistory';
+import PageHeader from '@/components/PageHeader';
+import EmptyState from '@/components/EmptyState';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 const FIBONACCI = [1, 2, 3, 5, 8, 13];
 
@@ -32,6 +35,9 @@ const PokerPlanning = () => {
   const [estimateSummary, setEstimateSummary] = useState(null);
   const [currentPersona, setCurrentPersona] = useState(null);
   const [estimatedStories, setEstimatedStories] = useState({});
+
+  // UI state
+  const [storyListOpen, setStoryListOpen] = useState(false);
 
   useEffect(() => {
     loadEpics();
@@ -222,6 +228,47 @@ const PokerPlanning = () => {
     }
   };
 
+  // Keyboard shortcuts: 1/2/3/5/8/13 accept points, arrows prev/next
+  useEffect(() => {
+    if (!selectedEpic || !stories.length) return;
+
+    const onKeyDown = (e) => {
+      // ignore typing contexts
+      const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+      if (['input', 'textarea', 'select'].includes(tag) || e.isComposing) return;
+
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleNextStory();
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrevStory();
+        return;
+      }
+
+      const current = stories[currentStoryIndex];
+      if (!current) return;
+
+      // Only accept if we have a current story and we are not in active estimating stream.
+      if (estimating) return;
+
+      const key = e.key;
+      if (key === '1') return void acceptEstimate(1);
+      if (key === '2') return void acceptEstimate(2);
+      if (key === '3') return void acceptEstimate(3);
+      if (key === '5') return void acceptEstimate(5);
+      if (key === '8') return void acceptEstimate(8);
+      if (key === '0') return void acceptEstimate(13);
+
+      // Tip: 13 is mapped to 0 to keep single-key shortcuts.
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedEpic, stories, currentStoryIndex, estimating]);
+
   const getConfidenceColor = (confidence) => {
     switch (confidence) {
       case 'high': return 'text-green-500';
@@ -257,12 +304,16 @@ const PokerPlanning = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">AI Poker Planning</h1>
-          <p className="text-muted-foreground mt-1">Get story estimates from AI team personas</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Poker"
+        description="Estimate stories fast with AI personas."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className="bg-muted">Keys: 1 2 3 5 8 0(=13)</Badge>
+            <Badge variant="outline" className="bg-muted">Nav: ← →</Badge>
+          </div>
+        }
+      />
 
       {/* Epic Selector */}
       <Card className="bg-card border-border">
@@ -283,15 +334,71 @@ const PokerPlanning = () => {
               </Select>
             </div>
             {selectedEpic && stories.length > 0 && (
-              <div className="text-sm text-muted-foreground">
-                Story {currentStoryIndex + 1} of {stories.length}
+              <div className="flex items-center gap-2">
+                <div className="text-sm text-muted-foreground">
+                  Story {currentStoryIndex + 1} of {stories.length}
+                </div>
+                <Sheet open={storyListOpen} onOpenChange={setStoryListOpen}>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <ChevronRight className="h-4 w-4" />
+                      Story list
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-full sm:max-w-md">
+                    <SheetHeader>
+                      <SheetTitle>Stories</SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-4 space-y-2">
+                      {stories.map((s, idx) => {
+                        const estimated = estimatedStories?.[s.story_id]?.points;
+                        const isActive = idx === currentStoryIndex;
+                        return (
+                          <button
+                            key={s.story_id}
+                            className={`w-full text-left rounded-lg border px-3 py-2 transition-colors ${isActive ? 'bg-primary/10 border-primary/30' : 'bg-card hover:bg-muted border-border'}`}
+                            onClick={() => {
+                              setCurrentStoryIndex(idx);
+                              resetEstimation();
+                              setStoryListOpen(false);
+                            }}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <div className="font-medium truncate">{idx + 1}. {s.title || 'Untitled'}</div>
+                                <div className="text-xs text-muted-foreground truncate">{s.persona} • {s.action}</div>
+                              </div>
+                              {estimated ? (
+                                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">{estimated} pts</Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-muted">Unestimated</Badge>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </SheetContent>
+                </Sheet>
               </div>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {selectedEpic && (
+      {selectedEpic && stories.length === 0 && !loading && (
+        <EmptyState
+          icon={Target}
+          title="No stories found"
+          description="This Epic has no stories yet. Lock the Epic, then generate features and stories first."
+          actionLabel="Go to Epic"
+          onAction={() => navigate(`/epic/${selectedEpic}`)}
+          secondaryLabel="Stories"
+          onSecondary={() => navigate('/stories')}
+        />
+      )}
+
+      {selectedEpic && stories.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content Area */}
           <div className="lg:col-span-2 space-y-6">

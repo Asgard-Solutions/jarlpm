@@ -9,6 +9,8 @@ import { Loader2, Gauge, ArrowUpDown, Filter, ExternalLink, Sparkles, Check } fr
 import { MoSCoWBadge, RICEBadge } from '@/components/ScoringComponents';
 import { epicAPI, featureAPI, storyAPI, scoringAPI } from '@/api';
 import { toast } from 'sonner';
+import PageHeader from '@/components/PageHeader';
+import EmptyState from '@/components/EmptyState';
 
 const Scoring = () => {
   const navigate = useNavigate();
@@ -206,41 +208,41 @@ const Scoring = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Scoring</h1>
-          <p className="text-muted-foreground mt-1">MoSCoW prioritization and RICE scoring</p>
-        </div>
-        <div className="flex gap-2">
-          {getTotalSuggestions() > 0 && (
-            <Button 
-              onClick={handleApplyScores} 
-              disabled={applying}
-              variant="outline"
-              className="border-green-500 text-green-500 hover:bg-green-500/10"
+      <PageHeader
+        title="Scoring"
+        description="MoSCoW prioritization and RICE scoring"
+        actions={
+          <>
+            {getTotalSuggestions() > 0 && (
+              <Button
+                onClick={handleApplyScores}
+                disabled={applying}
+                variant="outline"
+                className="border-green-500 text-green-500 hover:bg-green-500/10"
+              >
+                {applying ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4 mr-2" />
+                )}
+                Apply {getTotalSuggestions()} Scores
+              </Button>
+            )}
+            <Button
+              onClick={handleAIGenerate}
+              disabled={generating || selectedEpic === 'all'}
+              className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white"
             >
-              {applying ? (
+              {generating ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
-                <Check className="h-4 w-4 mr-2" />
+                <Sparkles className="h-4 w-4 mr-2" />
               )}
-              Apply {getTotalSuggestions()} Scores
+              {generating ? 'Generating...' : 'AI Score All'}
             </Button>
-          )}
-          <Button 
-            onClick={handleAIGenerate} 
-            disabled={generating || selectedEpic === 'all'}
-            className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white"
-          >
-            {generating ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4 mr-2" />
-            )}
-            {generating ? 'Generating...' : 'AI Score All'}
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

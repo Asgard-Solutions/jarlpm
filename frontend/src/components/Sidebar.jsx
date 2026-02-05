@@ -75,6 +75,12 @@ const navSections = [
         href: '/scoring',
         description: 'MoSCoW & RICE',
       },
+      {
+        title: 'PRD',
+        icon: FileEdit,
+        href: '/prd',
+        description: 'Product requirements',
+      },
     ],
   },
   {
@@ -97,12 +103,6 @@ const navSections = [
         icon: Users2,
         href: '/poker',
         description: 'Story estimation',
-      },
-      {
-        title: 'PRD',
-        icon: FileEdit,
-        href: '/prd',
-        description: 'Generate PRD',
       },
       {
         title: 'Export',
