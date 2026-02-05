@@ -434,10 +434,17 @@ const Initiatives = () => {
                           Duplicate
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleArchive(initiative)}>
-                          <Archive className="mr-2 h-4 w-4" />
-                          Archive
-                        </DropdownMenuItem>
+                        {initiative.status === 'archived' ? (
+                          <DropdownMenuItem onClick={() => handleUnarchive(initiative)}>
+                            <ArchiveRestore className="mr-2 h-4 w-4" />
+                            Restore
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onClick={() => handleArchive(initiative)}>
+                            <Archive className="mr-2 h-4 w-4" />
+                            Archive
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem 
                           onClick={() => setDeleteDialog({ open: true, initiative })}
                           className="text-destructive focus:text-destructive"
