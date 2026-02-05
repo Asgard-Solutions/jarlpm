@@ -171,11 +171,11 @@ const CompletedEpic = () => {
   const canGeneratePersonas = epic.current_stage === 'epic_locked';
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50">
+    <div className="-m-6">
+      {/* Page Title Bar */}
+      <div className="border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-4">
               <Button 
                 variant="ghost" 
@@ -186,32 +186,17 @@ const CompletedEpic = () => {
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <div className="flex items-center gap-2">
-                <img src={logoSrc} alt="JarlPM" className="h-8 w-auto" />
-                <span className="text-xl font-bold text-foreground">JarlPM</span>
-              </div>
+              <span className="text-lg font-semibold text-foreground">Epic Review</span>
             </div>
-            <div className="flex items-center gap-2">
-              {isFullyComplete && (
-                <Badge className="bg-success text-white" data-testid="completed-badge">
-                  <Trophy className="w-3 h-3 mr-1" />
-                  Completed
-                </Badge>
-              )}
-              <ThemeToggle />
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => navigate('/settings')}
-                className="text-muted-foreground hover:text-foreground"
-                data-testid="settings-btn"
-              >
-                <Settings className="w-5 h-5" />
-              </Button>
-            </div>
+            {isFullyComplete && (
+              <Badge className="bg-success text-white" data-testid="completed-badge">
+                <Trophy className="w-3 h-3 mr-1" />
+                Completed
+              </Badge>
+            )}
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Hero Section */}
       <div className={`border-b ${isFullyComplete ? 'border-success/30 bg-gradient-to-r from-success/10 via-emerald-500/10 to-success/10' : 'border-border bg-muted/30'}`}>
