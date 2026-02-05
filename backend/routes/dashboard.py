@@ -324,7 +324,7 @@ async def get_dashboard(
     from db.models import LLMProviderConfig
     llm_q = select(func.count(LLMProviderConfig.id)).where(
         LLMProviderConfig.user_id == user_id,
-        LLMProviderConfig.is_active == True
+        LLMProviderConfig.is_active.is_(True)
     )
     llm_result = await session.execute(llm_q)
     has_llm = (llm_result.scalar() or 0) > 0
