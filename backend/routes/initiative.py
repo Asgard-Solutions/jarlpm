@@ -340,16 +340,22 @@ def build_dod_for_methodology(methodology: str) -> List[str]:
 PRD_SYSTEM = """You are JarlPM, an expert Product Manager. Generate a focused PRD from a raw idea.
 {context}
 
-OUTPUT: Valid JSON only, no markdown or explanation.
+OUTPUT FORMAT:
+- Return ONLY valid JSON, nothing else
+- No markdown code fences (no ```json)
+- No commentary before or after the JSON
+- Use double quotes for all strings
+- No trailing commas
 
+SCHEMA:
 {{
-  "product_name": "short name",
-  "tagline": "one-line pitch",
+  "product_name": "short name (2-5 words)",
+  "tagline": "one-line pitch (max 100 chars)",
   "prd": {{
-    "problem_statement": "2-3 sentences on the core problem",
-    "target_users": "specific user persona(s)",
-    "desired_outcome": "what success looks like",
-    "key_metrics": ["metric1", "metric2", "metric3"],
+    "problem_statement": "2-3 sentences on the core problem (max 400 chars)",
+    "target_users": "specific user persona(s) with context",
+    "desired_outcome": "what success looks like (measurable)",
+    "key_metrics": ["metric1 (with target number/% or SLA)", "metric2", "metric3"],
     "out_of_scope": ["excluded1", "excluded2"],
     "risks": ["risk1", "risk2"]
   }},
@@ -360,7 +366,15 @@ OUTPUT: Valid JSON only, no markdown or explanation.
   }}
 }}
 
-Use industry-appropriate language and metrics. Be specific and actionable. Focus on the MVP."""
+CONSTRAINTS:
+- product_name: 2-5 words, no special characters
+- tagline: max 100 characters
+- problem_statement: max 400 characters, specific and actionable
+- key_metrics: exactly 3-5 metrics, each MUST be measurable (contain a number, %, $, SLA, or timeframe)
+- out_of_scope: 2-4 items to clarify boundaries
+- risks: 2-4 risks with likelihood/impact hints
+
+Use industry-appropriate language. Focus on the MVP."""
 
 
 PRD_USER = """Create a PRD for this idea:
@@ -369,7 +383,7 @@ PRD_USER = """Create a PRD for this idea:
 
 {name_hint}
 
-Return only valid JSON matching the schema."""
+Return only valid JSON matching the schema. No markdown fences, no commentary."""
 
 
 # ============================================
