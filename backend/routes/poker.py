@@ -546,7 +546,7 @@ async def get_poker_sessions(
     session: AsyncSession = Depends(get_db)
 ):
     """Get all poker estimation sessions for a story with their reasoning"""
-    user_id = await get_current_user_id(request, session)
+    await get_current_user_id(request, session)
     
     # Get all sessions for this story
     result = await session.execute(
