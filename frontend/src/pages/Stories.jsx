@@ -966,6 +966,10 @@ const StoryDetailDialog = ({ story, open, onClose, onRefine, onApprove, onDelete
                     {story.story_points} points
                   </Badge>
                 )}
+                <PokerSessionHistory 
+                  storyId={story.story_id} 
+                  storyTitle={story.title}
+                />
               </div>
             </div>
           </div>
