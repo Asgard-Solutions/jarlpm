@@ -409,6 +409,7 @@ const LeanCanvas = () => {
             />
           </div>
         </div>
+        )
       ) : (
         <Card className="bg-card border-border">
           <CardContent className="p-12 text-center">
