@@ -344,6 +344,12 @@ export const pokerAPI = {
       credentials: 'include',
     });
   },
+  
+  // Save estimate to database
+  saveEstimate: (storyId, storyPoints) => api.post('/poker/save-estimate', {
+    story_id: storyId,
+    story_points: storyPoints
+  }),
 };
 
 // Initiative Library API
