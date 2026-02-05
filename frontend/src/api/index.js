@@ -305,6 +305,10 @@ export const scoringAPI = {
       credentials: 'include',
     });
   },
+  
+  // Bulk scoring for Epic features
+  bulkScoreEpic: (epicId) => api.post(`/scoring/epic/${epicId}/bulk-score`),
+  applyBulkScores: (epicId, suggestions) => api.post(`/scoring/epic/${epicId}/apply-scores`, suggestions),
 };
 
 // AI Poker Planning API
