@@ -24,6 +24,7 @@ class DeliveryContextCreate(BaseModel):
     num_developers: Optional[int] = Field(None, ge=0, description="Number of developers")
     num_qa: Optional[int] = Field(None, ge=0, description="Number of QA engineers")
     delivery_platform: Optional[str] = Field(None, description="jira, azure_devops, none, other")
+    points_per_dev_per_sprint: Optional[int] = Field(8, ge=1, le=50, description="Story points per developer per sprint (default 8)")
     quality_mode: Optional[str] = Field("standard", description="standard or quality (2-pass with critique)")
 
 
@@ -36,6 +37,7 @@ class DeliveryContextResponse(BaseModel):
     num_developers: Optional[int] = None
     num_qa: Optional[int] = None
     delivery_platform: Optional[str] = None
+    points_per_dev_per_sprint: Optional[int] = 8
     quality_mode: Optional[str] = "standard"
     created_at: datetime
     updated_at: datetime
@@ -96,6 +98,7 @@ async def get_delivery_context(
         num_developers=context.num_developers,
         num_qa=context.num_qa,
         delivery_platform=context.delivery_platform,
+        points_per_dev_per_sprint=context.points_per_dev_per_sprint or 8,
         quality_mode=context.quality_mode or "standard",
         created_at=context.created_at,
         updated_at=context.updated_at
@@ -131,6 +134,7 @@ async def update_delivery_context(
             num_developers=body.num_developers,
             num_qa=body.num_qa,
             delivery_platform=platform,
+            points_per_dev_per_sprint=body.points_per_dev_per_sprint or 8,
             quality_mode=body.quality_mode or "standard"
         )
         session.add(context)
@@ -143,6 +147,7 @@ async def update_delivery_context(
         context.num_developers = body.num_developers
         context.num_qa = body.num_qa
         context.delivery_platform = platform
+        context.points_per_dev_per_sprint = body.points_per_dev_per_sprint or 8
         context.quality_mode = body.quality_mode or "standard"
         context.updated_at = datetime.now(timezone.utc)
     
@@ -158,6 +163,7 @@ async def update_delivery_context(
         num_developers=context.num_developers,
         num_qa=context.num_qa,
         delivery_platform=context.delivery_platform,
+        points_per_dev_per_sprint=context.points_per_dev_per_sprint or 8,
         quality_mode=context.quality_mode or "standard",
         created_at=context.created_at,
         updated_at=context.updated_at

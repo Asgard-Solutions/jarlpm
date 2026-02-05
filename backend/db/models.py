@@ -498,6 +498,9 @@ class ProductDeliveryContext(Base):
     num_qa: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     delivery_platform: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # jira, azure_devops, none, other
     
+    # Velocity - story points per developer per sprint (default 8)
+    points_per_dev_per_sprint: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=8)
+    
     # Quality mode: standard (1-pass) or quality (2-pass with critique)
     quality_mode: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, default="standard")
     
@@ -509,6 +512,49 @@ class ProductDeliveryContext(Base):
     
     __table_args__ = (
         Index('idx_delivery_context_user_id', 'user_id'),
+    )
+
+
+# ============================================
+# SCOPE PLAN (Delivery Reality)
+# ============================================
+
+class ScopePlan(Base):
+    """
+    Saved scope plan for an initiative - reversible planning.
+    Stores deferred story IDs without mutating the stories themselves.
+    """
+    __tablename__ = "scope_plans"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    plan_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("splan_"))
+    epic_id: Mapped[str] = mapped_column(String(50), ForeignKey("epics.epic_id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[str] = mapped_column(String(50), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    
+    # Plan name (optional, allows multiple plans per epic)
+    name: Mapped[str] = mapped_column(String(200), default="Default Plan", nullable=False)
+    
+    # Deferred story IDs (JSON array)
+    deferred_story_ids: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)
+    
+    # Points summary at time of saving (for historical reference)
+    total_points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    deferred_points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    remaining_points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    
+    # Notes from PM
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Active flag (only one active plan per epic)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    __table_args__ = (
+        Index('idx_scope_plans_epic_id', 'epic_id'),
+        Index('idx_scope_plans_user_id', 'user_id'),
+        Index('idx_scope_plans_active', 'epic_id', 'is_active'),
     )
 
 

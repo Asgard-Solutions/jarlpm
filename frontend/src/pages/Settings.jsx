@@ -53,6 +53,7 @@ const Settings = () => {
     num_developers: '',
     num_qa: '',
     delivery_platform: '',
+    points_per_dev_per_sprint: '8',
     quality_mode: 'standard',
   });
   const [savingContext, setSavingContext] = useState(false);
@@ -93,6 +94,7 @@ const Settings = () => {
           num_developers: ctxRes.data.num_developers?.toString() || '',
           num_qa: ctxRes.data.num_qa?.toString() || '',
           delivery_platform: ctxRes.data.delivery_platform || '',
+          points_per_dev_per_sprint: ctxRes.data.points_per_dev_per_sprint?.toString() || '8',
           quality_mode: ctxRes.data.quality_mode || 'standard',
         });
       }
@@ -230,6 +232,7 @@ const Settings = () => {
         num_developers: deliveryContext.num_developers ? parseInt(deliveryContext.num_developers) : null,
         num_qa: deliveryContext.num_qa ? parseInt(deliveryContext.num_qa) : null,
         delivery_platform: deliveryContext.delivery_platform || null,
+        points_per_dev_per_sprint: deliveryContext.points_per_dev_per_sprint ? parseInt(deliveryContext.points_per_dev_per_sprint) : 8,
         quality_mode: deliveryContext.quality_mode || 'standard',
       };
       
@@ -418,6 +421,24 @@ const Settings = () => {
                       data-testid="input-num-qa"
                     />
                   </div>
+                </div>
+
+                {/* Velocity */}
+                <div className="space-y-2">
+                  <Label className="text-nordic-text-secondary">Velocity (Points per Dev per Sprint)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={deliveryContext.points_per_dev_per_sprint}
+                    onChange={(e) => setDeliveryContext({ ...deliveryContext, points_per_dev_per_sprint: e.target.value })}
+                    placeholder="e.g., 8"
+                    className="bg-background border-border text-foreground placeholder:text-muted-foreground"
+                    data-testid="input-velocity"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Used in Delivery Reality to calculate 2-sprint capacity. Default is 8 points.
+                  </p>
                 </div>
 
                 {/* Delivery Platform */}

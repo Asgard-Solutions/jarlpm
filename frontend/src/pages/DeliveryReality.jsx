@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -45,6 +46,8 @@ import {
   Scissors,
   Download,
   Zap,
+  Save,
+  RotateCcw,
 } from 'lucide-react';
 
 const ASSESSMENT_CONFIG = {
@@ -96,6 +99,9 @@ const DeliveryReality = () => {
   const [initiativeDetail, setInitiativeDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [deferredStories, setDeferredStories] = useState(new Set());
+  const [scopePlan, setScopePlan] = useState(null);
+  const [planNotes, setPlanNotes] = useState('');
+  const [savingPlan, setSavingPlan] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -126,14 +132,27 @@ const DeliveryReality = () => {
     try {
       setDetailLoading(true);
       setSelectedInitiative(id);
-      const response = await deliveryRealityAPI.getInitiative(id);
-      setInitiativeDetail(response.data);
       
-      // Pre-select recommended deferrals
-      const recommendedIds = new Set(
-        response.data.recommended_defer.map(s => s.story_id)
-      );
-      setDeferredStories(recommendedIds);
+      const [detailRes, planRes] = await Promise.all([
+        deliveryRealityAPI.getInitiative(id),
+        deliveryRealityAPI.getScopePlan(id).catch(() => ({ data: null })),
+      ]);
+      
+      setInitiativeDetail(detailRes.data);
+      setScopePlan(planRes.data);
+      
+      // If there's a saved plan, use those deferrals
+      // Otherwise, use recommended deferrals
+      if (planRes.data) {
+        setDeferredStories(new Set(planRes.data.deferred_story_ids || []));
+        setPlanNotes(planRes.data.notes || '');
+      } else {
+        const recommendedIds = new Set(
+          detailRes.data.recommended_defer.map(s => s.story_id)
+        );
+        setDeferredStories(recommendedIds);
+        setPlanNotes('');
+      }
     } catch (error) {
       console.error('Failed to fetch initiative detail:', error);
       toast.error('Failed to load initiative details');
@@ -150,6 +169,8 @@ const DeliveryReality = () => {
     setSelectedInitiative(null);
     setInitiativeDetail(null);
     setDeferredStories(new Set());
+    setScopePlan(null);
+    setPlanNotes('');
     // Remove epicId from URL if present
     if (epicId) {
       navigate('/delivery-reality');
@@ -166,6 +187,45 @@ const DeliveryReality = () => {
       }
       return next;
     });
+  };
+
+  const saveScopePlan = async () => {
+    if (!initiativeDetail) return;
+    
+    try {
+      setSavingPlan(true);
+      const response = await deliveryRealityAPI.saveScopePlan(initiativeDetail.epic_id, {
+        name: 'Default Plan',
+        deferred_story_ids: Array.from(deferredStories),
+        notes: planNotes || null,
+      });
+      setScopePlan(response.data);
+      toast.success('Scope plan saved');
+    } catch (error) {
+      console.error('Failed to save scope plan:', error);
+      toast.error('Failed to save scope plan');
+    } finally {
+      setSavingPlan(false);
+    }
+  };
+
+  const clearScopePlan = async () => {
+    if (!initiativeDetail) return;
+    
+    try {
+      await deliveryRealityAPI.clearScopePlan(initiativeDetail.epic_id);
+      setScopePlan(null);
+      setPlanNotes('');
+      // Reset to recommended deferrals
+      const recommendedIds = new Set(
+        initiativeDetail.recommended_defer.map(s => s.story_id)
+      );
+      setDeferredStories(recommendedIds);
+      toast.success('Returned to base plan');
+    } catch (error) {
+      console.error('Failed to clear scope plan:', error);
+      toast.error('Failed to clear scope plan');
+    }
   };
 
   // Calculate deferred points based on current selection
@@ -479,12 +539,23 @@ const DeliveryReality = () => {
                 <>
                   <Separator />
                   <div>
-                    <h4 className="font-semibold flex items-center gap-2 mb-3">
-                      <Scissors className="h-4 w-4" />
-                      Recommended Scope Cuts
-                    </h4>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold flex items-center gap-2">
+                        <Scissors className="h-4 w-4" />
+                        {scopePlan ? 'Saved Scope Plan' : 'Recommended Scope Cuts'}
+                      </h4>
+                      {scopePlan && (
+                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                          <Save className="h-3 w-3 mr-1" />
+                          Plan Saved
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Defer these stories to fit within 2-sprint capacity. Stories are sorted by priority (lowest first) and size (largest first).
+                      {scopePlan 
+                        ? 'This is your saved deferral plan. Changes are not applied to stories — they remain reversible.'
+                        : 'These are AI-recommended deferrals based on priority (lowest first) and size (largest first). Select stories to defer, then save as a plan.'
+                      }
                     </p>
                     <Table>
                       <TableHeader>
@@ -534,11 +605,24 @@ const DeliveryReality = () => {
                       </TableBody>
                     </Table>
 
+                    {/* Plan notes */}
+                    <div className="mt-4 space-y-2">
+                      <label className="text-sm font-medium">Notes (optional)</label>
+                      <Textarea
+                        placeholder="Add notes about this scope plan..."
+                        value={planNotes}
+                        onChange={(e) => setPlanNotes(e.target.value)}
+                        className="h-20"
+                      />
+                    </div>
+
                     {/* New totals after deferral */}
                     <div className="mt-4 p-4 bg-muted/50 rounded-lg">
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="text-sm text-muted-foreground">After deferring selected stories:</p>
+                          <p className="text-sm text-muted-foreground">
+                            {scopePlan ? 'With saved plan:' : 'After deferring selected stories:'}
+                          </p>
                           <p className="font-medium">
                             New total: <span className="font-mono">{initiativeDetail.total_points - calculateDeferredPoints()}</span> pts
                             {' '}
@@ -567,6 +651,30 @@ const DeliveryReality = () => {
                   Close
                 </Button>
                 <div className="flex gap-2">
+                  {scopePlan && (
+                    <Button 
+                      variant="outline"
+                      onClick={clearScopePlan}
+                      className="gap-2"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Reset to Base
+                    </Button>
+                  )}
+                  {initiativeDetail.recommended_defer.length > 0 && (
+                    <Button 
+                      onClick={saveScopePlan}
+                      disabled={savingPlan}
+                      className="gap-2"
+                    >
+                      {savingPlan ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
+                      {scopePlan ? 'Update Plan' : 'Save Plan'}
+                    </Button>
+                  )}
                   <Button 
                     variant="outline" 
                     onClick={() => navigate(`/epic/${initiativeDetail.epic_id}`)}
