@@ -1458,11 +1458,12 @@ async def save_initiative(
             feature = Feature(
                 feature_id=feature_db_id,
                 epic_id=epic.epic_id,
-                name=feat_data.name,
+                title=feat_data.name,
                 description=feat_data.description,
-                priority=feat_data.priority,
-                status="planned",
-                order_index=i,
+                acceptance_criteria=[],
+                current_stage="approved",  # Features from initiative are pre-approved
+                source="ai_generated",
+                priority=i,
                 created_at=now,
                 updated_at=now
             )
