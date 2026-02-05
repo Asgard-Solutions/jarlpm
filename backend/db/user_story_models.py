@@ -179,3 +179,62 @@ class UserStoryConversationEvent(Base):
         CheckConstraint("role IN ('user', 'assistant', 'system')", name='ck_user_story_conv_valid_role'),
     )
 
+
+
+class PokerEstimateSession(Base):
+    """A poker planning session for a story - groups all persona estimates together"""
+    __tablename__ = "poker_estimate_sessions"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    session_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("pses_"))
+    story_id: Mapped[str] = mapped_column(String(50), ForeignKey("user_stories.story_id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    
+    # Summary statistics
+    min_estimate: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    max_estimate: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    average_estimate: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    suggested_estimate: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    
+    # Final accepted estimate (if user accepted one)
+    accepted_estimate: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    accepted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    estimates: Mapped[List["PokerPersonaEstimate"]] = relationship(back_populates="session", cascade="all, delete-orphan")
+    
+    __table_args__ = (
+        Index('idx_poker_sessions_story_id', 'story_id'),
+        Index('idx_poker_sessions_user_id', 'user_id'),
+    )
+
+
+class PokerPersonaEstimate(Base):
+    """Individual persona estimate within a poker session"""
+    __tablename__ = "poker_persona_estimates"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    estimate_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("pest_"))
+    session_id: Mapped[str] = mapped_column(String(50), ForeignKey("poker_estimate_sessions.session_id", ondelete="CASCADE"), nullable=False)
+    
+    # Persona info
+    persona_name: Mapped[str] = mapped_column(String(100), nullable=False)  # e.g., "Sarah"
+    persona_role: Mapped[str] = mapped_column(String(100), nullable=False)  # e.g., "Senior Developer"
+    
+    # Estimate details
+    estimate_points: Mapped[int] = mapped_column(Integer, nullable=False)
+    reasoning: Mapped[str] = mapped_column(Text, nullable=False)
+    confidence: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # "high", "medium", "low"
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    
+    # Relationships
+    session: Mapped["PokerEstimateSession"] = relationship(back_populates="estimates")
+    
+    __table_args__ = (
+        Index('idx_poker_estimates_session_id', 'session_id'),
+    )
+
+
