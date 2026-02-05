@@ -213,6 +213,40 @@ const LeanCanvas = () => {
     URL.revokeObjectURL(url);
   };
 
+  const handleAIGenerate = async () => {
+    if (!selectedEpic) {
+      toast.error('Please select an epic first');
+      return;
+    }
+    
+    setGenerating(true);
+    try {
+      const response = await leanCanvasAPI.generate(selectedEpic);
+      const generatedCanvas = response.data.canvas;
+      
+      // Update canvas with generated data
+      setCanvas({
+        problem: generatedCanvas.problem || '',
+        solution: generatedCanvas.solution || '',
+        unique_value: generatedCanvas.unique_value || '',
+        unfair_advantage: generatedCanvas.unfair_advantage || '',
+        customer_segments: generatedCanvas.customer_segments || '',
+        key_metrics: generatedCanvas.key_metrics || '',
+        channels: generatedCanvas.channels || '',
+        cost_structure: generatedCanvas.cost_structure || '',
+        revenue_streams: generatedCanvas.revenue_streams || '',
+      });
+      
+      toast.success('Lean Canvas generated successfully!');
+    } catch (error) {
+      console.error('Failed to generate lean canvas:', error);
+      const message = error.response?.data?.detail || 'Failed to generate Lean Canvas';
+      toast.error(message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-20">
