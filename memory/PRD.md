@@ -882,28 +882,35 @@ When an Epic is locked, users enter Feature Planning Mode:
 ### 2026-02-05: Initiative Library (COMPLETE)
 **Central hub to view, search, and manage all saved initiatives**
 - **Backend Routes (`/app/backend/routes/initiatives.py`):**
-  - `GET /api/initiatives` - List with pagination, filtering by status, search
-  - `GET /api/initiatives/stats/summary` - Summary counts (total, draft, active, completed)
+  - `GET /api/initiatives` - List with pagination, SQL-based search and status filtering
+  - `GET /api/initiatives/stats/summary` - Summary counts (total, draft, active, completed, archived)
   - `GET /api/initiatives/{epic_id}` - Full initiative details
   - `POST /api/initiatives/{epic_id}/duplicate` - Clone an initiative
-  - `PATCH /api/initiatives/{epic_id}/archive` - Soft-delete (reversible)
+  - `PATCH /api/initiatives/{epic_id}/archive` - Soft-delete (reversible, sets is_archived=true)
   - `PATCH /api/initiatives/{epic_id}/unarchive` - Restore from archive
   - `DELETE /api/initiatives/{epic_id}` - Permanent delete
+- **Database Changes:**
+  - Added `is_archived` (Boolean, default false) to Epic model
+  - Added `archived_at` (DateTime) to Epic model
+  - Added `idx_epics_archived` index
 - **Status Mapping:**
   - `draft` = Early epic stages (problem_capture, problem_confirmed, outcome_capture, outcome_confirmed)
   - `active` = epic_drafted stage
   - `completed` = epic_locked stage
-  - `archived` = Tracked separately (reversible soft-delete)
+  - `archived` = is_archived=true (reversible soft-delete)
 - **Frontend Page (`/app/frontend/src/pages/Initiatives.jsx`):**
   - Table view with columns: Name, Status, Updated, Stories/Points, Actions
-  - Summary cards: Total, Draft, Active, Completed counts
-  - Search input: Filters by title, tagline, or problem statement
-  - Status filter dropdown
-  - Actions menu: View, Duplicate, Archive, Delete
+  - 5 Summary cards: Total, Draft, Active, Completed, Archived counts
+  - **SQL-based search**: Filters by title or problem statement in database (correct pagination)
+  - **Archived filter**: Status dropdown includes Archived option, works correctly
+  - Actions menu: View, Duplicate, Archive/Restore (conditional), Delete
   - Delete confirmation dialog with archive tip
   - Pagination for large lists
 - **Navigation:**
   - Route `/initiatives` added to App.jsx
   - "Initiatives" link added to Sidebar under Planning section
-- **Bug Fix:** DELETE endpoint now sets `jarlpm.allow_cascade_delete` session variable to bypass append-only constraints on transcript tables
-- **Tests:** 22/22 backend tests passed (after bug fix)
+- **Bug Fixes:**
+  - DELETE endpoint sets `jarlpm.allow_cascade_delete` session variable (scoped to transaction)
+  - Search is now SQL-based, not client-side (correct pagination/totals)
+  - Archived filter actually filters for is_archived=true
+- **Tests:** 22/22 backend tests passed
