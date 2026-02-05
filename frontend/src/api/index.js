@@ -417,6 +417,12 @@ export const leanCanvasAPI = {
   // Generate Lean Canvas from Epic using LLM
   generate: (epicId) => api.post('/lean-canvas/generate', { epic_id: epicId }),
   
+  // List all Lean Canvases
+  list: () => api.get('/lean-canvas/list'),
+  
+  // Get epics without a canvas
+  getEpicsWithoutCanvas: () => api.get('/lean-canvas/epics-without-canvas'),
+  
   // Get saved Lean Canvas for an Epic
   get: (epicId) => api.get(`/lean-canvas/${epicId}`),
   
@@ -426,6 +432,29 @@ export const leanCanvasAPI = {
     canvas,
     source
   }),
+};
+
+export const prdAPI = {
+  // List all PRDs
+  list: () => api.get('/prd/list'),
+  
+  // Get epics without a PRD
+  getEpicsWithoutPRD: () => api.get('/prd/epics-without-prd'),
+  
+  // Get saved PRD for an Epic
+  get: (epicId) => api.get(`/prd/${epicId}`),
+  
+  // Save or update PRD
+  save: (epicId, content, title = null, version = '1.0', status = 'draft') => api.post('/prd/save', {
+    epic_id: epicId,
+    content,
+    title,
+    version,
+    status
+  }),
+  
+  // Delete PRD
+  delete: (epicId) => api.delete(`/prd/${epicId}`),
 };
 
 export default api;
