@@ -170,9 +170,12 @@ const PokerPlanning = () => {
     const currentStory = stories[currentStoryIndex];
     if (!currentStory) return;
     
+    // Get session_id from the summary if available
+    const sessionId = estimateSummary?.session_id || null;
+    
     // Save to database
     try {
-      await pokerAPI.saveEstimate(currentStory.story_id, points);
+      await pokerAPI.saveEstimate(currentStory.story_id, points, sessionId);
       toast.success(`✅ Saved ${points} story points for "${currentStory.title.substring(0, 30)}..."`, {
         duration: 4000,
       });
@@ -190,6 +193,7 @@ const PokerPlanning = () => {
         points,
         aiEstimates,
         summary: estimateSummary,
+        sessionId,
         estimatedAt: new Date().toISOString()
       }
     };
