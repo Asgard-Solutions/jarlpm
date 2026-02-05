@@ -187,8 +187,10 @@ const LeanCanvas = () => {
       
       setCanvasList(updatedList);
       localStorage.setItem('jarlpm_lean_canvases', JSON.stringify(updatedList));
+      toast.success('Lean Canvas saved successfully!');
     } catch (error) {
       console.error('Failed to save canvas:', error);
+      toast.error('Failed to save Lean Canvas');
     } finally {
       setSaving(false);
     }
