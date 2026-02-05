@@ -1061,9 +1061,10 @@ async def bulk_score_all_items(
         )
         stories.extend(stories_result.scalars().all())
     
-    # Get bugs for this epic
+    # Get bugs for this user (bugs are linked to epics via BugLink, not directly)
+    # For now, get all bugs for the user
     bugs_result = await session.execute(
-        select(Bug).where(Bug.epic_id == epic_id, Bug.user_id == user_id)
+        select(Bug).where(Bug.user_id == user_id, Bug.is_deleted.is_(False))
     )
     bugs = bugs_result.scalars().all()
     
