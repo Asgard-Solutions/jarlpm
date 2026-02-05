@@ -19,6 +19,8 @@ import { BookOpen, Plus, Search, ArrowLeft, Settings,
   Lock, FileText, ChevronRight, History
 } from 'lucide-react';
 import PokerSessionHistory from '@/components/PokerSessionHistory';
+import PageHeader from '@/components/PageHeader';
+import EmptyState from '@/components/EmptyState';
 
 // Constants
 const STAGE_CONFIG = {
@@ -517,21 +519,19 @@ const Stories = () => {
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
           ) : filteredStories.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-12 text-center">
-                <BookOpen className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No standalone stories</h3>
-                <p className="text-muted-foreground mb-4">
-                  {searchQuery || stageFilter !== 'all'
-                    ? 'Try adjusting your filters'
-                    : 'Create your first standalone user story to start tracking work'}
-                </p>
-                <Button onClick={startAIChat} className="bg-violet-500 hover:bg-violet-600" data-testid="create-first-story-btn">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Create with AI
-                </Button>
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={BookOpen}
+              title="No standalone stories"
+              description={
+                searchQuery || stageFilter !== 'all'
+                  ? 'No stories match your filters. Try widening your search.'
+                  : 'Create your first standalone user story to start tracking work.'
+              }
+              actionLabel="Create with AI"
+              onAction={startAIChat}
+              secondaryLabel="Manual"
+              onSecondary={() => setShowCreateDialog(true)}
+            />
           ) : (
             <div className="space-y-3">
               {filteredStories.map((story) => (

@@ -12,13 +12,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useAuthStore } from '@/store';
 import { bugAPI } from '@/api';
-import { 
-  Bug, Plus, Search, ArrowLeft, Settings, 
+import {
+  Bug, Plus, Search, ArrowLeft, Settings,
   AlertTriangle, AlertCircle, Info, CheckCircle2,
   Clock, Play, CheckCheck, Archive, Link2, Unlink,
   ChevronRight, Loader2, Trash2, Edit3, Sparkles,
   ArrowUpDown, Calendar, User, Send, Bot, UserIcon, MessageSquare
 } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
+import EmptyState from '@/components/EmptyState';
 
 // Constants
 const SEVERITY_CONFIG = {
@@ -454,21 +456,19 @@ const Bugs = () => {
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
           ) : filteredBugs.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-12 text-center">
-                <Bug className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No bugs found</h3>
-                <p className="text-muted-foreground mb-4">
-                  {searchQuery || statusFilter !== 'all' || severityFilter !== 'all' || linkedFilter !== 'all'
-                    ? 'Try adjusting your filters'
-                    : 'Create your first bug to start tracking issues'}
-                </p>
-                <Button onClick={() => setShowCreateDialog(true)} data-testid="create-first-bug-btn">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Bug
-                </Button>
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={Bug}
+              title="No bugs found"
+              description={
+                searchQuery || statusFilter !== 'all' || severityFilter !== 'all' || linkedFilter !== 'all'
+                  ? 'No bugs match your filters. Try adjusting search, status, severity, or linkage.'
+                  : 'Create your first bug to start tracking issues and regressions.'
+              }
+              actionLabel="Create bug"
+              onAction={() => setShowCreateDialog(true)}
+              secondaryLabel="Create with AI"
+              onSecondary={startAIChat}
+            />
           ) : (
             <div className="space-y-3">
               {filteredBugs.map((bug) => (
