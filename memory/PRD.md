@@ -711,10 +711,9 @@ When an Epic is locked, users enter Feature Planning Mode:
 ## Backlog
 
 ### P0 - Critical
-- None! All critical items completed.
+- None! All P0 items completed (Initiative Library + Delivery Reality View).
 
 ### P1 - Upcoming
-- **Delivery Reality View:** Build a UI that uses delivery context (team size, velocity) and the generated plan's story points to show capacity-per-sprint estimate, scope-fit indicator (on-track/at-risk), and auto-suggested scope cuts
 - Configure Stripe webhook in Stripe Dashboard (endpoint: /api/webhook/stripe)
 - Test full subscription flow with real Stripe test keys
 - Sprint Planning (Kanban board) implementation
@@ -723,6 +722,7 @@ When an Epic is locked, users enter Feature Planning Mode:
 - **Decision & Assumption Tracking:** Persist assumptions and risks from "Confidence & Risks" panel, build workflow to track validation status
 - **Collaboration Loop:** Share read-only links to initiatives, basic commenting system
 - **Jira/Linear Push Integration:** Deep integration to push plans directly into user's Jira or Linear project
+- **points_per_dev_per_sprint field:** Add to ProductDeliveryContext model to allow user override of default 8
 - Google OAuth authentication (nice-to-have)
 - Team collaboration features
 
