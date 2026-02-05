@@ -7,7 +7,7 @@ import requests
 import os
 import uuid
 
-BASE_URL = os.environ.get('VITE_BACKEND_URL', 'https://jarlpm-ai-1.preview.emergentagent.com')
+BASE_URL = os.environ.get('VITE_BACKEND_URL', 'https://pm-assistant-3.preview.emergentagent.com')
 
 
 class TestInitiativeAPI:

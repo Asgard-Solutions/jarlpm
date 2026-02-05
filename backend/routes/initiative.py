@@ -33,7 +33,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from db import get_db
-from db.models import Epic, EpicSnapshot, Subscription, SubscriptionStatus, ProductDeliveryContext
+from db.models import Epic, EpicSnapshot, EpicStage, Subscription, SubscriptionStatus, ProductDeliveryContext
 from db.feature_models import Feature
 from db.user_story_models import UserStory
 from services.llm_service import LLMService
@@ -288,7 +288,7 @@ def build_context_prompt(ctx: dict) -> str:
     }
     
     context_parts = [
-        f"\nORGANIZATION CONTEXT:",
+        "\nORGANIZATION CONTEXT:",
         f"- Industry: {ctx['industry'].title()}",
         f"- Methodology: {ctx['methodology'].title()}",
         f"- Sprint Length: {ctx['sprint_length']} days",
@@ -340,16 +340,22 @@ def build_dod_for_methodology(methodology: str) -> List[str]:
 PRD_SYSTEM = """You are JarlPM, an expert Product Manager. Generate a focused PRD from a raw idea.
 {context}
 
-OUTPUT: Valid JSON only, no markdown or explanation.
+OUTPUT FORMAT:
+- Return ONLY valid JSON, nothing else
+- No markdown code fences (no ```json)
+- No commentary before or after the JSON
+- Use double quotes for all strings
+- No trailing commas
 
+SCHEMA:
 {{
-  "product_name": "short name",
-  "tagline": "one-line pitch",
+  "product_name": "short name (2-5 words)",
+  "tagline": "one-line pitch (max 100 chars)",
   "prd": {{
-    "problem_statement": "2-3 sentences on the core problem",
-    "target_users": "specific user persona(s)",
-    "desired_outcome": "what success looks like",
-    "key_metrics": ["metric1", "metric2", "metric3"],
+    "problem_statement": "2-3 sentences on the core problem (max 400 chars)",
+    "target_users": "specific user persona(s) with context",
+    "desired_outcome": "what success looks like (measurable)",
+    "key_metrics": ["metric1 (with target number/% or SLA)", "metric2", "metric3"],
     "out_of_scope": ["excluded1", "excluded2"],
     "risks": ["risk1", "risk2"]
   }},
@@ -360,7 +366,15 @@ OUTPUT: Valid JSON only, no markdown or explanation.
   }}
 }}
 
-Use industry-appropriate language and metrics. Be specific and actionable. Focus on the MVP."""
+CONSTRAINTS:
+- product_name: 2-5 words, no special characters
+- tagline: max 100 characters
+- problem_statement: max 400 characters, specific and actionable
+- key_metrics: exactly 3-5 metrics, each MUST be measurable (contain a number, %, $, SLA, or timeframe)
+- out_of_scope: 2-4 items to clarify boundaries
+- risks: 2-4 risks with likelihood/impact hints
+
+Use industry-appropriate language. Focus on the MVP."""
 
 
 PRD_USER = """Create a PRD for this idea:
@@ -369,7 +383,7 @@ PRD_USER = """Create a PRD for this idea:
 
 {name_hint}
 
-Return only valid JSON matching the schema."""
+Return only valid JSON matching the schema. No markdown fences, no commentary."""
 
 
 # ============================================
@@ -379,25 +393,31 @@ Return only valid JSON matching the schema."""
 DECOMP_SYSTEM = """You are JarlPM. Given a PRD, decompose it into features and user stories.
 {context}
 
-OUTPUT: Valid JSON only.
+OUTPUT FORMAT:
+- Return ONLY valid JSON, nothing else
+- No markdown code fences (no ```json)
+- No commentary before or after the JSON
+- Use double quotes for all strings
+- No trailing commas
 
+SCHEMA:
 {{
   "features": [
     {{
-      "name": "Feature name",
-      "description": "What it does",
+      "name": "Feature name (2-5 words)",
+      "description": "What it does (1-2 sentences)",
       "priority": "must-have | should-have | nice-to-have",
       "stories": [
         {{
           "title": "Short, actionable title (5-10 words)",
-          "persona": "a [user type]",
+          "persona": "a [specific user type]",
           "action": "[what they want to do]",
           "benefit": "[why they want it]",
           "acceptance_criteria": [
             "Given X, When Y, Then Z",
             "Given A, When B, Then C"
           ],
-          "labels": ["backend", "frontend", "api", "auth", "database", "integration", "mvp", "ui"],
+          "labels": ["backend", "frontend", "api"],
           "priority": "must-have | should-have | nice-to-have",
           "dependencies": ["Description of what this story depends on"],
           "risks": ["Potential risks or blockers for this story"]
@@ -407,16 +427,22 @@ OUTPUT: Valid JSON only.
   ]
 }}
 
-RULES:
-- 3-5 features for MVP
+HARD CONSTRAINTS:
+- 3-5 features for MVP (no more, no less)
 - 2-4 stories per feature
-- Each story has 2-4 acceptance criteria in Given/When/Then (Gherkin) format
-- Labels: Choose from [backend, frontend, api, auth, database, integration, mvp, ui, performance, security]
-- Priorities: at least 1 must-have feature, stories inherit feature priority unless overridden
+- Each story MUST have exactly 2-4 acceptance criteria in Gherkin format (Given/When/Then)
+- Each AC must contain the tokens: Given, When, Then
+- Labels: choose from [backend, frontend, api, auth, database, integration, mvp, ui, performance, security, nfr]
+- At least 1 feature must be must-have
 - Stories should be small enough to complete in 1-3 days
-- Dependencies: Reference other stories by title or external dependencies
-- Risks: Include technical risks, integration risks, or unknowns
-- Use platform-appropriate story format"""
+- REQUIRED: Include at least 1 NFR story (security/performance/reliability/accessibility) in MVP features
+
+PRIORITY RULES:
+- must-have: Required for launch, no workarounds
+- should-have: Important, but can launch without
+- nice-to-have: Enhances UX, defer if needed
+
+Use platform-appropriate story format."""
 
 
 DECOMP_USER = """Decompose this PRD into features and user stories:
@@ -432,7 +458,9 @@ OUT OF SCOPE: {out_of_scope}
 
 {dod_section}
 
-Generate features with detailed user stories and acceptance criteria. Return only valid JSON."""
+Generate features with detailed user stories and acceptance criteria. 
+IMPORTANT: Include at least 1 NFR story for security, performance, or reliability.
+Return only valid JSON. No markdown fences, no commentary."""
 
 
 # ============================================
@@ -442,12 +470,18 @@ Generate features with detailed user stories and acceptance criteria. Return onl
 PLANNING_SYSTEM = """You are JarlPM. Given features and stories, assign story points and create a sprint plan.
 {context}
 
-OUTPUT: Valid JSON only.
+OUTPUT FORMAT:
+- Return ONLY valid JSON, nothing else
+- No markdown code fences (no ```json)
+- No commentary before or after the JSON
+- Use double quotes for all strings
+- No trailing commas
 
+SCHEMA:
 {{
   "estimated_stories": [
     {{
-      "story_id": "the story id",
+      "story_id": "the story id from input",
       "title": "story title (for reference)",
       "points": 3
     }}
@@ -474,12 +508,19 @@ FIBONACCI SCALE:
 - 8: Very Large (3-5 days)
 - 13: Huge (1 week, consider splitting)
 
-RULES:
+HARD CONSTRAINTS:
+- Points MUST be Fibonacci: 1, 2, 3, 5, 8, or 13 only
 - Respect team velocity: target {velocity} points per sprint
 - Sprint length: {sprint_length} days
-- Must-have stories go in Sprint 1
-- Nice-to-have stories go in Sprint 2
-- Balance the sprints for sustainable pace"""
+- CRITICAL: story_ids in sprint_plan MUST be a subset of the story_ids provided in FEATURES & STORIES
+- Do NOT invent new story IDs - only use the exact IDs given to you
+- Every story from the input MUST appear in estimated_stories
+
+SPRINT ALLOCATION RULES:
+- Must-have stories → Sprint 1 (prioritize)
+- Should-have stories → Split between sprints based on capacity
+- Nice-to-have stories → Sprint 2 (if capacity allows)
+- Balance sprints for sustainable pace (avoid one overloaded sprint)"""
 
 
 PLANNING_USER = """Estimate story points and create a sprint plan for:
@@ -492,10 +533,13 @@ TEAM CAPACITY:
 - Team Velocity: ~{velocity} points/sprint
 - Team: {num_devs} developers, {num_qa} QA
 
-FEATURES & STORIES:
+FEATURES & STORIES (use these exact story_ids):
 {stories_list}
 
-Assign Fibonacci points (1,2,3,5,8,13) to each story. Organize into 2 sprints respecting team capacity. Return only valid JSON."""
+Assign Fibonacci points (1,2,3,5,8,13) to each story.
+Organize into 2 sprints respecting team capacity.
+CRITICAL: Only use story_ids from the list above - do not invent new IDs.
+Return only valid JSON. No markdown fences, no commentary."""
 
 
 # ============================================
@@ -507,8 +551,15 @@ CRITIC_SYSTEM = """You are a Senior PM reviewing an initiative for quality and c
 
 Review the initiative and identify issues. Then provide fixes AND a confidence assessment.
 
-OUTPUT: Valid JSON only.
+OUTPUT FORMAT:
+- Return ONLY valid JSON, nothing else
+- No markdown code fences (no ```json)
+- No commentary before or after the JSON
+- Use double quotes for all strings
+- No trailing commas
+- ALWAYS include all top-level keys, even if empty (issues: [], fixes: {{}}, summary: {{}}, confidence_assessment: {{}})
 
+SCHEMA:
 {{
   "issues": [
     {{
@@ -520,7 +571,31 @@ OUTPUT: Valid JSON only.
     }}
   ],
   "fixes": {{
-    "metrics": ["list of improved/added metrics if any were unclear"],
+    "metrics": [],
+    "split_stories": [],
+    "added_nfr_stories": [],
+    "improved_acceptance_criteria": []
+  }},
+  "summary": {{
+    "total_issues": 0,
+    "errors": 0,
+    "warnings": 0,
+    "auto_fixed": 0,
+    "scope_assessment": "on_track | at_risk | overloaded",
+    "recommendation": "Brief recommendation for the PM"
+  }},
+  "confidence_assessment": {{
+    "confidence_score": 75,
+    "top_risks": [],
+    "key_assumptions": [],
+    "validate_first": []
+  }}
+}}
+
+DETAILED SCHEMA FOR fixes:
+{{
+  "fixes": {{
+    "metrics": ["list of improved/added metrics if any were unclear - empty array if none"],
     "split_stories": [
       {{
         "original_story_id": "story_xxx",
@@ -530,7 +605,7 @@ OUTPUT: Valid JSON only.
             "persona": "...",
             "action": "...",
             "benefit": "...",
-            "acceptance_criteria": ["..."],
+            "acceptance_criteria": ["Given X, When Y, Then Z"],
             "points": 3
           }}
         ]
@@ -542,7 +617,7 @@ OUTPUT: Valid JSON only.
         "persona": "a developer",
         "action": "...",
         "benefit": "...",
-        "acceptance_criteria": ["..."],
+        "acceptance_criteria": ["Given X, When Y, Then Z"],
         "points": 2,
         "nfr_type": "security | performance | accessibility | reliability"
       }}
@@ -553,45 +628,24 @@ OUTPUT: Valid JSON only.
         "improved_criteria": ["Given X, When Y, Then Z (measurable)"]
       }}
     ]
-  }},
-  "summary": {{
-    "total_issues": 5,
-    "errors": 1,
-    "warnings": 4,
-    "auto_fixed": 3,
-    "scope_assessment": "on_track | at_risk | overloaded",
-    "recommendation": "Brief recommendation for the PM"
-  }},
-  "confidence_assessment": {{
-    "confidence_score": 75,
-    "top_risks": [
-      "Risk 1: Brief description of biggest risk",
-      "Risk 2: Second biggest risk",
-      "Risk 3: Third risk"
-    ],
-    "key_assumptions": [
-      "Assumption 1: What we're assuming to be true",
-      "Assumption 2: Another critical assumption",
-      "Assumption 3: Third assumption"
-    ],
-    "validate_first": [
-      "What to validate first before heavy development",
-      "Second priority to validate",
-      "Third priority to validate"
-    ],
-    "success_factors": [
-      "Critical success factor 1",
-      "Critical success factor 2"
-    ]
   }}
 }}
 
-CHECKS TO PERFORM:
-1. METRICS: Are they industry-appropriate and measurable? (bad: "user satisfaction", good: "NPS score > 40")
-2. ACCEPTANCE CRITERIA: Are they testable? Must be Given/When/Then with observable outcomes
-3. STORY SIZE: Flag stories > 8 points - suggest splits into smaller stories
-4. NFRs: Check for missing security, performance, accessibility, error handling stories
-5. SCOPE: Is total points realistic for team velocity of {velocity} points/sprint?
+REVIEW CHECKLIST:
+1. Metrics: Are they measurable (have a number, %, $, SLA)?
+2. Acceptance Criteria: Do they follow Given/When/Then? Are they testable?
+3. Story Size: Any story > 8 points should be flagged for splitting
+4. NFRs: Is there at least 1 security/performance/reliability story?
+5. Scope: Does total points fit team capacity? Calculate scope_assessment
+6. Dependencies: Are there any circular or missing dependencies?
+
+HARD CONSTRAINTS:
+- ALWAYS return all top-level keys: issues, fixes, summary, confidence_assessment
+- If no fixes needed, return empty arrays/objects (not null, not omitted)
+- confidence_score: integer 0-100
+- top_risks: exactly 3 items
+- key_assumptions: exactly 3 items
+- validate_first: exactly 3 items
 
 Be constructive. Auto-fix what you can, warn about the rest."""
 
@@ -965,7 +1019,7 @@ async def generate_initiative(
             yield f"data: {json.dumps({'type': 'pass', 'pass': 2, 'message': 'Breaking down features...'})}\n\n"
             
             # Build DoD section
-            dod_section = f"DEFINITION OF DONE:\n" + "\n".join(f"- {d}" for d in dod)
+            dod_section = "DEFINITION OF DONE:\n" + "\n".join(f"- {d}" for d in dod)
             
             decomp_prompt = DECOMP_USER.format(
                 product_name=product_name,
@@ -1373,8 +1427,7 @@ async def save_initiative(
             epic_id=generate_id("epic_"),
             user_id=user_id,
             title=validated.product_name or validated.epic.title,
-            description=validated.epic.description,
-            status="in_progress",
+            current_stage=EpicStage.EPIC_LOCKED.value,  # New initiatives start as locked
             created_at=now,
             updated_at=now
         )

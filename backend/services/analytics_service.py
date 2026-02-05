@@ -11,11 +11,11 @@ Features:
 """
 import hashlib
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field
 
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, Integer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.analytics_models import InitiativeGenerationLog, InitiativeEditLog
@@ -311,10 +311,8 @@ class AnalyticsService:
         user_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """Get aggregated generation statistics"""
-        from_date = datetime.now(timezone.utc).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
-        from_date = from_date.replace(day=from_date.day - days)
+        from_date = datetime.now(timezone.utc) - timedelta(days=days)
+        from_date = from_date.replace(hour=0, minute=0, second=0, microsecond=0)
         
         # Build query
         base_filter = InitiativeGenerationLog.created_at >= from_date
@@ -330,7 +328,7 @@ class AnalyticsService:
         # Success rate
         success_result = await self.session.execute(
             select(func.count(InitiativeGenerationLog.id)).where(
-                and_(base_filter, InitiativeGenerationLog.success == True)
+                and_(base_filter, InitiativeGenerationLog.success.is_(True))
             )
         )
         successes = success_result.scalar() or 0
