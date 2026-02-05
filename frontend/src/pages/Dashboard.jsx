@@ -76,6 +76,16 @@ const Dashboard = () => {
     loadDashboard();
   }, [loadDashboard]);
 
+  const handleCreateEpic = async () => {
+    try {
+      const response = await epicAPI.create('New Epic');
+      navigate(`/epic/${response.data.epic_id}`);
+    } catch (error) {
+      console.error('Failed to create epic:', error);
+      toast.error('Failed to create epic');
+    }
+  };
+
   const handleQuickGenerate = async () => {
     if (!problemInput.trim()) {
       toast.error('Please enter a problem statement');
