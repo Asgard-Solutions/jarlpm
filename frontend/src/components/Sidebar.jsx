@@ -18,6 +18,7 @@ import {
   Users2,
   Sparkles,
   Library,
+  Target,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -79,6 +80,12 @@ const navSections = [
   {
     title: 'Delivery',
     items: [
+      {
+        title: 'Delivery Reality',
+        icon: Target,
+        href: '/delivery-reality',
+        description: 'Capacity & scope',
+      },
       {
         title: 'Sprints',
         icon: Calendar,
