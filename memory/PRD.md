@@ -1072,3 +1072,31 @@ When an Epic is locked, users enter Feature Planning Mode:
 
 **Tests:** API endpoints verified via curl, backend running without errors
 
+### 2026-02-05: Poker Session History UI Component (COMPLETE)
+**Feature:** View past AI estimation sessions with full persona reasoning
+
+**New Component (`/app/frontend/src/components/PokerSessionHistory.jsx`):**
+- Dialog-based history viewer triggered by "View History" button
+- Collapsible session cards showing:
+  - Date/time of estimation
+  - Acceptance status badge (if estimate was accepted)
+  - Summary stats (suggested, average, min, max)
+- Expandable persona reasoning section:
+  - Each persona's estimate with avatar
+  - Full reasoning text
+  - Confidence level indicator
+- "Latest" badge on most recent session
+
+**Integration Points:**
+- **PokerPlanning.jsx:** Button appears next to story badge when story is selected
+- **Stories.jsx (StoryDetailDialog):** Button appears next to story points in header
+
+**User Flow:**
+1. User opens story detail or selects story in Poker Planning
+2. Clicks "View History" button (History icon)
+3. Dialog shows all past estimation sessions
+4. Click session to expand and see full persona reasoning
+5. Useful for retrospectives, audits, and understanding estimate rationale
+
+**Tests:** Frontend compiles successfully, UI visually verified
+
