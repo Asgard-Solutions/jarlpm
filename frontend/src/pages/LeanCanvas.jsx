@@ -285,6 +285,18 @@ const LeanCanvas = () => {
             </div>
             {selectedEpic && (
               <div className="flex gap-2">
+                <Button 
+                  onClick={handleAIGenerate} 
+                  disabled={generating}
+                  className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white"
+                >
+                  {generating ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-2" />
+                  )}
+                  {generating ? 'Generating...' : 'AI Generate'}
+                </Button>
                 <Button variant="outline" onClick={handleExport}>
                   <Download className="h-4 w-4 mr-2" />
                   Export
