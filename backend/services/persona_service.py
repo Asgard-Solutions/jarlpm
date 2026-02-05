@@ -296,7 +296,7 @@ Generate {count} personas that represent the key user types for this product. Re
                     select(LLMProviderConfig).where(
                         LLMProviderConfig.user_id == user_id,
                         LLMProviderConfig.provider == "openai",
-                        LLMProviderConfig.is_active == True
+                        LLMProviderConfig.is_active.is_(True)
                     )
                 )
                 config = result.scalar_one_or_none()
@@ -315,18 +315,30 @@ Generate {count} personas that represent the key user types for this product. Re
             enhanced_prompt = f"Professional headshot portrait photograph. {portrait_prompt}. Clean background, soft lighting, friendly expression, high quality, realistic."
             
             # Generate image using gpt-image-1
+            # Note: gpt-image-1 doesn't support response_format parameter, returns URL by default
             response = await client.images.generate(
                 model="gpt-image-1",
                 prompt=enhanced_prompt,
                 size="1024x1024",
                 quality="standard",
-                n=1,
-                response_format="b64_json"  # Get base64 directly
+                n=1
             )
             
             if response.data and len(response.data) > 0:
-                # Return base64 encoded image
-                return response.data[0].b64_json
+                image_data = response.data[0]
+                
+                # gpt-image-1 returns b64_json directly in the response
+                if hasattr(image_data, 'b64_json') and image_data.b64_json:
+                    return image_data.b64_json
+                
+                # If URL is returned, download and convert to base64
+                if hasattr(image_data, 'url') and image_data.url:
+                    import httpx
+                    async with httpx.AsyncClient() as http_client:
+                        img_response = await http_client.get(image_data.url)
+                        if img_response.status_code == 200:
+                            import base64
+                            return base64.b64encode(img_response.content).decode('utf-8')
             
             return None
             

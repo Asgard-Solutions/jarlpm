@@ -39,8 +39,8 @@ const Sprints = () => {
     try {
       const [storiesRes, epicsRes, contextRes] = await Promise.all([
         storyAPI.getAllStories(),
-        epicAPI.getEpics(),
-        deliveryContextAPI.getContext(),
+        epicAPI.list(),
+        deliveryContextAPI.get(),
       ]);
       
       setStories(storiesRes.data || []);
