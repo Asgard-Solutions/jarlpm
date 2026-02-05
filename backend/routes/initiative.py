@@ -288,7 +288,7 @@ def build_context_prompt(ctx: dict) -> str:
     }
     
     context_parts = [
-        f"\nORGANIZATION CONTEXT:",
+        "\nORGANIZATION CONTEXT:",
         f"- Industry: {ctx['industry'].title()}",
         f"- Methodology: {ctx['methodology'].title()}",
         f"- Sprint Length: {ctx['sprint_length']} days",
