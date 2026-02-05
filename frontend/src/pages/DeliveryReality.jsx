@@ -169,6 +169,8 @@ const DeliveryReality = () => {
     setSelectedInitiative(null);
     setInitiativeDetail(null);
     setDeferredStories(new Set());
+    setScopePlan(null);
+    setPlanNotes('');
     // Remove epicId from URL if present
     if (epicId) {
       navigate('/delivery-reality');
@@ -185,6 +187,45 @@ const DeliveryReality = () => {
       }
       return next;
     });
+  };
+
+  const saveScopePlan = async () => {
+    if (!initiativeDetail) return;
+    
+    try {
+      setSavingPlan(true);
+      const response = await deliveryRealityAPI.saveScopePlan(initiativeDetail.epic_id, {
+        name: 'Default Plan',
+        deferred_story_ids: Array.from(deferredStories),
+        notes: planNotes || null,
+      });
+      setScopePlan(response.data);
+      toast.success('Scope plan saved');
+    } catch (error) {
+      console.error('Failed to save scope plan:', error);
+      toast.error('Failed to save scope plan');
+    } finally {
+      setSavingPlan(false);
+    }
+  };
+
+  const clearScopePlan = async () => {
+    if (!initiativeDetail) return;
+    
+    try {
+      await deliveryRealityAPI.clearScopePlan(initiativeDetail.epic_id);
+      setScopePlan(null);
+      setPlanNotes('');
+      // Reset to recommended deferrals
+      const recommendedIds = new Set(
+        initiativeDetail.recommended_defer.map(s => s.story_id)
+      );
+      setDeferredStories(recommendedIds);
+      toast.success('Returned to base plan');
+    } catch (error) {
+      console.error('Failed to clear scope plan:', error);
+      toast.error('Failed to clear scope plan');
+    }
   };
 
   // Calculate deferred points based on current selection
