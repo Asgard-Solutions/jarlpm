@@ -99,6 +99,9 @@ const DeliveryReality = () => {
   const [initiativeDetail, setInitiativeDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [deferredStories, setDeferredStories] = useState(new Set());
+  const [scopePlan, setScopePlan] = useState(null);
+  const [planNotes, setPlanNotes] = useState('');
+  const [savingPlan, setSavingPlan] = useState(false);
 
   const fetchData = async () => {
     try {
