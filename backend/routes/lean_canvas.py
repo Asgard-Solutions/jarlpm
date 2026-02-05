@@ -13,7 +13,7 @@ from sqlalchemy import select
 from pydantic import BaseModel, Field
 
 from db import get_db
-from db.models import Epic, EpicSnapshot, Subscription, SubscriptionStatus
+from db.models import Epic, EpicSnapshot, Subscription, SubscriptionStatus, LeanCanvas
 from services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
@@ -39,12 +39,20 @@ class GenerateLeanCanvasRequest(BaseModel):
     epic_id: str
 
 
+class SaveLeanCanvasRequest(BaseModel):
+    """Request to save lean canvas"""
+    epic_id: str
+    canvas: LeanCanvasData
+    source: str = "manual"  # manual | ai_generated
+
+
 class LeanCanvasResponse(BaseModel):
     """Response with generated lean canvas"""
     epic_id: str
     epic_title: str
     canvas: LeanCanvasData
     generated_at: str
+    source: Optional[str] = None
 
 
 async def get_current_user_id(request: Request, session: AsyncSession) -> str:
