@@ -498,6 +498,9 @@ class ProductDeliveryContext(Base):
     num_qa: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     delivery_platform: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # jira, azure_devops, none, other
     
+    # Velocity - story points per developer per sprint (default 8)
+    points_per_dev_per_sprint: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=8)
+    
     # Quality mode: standard (1-pass) or quality (2-pass with critique)
     quality_mode: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, default="standard")
     
