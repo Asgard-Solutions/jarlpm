@@ -59,6 +59,7 @@ api_router.include_router(initiatives_router)
 api_router.include_router(delivery_reality_router)
 api_router.include_router(dashboard_router)
 api_router.include_router(lean_canvas_router)
+api_router.include_router(prd_router)
 
 # Health check endpoint
 @api_router.get("/")
