@@ -2,6 +2,7 @@
 AI-Powered Poker Planning Routes for JarlPM
 Simulates a team of AI personas to estimate story points
 """
+from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -309,6 +310,48 @@ Provide your estimate in the specified JSON format."""
             "X-Accel-Buffering": "no"
         }
     )
+
+
+
+class SaveEstimateRequest(BaseModel):
+    story_id: str
+    story_points: int
+
+
+@router.post("/save-estimate")
+async def save_estimate(
+    request: Request,
+    body: SaveEstimateRequest,
+    session: AsyncSession = Depends(get_db)
+):
+    """Save the accepted story point estimate to the database"""
+    from db.user_story_models import UserStory
+    
+    # Verify user is authenticated (we don't need the ID, just auth check)
+    await get_current_user_id(request, session)
+    
+    # Find the story
+    result = await session.execute(
+        select(UserStory).where(UserStory.story_id == body.story_id)
+    )
+    story = result.scalar_one_or_none()
+    
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    
+    # Update story points
+    story.story_points = body.story_points
+    story.updated_at = datetime.now(timezone.utc)
+    
+    await session.commit()
+    await session.refresh(story)
+    
+    return {
+        "success": True,
+        "story_id": body.story_id,
+        "story_points": body.story_points
+    }
+
 
 
 @router.post("/estimate-custom")
