@@ -539,12 +539,23 @@ const DeliveryReality = () => {
                 <>
                   <Separator />
                   <div>
-                    <h4 className="font-semibold flex items-center gap-2 mb-3">
-                      <Scissors className="h-4 w-4" />
-                      Recommended Scope Cuts
-                    </h4>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold flex items-center gap-2">
+                        <Scissors className="h-4 w-4" />
+                        {scopePlan ? 'Saved Scope Plan' : 'Recommended Scope Cuts'}
+                      </h4>
+                      {scopePlan && (
+                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                          <Save className="h-3 w-3 mr-1" />
+                          Plan Saved
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Defer these stories to fit within 2-sprint capacity. Stories are sorted by priority (lowest first) and size (largest first).
+                      {scopePlan 
+                        ? 'This is your saved deferral plan. Changes are not applied to stories — they remain reversible.'
+                        : 'These are AI-recommended deferrals based on priority (lowest first) and size (largest first). Select stories to defer, then save as a plan.'
+                      }
                     </p>
                     <Table>
                       <TableHeader>
@@ -594,11 +605,24 @@ const DeliveryReality = () => {
                       </TableBody>
                     </Table>
 
+                    {/* Plan notes */}
+                    <div className="mt-4 space-y-2">
+                      <label className="text-sm font-medium">Notes (optional)</label>
+                      <Textarea
+                        placeholder="Add notes about this scope plan..."
+                        value={planNotes}
+                        onChange={(e) => setPlanNotes(e.target.value)}
+                        className="h-20"
+                      />
+                    </div>
+
                     {/* New totals after deferral */}
                     <div className="mt-4 p-4 bg-muted/50 rounded-lg">
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="text-sm text-muted-foreground">After deferring selected stories:</p>
+                          <p className="text-sm text-muted-foreground">
+                            {scopePlan ? 'With saved plan:' : 'After deferring selected stories:'}
+                          </p>
                           <p className="font-medium">
                             New total: <span className="font-mono">{initiativeDetail.total_points - calculateDeferredPoints()}</span> pts
                             {' '}
