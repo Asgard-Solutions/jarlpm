@@ -171,7 +171,7 @@ async def save_prd(
     
     if existing_prd:
         # Update existing PRD
-        existing_prd.content = body.content
+        existing_prd.sections = body.content  # Store 'content' in 'sections' column
         existing_prd.title = body.title or epic.title
         existing_prd.version = body.version
         existing_prd.status = body.status
@@ -181,7 +181,7 @@ async def save_prd(
         new_prd = PRDDocument(
             epic_id=body.epic_id,
             user_id=user_id,
-            content=body.content,
+            sections=body.content,  # Store 'content' in 'sections' column
             title=body.title or epic.title,
             version=body.version,
             status=body.status
