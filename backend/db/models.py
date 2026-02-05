@@ -710,3 +710,31 @@ class LeanCanvas(Base):
         Index('idx_lean_canvas_user_id', 'user_id'),
         UniqueConstraint('epic_id', name='uq_lean_canvas_epic'),  # One canvas per epic
     )
+
+
+
+class PRDDocument(Base):
+    """Product Requirements Document tied to an Epic"""
+    __tablename__ = "prd_documents"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    prd_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("prd_"))
+    epic_id: Mapped[str] = mapped_column(String(50), ForeignKey("epics.epic_id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[str] = mapped_column(String(50), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    
+    # PRD content
+    content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Metadata
+    title: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    version: Mapped[str] = mapped_column(String(20), default="1.0", nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default="draft", nullable=False)  # draft | review | approved
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    __table_args__ = (
+        Index('idx_prd_epic_id', 'epic_id'),
+        Index('idx_prd_user_id', 'user_id'),
+        UniqueConstraint('epic_id', name='uq_prd_epic'),  # One PRD per epic
+    )
