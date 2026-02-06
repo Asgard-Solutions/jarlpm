@@ -651,21 +651,6 @@ DETAILED SCHEMA FOR fixes:
 {{
   "fixes": {{
     "metrics": ["list of improved/added metrics if any were unclear - empty array if none"],
-    "split_stories": [
-      {{
-        "original_story_id": "story_xxx",
-        "new_stories": [
-          {{
-            "title": "New smaller story 1",
-            "persona": "...",
-            "action": "...",
-            "benefit": "...",
-            "acceptance_criteria": ["Given X, When Y, Then Z"],
-            "points": 3
-          }}
-        ]
-      }}
-    ],
     "added_nfr_stories": [
       {{
         "title": "NFR story title",
@@ -673,7 +658,6 @@ DETAILED SCHEMA FOR fixes:
         "action": "...",
         "benefit": "...",
         "acceptance_criteria": ["Given X, When Y, Then Z"],
-        "points": 2,
         "nfr_type": "security | performance | accessibility | reliability"
       }}
     ],
@@ -689,10 +673,12 @@ DETAILED SCHEMA FOR fixes:
 REVIEW CHECKLIST:
 1. Metrics: Are they measurable (have a number, %, $, SLA)?
 2. Acceptance Criteria: Do they follow Given/When/Then? Are they testable?
-3. Story Size: Any story > 8 points should be flagged for splitting
-4. NFRs: Is there at least 1 security/performance/reliability story?
-5. Scope: Does total points fit team capacity? Calculate scope_assessment
-6. Dependencies: Are there any circular or missing dependencies?
+3. NFRs: Is there at least 1 security/performance/reliability story?
+4. Dependencies: Are there any circular or missing dependencies?
+5. Story quality: Are descriptions clear? Are acceptance criteria testable?
+
+NOTE: Story points and sprint planning are NOT part of this review. 
+Points are assigned later via Scoring or Poker Planning features.
 
 HARD CONSTRAINTS:
 - ALWAYS return all top-level keys: issues, fixes, summary, confidence_assessment
