@@ -166,6 +166,54 @@ async def get_linear_service(session: AsyncSession, user_id: str) -> LinearGraph
     return LinearGraphQLService(access_token)
 
 
+async def get_jira_service(session: AsyncSession, user_id: str) -> JiraRESTService:
+    """Get authenticated Jira REST service for user"""
+    integration = await get_user_integration(session, user_id, IntegrationProvider.JIRA.value)
+    
+    if not integration or integration.status != IntegrationStatus.CONNECTED.value:
+        raise HTTPException(status_code=400, detail="Jira integration not connected")
+    
+    if not integration.access_token_encrypted:
+        raise HTTPException(status_code=400, detail="Jira tokens not found")
+    
+    if not integration.external_account_id:
+        raise HTTPException(status_code=400, detail="Jira cloud ID not found")
+    
+    # Check token expiration
+    if integration.token_expires_at and integration.token_expires_at < datetime.now(timezone.utc):
+        # Try to refresh
+        if integration.refresh_token_encrypted:
+            try:
+                encryption = get_encryption_service()
+                refresh_token = encryption.decrypt(integration.refresh_token_encrypted)
+                
+                oauth = JiraOAuthService()
+                new_tokens = await oauth.refresh_access_token(refresh_token)
+                
+                # Update tokens
+                integration.access_token_encrypted = encryption.encrypt(new_tokens["access_token"])
+                if new_tokens.get("refresh_token"):
+                    integration.refresh_token_encrypted = encryption.encrypt(new_tokens["refresh_token"])
+                integration.token_expires_at = datetime.now(timezone.utc) + timedelta(
+                    seconds=new_tokens.get("expires_in", 3600)
+                )
+                await session.commit()
+                
+                return JiraRESTService(new_tokens["access_token"], integration.external_account_id)
+            except Exception as e:
+                logger.error(f"Jira token refresh failed: {e}")
+                integration.status = IntegrationStatus.ERROR.value
+                await session.commit()
+                raise HTTPException(status_code=401, detail="Jira token expired. Please reconnect.")
+        else:
+            raise HTTPException(status_code=401, detail="Jira token expired. Please reconnect.")
+    
+    # Decrypt and return service
+    encryption = get_encryption_service()
+    access_token = encryption.decrypt(integration.access_token_encrypted)
+    return JiraRESTService(access_token, integration.external_account_id)
+
+
 # ============================================
 # Integration Status Endpoints
 # ============================================
