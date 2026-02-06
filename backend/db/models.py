@@ -722,14 +722,14 @@ class PRDDocument(Base):
     epic_id: Mapped[str] = mapped_column(String(50), ForeignKey("epics.epic_id", ondelete="CASCADE"), nullable=False)
     user_id: Mapped[str] = mapped_column(String(50), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
     
-    # PRD content - using 'sections' to match existing schema
-    title: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    sections: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Stores the full PRD content
+    # PRD content - using JSON to match existing schema
+    title: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    sections: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)  # Stores PRD sections as JSON
     source: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    generation_context: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    generation_context: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     
     # Metadata
-    version: Mapped[str] = mapped_column(String(20), default="1.0", nullable=False)
+    version: Mapped[str] = mapped_column(String(50), default="1.0", nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="draft", nullable=False)  # draft | review | approved
     
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
