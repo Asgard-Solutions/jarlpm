@@ -523,8 +523,10 @@ RESPONSE FORMAT (JSON only):
 
             try:
                 full_response = ""
-                async for chunk in llm_service.generate_stream(
-                    user_id=user_id,
+                # Use sessionless streaming
+                llm = LLMService()  # No session needed
+                async for chunk in llm.stream_with_config(
+                    config_data=config_data,
                     system_prompt=system_prompt,
                     user_prompt=user_prompt,
                     conversation_history=None
