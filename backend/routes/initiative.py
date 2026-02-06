@@ -880,16 +880,12 @@ async def run_llm_pass_with_validation(
     pass_name: str = "unknown"
 ) -> Optional[dict]:
     """
-    Run a single LLM pass with strict output validation and auto-repair.
-    
-    Features:
-    - Uses task-specific temperature for guardrails
-    - Validates against Pydantic schema
-    - Auto-repairs invalid JSON (up to 2 retries)
-    - Optionally runs quality pass for 2-pass mode
-    - Tracks all metrics for analytics
-    - Logs retries consistently for debugging
+    DEPRECATED: Use run_llm_pass_with_validation_sessionless instead.
+    This function holds DB sessions open during LLM streaming and should not be used.
+    Kept for reference only.
     """
+    # Log deprecation warning
+    logger.warning(f"DEPRECATED: run_llm_pass_with_validation called from {pass_name}. Use sessionless version instead.")
     start_time = time.time()
     temperature = strict_service.get_temperature(task_type)
     
