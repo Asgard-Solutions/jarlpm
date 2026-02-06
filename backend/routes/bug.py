@@ -484,13 +484,13 @@ async def get_bugs_for_entity(
 # AI ASSISTANCE (Optional)
 # ============================================
 
-@router.post("/{bug_id}/ai/refine-description")
-async def ai_refine_description(
+@router.post("/{bug_id}/ai/refine")
+async def ai_refine_bug(
     request: Request,
     bug_id: str,
     session: AsyncSession = Depends(get_db)
 ):
-    """Get AI suggestions for refining bug description (streaming)"""
+    """Use AI to suggest refined bug description"""
     user_id = await get_current_user_id(request, session)
     
     bug_service = BugService(session)
@@ -506,7 +506,10 @@ async def ai_refine_description(
     if not config:
         raise HTTPException(status_code=400, detail="No LLM provider configured")
     
-    # Build context
+    # Prepare for streaming - extract all needed data BEFORE releasing session
+    config_data = llm_service.prepare_for_streaming(config)
+    
+    # Build context (extract all data from bug object)
     context = f"""Bug Title: {bug.title}
 Current Description: {bug.description}
 Severity: {bug.severity}
@@ -520,11 +523,18 @@ Your task is to help improve bug descriptions to be clearer, more actionable, an
 Suggest improvements while keeping the core issue intact.
 Format your response as a refined description that could replace the current one."""
 
+    user_prompt = f"Please refine this bug description:\n\n{context}"
+    
+    # Session can be released here - streaming happens without DB connection
+    # (FastAPI will handle session cleanup after this function returns)
+
     async def generate():
-        async for chunk in llm_service.generate_stream(
-            user_id=user_id,
+        # Use stream_with_config which doesn't need a session
+        llm = LLMService()  # No session needed for streaming
+        async for chunk in llm.stream_with_config(
+            config_data=config_data,
             system_prompt=system_prompt,
-            user_prompt=f"Please refine this bug description:\n\n{context}",
+            user_prompt=user_prompt,
             conversation_history=None
         ):
             yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
