@@ -339,6 +339,7 @@ async def test_linear_connection(
 # ============================================
 
 @router.post("/preview")
+@limiter.limit(RATE_LIMITS["integration_preview"])
 async def preview_linear_push(
     request: Request,
     body: PushPreviewRequest,
