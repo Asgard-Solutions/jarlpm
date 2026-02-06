@@ -1361,3 +1361,29 @@ When an Epic is locked, users enter Feature Planning Mode:
 - `/app/backend/routes/sprints.py` - Lines 106, 498, 995
 
 
+
+### 2026-02-06: Critical Fix - DB Pool Exhaustion Prevention (COMPLETE)
+**Issue:** All streaming LLM endpoints (initiative generation, sprint AI insights, delivery reality AI, epic/feature/story/bug chat) were holding database sessions open during the entire streaming process. Under concurrent load, this could exhaust the DB connection pool.
+
+**Pattern Applied:**
+1. **Prepare config before streaming:** Call `llm_service.prepare_for_streaming(llm_config)` to extract all LLM config data BEFORE entering the async generator
+2. **Use sessionless streaming:** Create `LLMService()` without a session and call `stream_with_config(config_data, ...)` instead of `generate_stream(user_id, ...)`
+3. **Fresh sessions for DB writes:** Use `async with AsyncSessionLocal() as new_session:` for any database operations inside the generator (e.g., saving conversation events, tracking metrics)
+
+**New Functions/Methods:**
+- `LLMService.prepare_for_streaming(llm_config)` - Extracts config data as dict
+- `LLMService.stream_with_config(config_data, ...)` - Streams without needing session
+- `run_llm_pass_with_validation_sessionless()` - Sessionless version for initiative generation
+
+**Files Modified:**
+- `/app/backend/routes/initiative.py` - 4-pass generation now sessionless
+- `/app/backend/routes/sprints.py` - kickoff, standup, WIP endpoints
+- `/app/backend/routes/delivery_reality.py` - cut rationale, alternatives, risk review
+- `/app/backend/routes/scoring.py` - epic/feature/story/bug suggestions
+- `/app/backend/routes/feature.py` - feature generation and chat
+- `/app/backend/routes/user_story.py` - story generation and chat
+- `/app/backend/routes/epic.py` - epic chat
+- `/app/backend/routes/bug.py` - bug refine and chat
+
+**Tests:** 23/23 backend tests passed (iteration_27.json)
+
