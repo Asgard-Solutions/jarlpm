@@ -103,22 +103,21 @@ class TestSprintAIEndpoints:
     """Test sprint AI endpoints (sessionless streaming)"""
     
     @pytest.fixture(scope="class")
-    def auth_token(self):
-        """Get authentication token"""
-        response = requests.post(
+    def auth_session(self):
+        """Get authenticated session with cookies"""
+        session = requests.Session()
+        response = session.post(
             f"{BASE_URL}/api/auth/login",
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
-            data = response.json()
-            return data.get("session_token") or data.get("token")
+            return session
         pytest.skip("Authentication failed")
     
-    def test_kickoff_plan_accessible(self, auth_token):
+    def test_kickoff_plan_accessible(self, auth_session):
         """Sprint kickoff plan endpoint should be accessible"""
-        response = requests.post(
-            f"{BASE_URL}/api/sprints/ai/kickoff-plan",
-            headers={"Authorization": f"Bearer {auth_token}"}
+        response = auth_session.post(
+            f"{BASE_URL}/api/sprints/ai/kickoff-plan"
         )
         # Expected: 402, 400, or 200 - NOT 500
         assert response.status_code != 500, f"Server error: {response.text}"
@@ -130,11 +129,10 @@ class TestSprintAIEndpoints:
             data = response.json()
             print(f"  → Returns 400: {data.get('detail', 'Unknown')}")
     
-    def test_standup_summary_accessible(self, auth_token):
+    def test_standup_summary_accessible(self, auth_session):
         """Sprint standup summary endpoint should be accessible"""
-        response = requests.post(
-            f"{BASE_URL}/api/sprints/ai/standup-summary",
-            headers={"Authorization": f"Bearer {auth_token}"}
+        response = auth_session.post(
+            f"{BASE_URL}/api/sprints/ai/standup-summary"
         )
         assert response.status_code != 500, f"Server error: {response.text}"
         print(f"✓ Sprint standup-summary endpoint accessible: {response.status_code}")
@@ -145,11 +143,10 @@ class TestSprintAIEndpoints:
             data = response.json()
             print(f"  → Returns 400: {data.get('detail', 'Unknown')}")
     
-    def test_wip_suggestions_accessible(self, auth_token):
+    def test_wip_suggestions_accessible(self, auth_session):
         """Sprint WIP suggestions endpoint should be accessible"""
-        response = requests.post(
-            f"{BASE_URL}/api/sprints/ai/wip-suggestions",
-            headers={"Authorization": f"Bearer {auth_token}"}
+        response = auth_session.post(
+            f"{BASE_URL}/api/sprints/ai/wip-suggestions"
         )
         assert response.status_code != 500, f"Server error: {response.text}"
         print(f"✓ Sprint wip-suggestions endpoint accessible: {response.status_code}")
