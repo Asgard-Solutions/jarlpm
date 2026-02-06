@@ -348,15 +348,30 @@ const CompletedEpic = () => {
         {/* Epic Details Card */}
         <Card className="mb-6 border-success/30 bg-success/5" data-testid="epic-details-card">
           <CardHeader className="pb-2">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-success/20 flex items-center justify-center">
-                <Layers className="w-5 h-5 text-success" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-success/20 flex items-center justify-center">
+                  <Layers className="w-5 h-5 text-success" />
+                </div>
+                <div>
+                  <CardTitle className="text-base text-foreground flex items-center gap-2">
+                    Epic Details
+                    <Lock className="w-4 h-4 text-success" />
+                  </CardTitle>
+                </div>
               </div>
-              <div>
-                <CardTitle className="text-base text-foreground flex items-center gap-2">
-                  Epic Details
-                  <Lock className="w-4 h-4 text-success" />
-                </CardTitle>
+              <div className="flex items-center gap-2">
+                {epic.moscow_score && <MoSCoWBadge score={epic.moscow_score} />}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/scoring?epic=${epicId}`)}
+                  className="bg-violet-500/10 border-violet-500/30 hover:bg-violet-500/20"
+                  data-testid="view-scoring-btn"
+                >
+                  <Gauge className="w-4 h-4 mr-2 text-violet-400" />
+                  Scoring
+                </Button>
               </div>
             </div>
           </CardHeader>
