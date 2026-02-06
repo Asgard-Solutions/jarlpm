@@ -1284,7 +1284,8 @@ async def apply_all_bulk_scores(
                     suggestion.moscow["score"]
                 )
             if suggestion.rice:
-                rice = suggestion.rice
+                # Normalize RICE values to allowed discrete values
+                rice = normalize_rice_values(suggestion.rice)
                 if all(k in rice for k in ["reach", "impact", "confidence", "effort"]):
                     await scoring_service.update_feature_rice(
                         suggestion.item_id,
@@ -1301,7 +1302,8 @@ async def apply_all_bulk_scores(
     for suggestion in body.story_suggestions:
         try:
             if suggestion.rice:
-                rice = suggestion.rice
+                # Normalize RICE values to allowed discrete values
+                rice = normalize_rice_values(suggestion.rice)
                 if all(k in rice for k in ["reach", "impact", "confidence", "effort"]):
                     await scoring_service.update_story_rice(
                         suggestion.item_id,
@@ -1318,7 +1320,8 @@ async def apply_all_bulk_scores(
     for suggestion in body.bug_suggestions:
         try:
             if suggestion.rice:
-                rice = suggestion.rice
+                # Normalize RICE values to allowed discrete values
+                rice = normalize_rice_values(suggestion.rice)
                 if all(k in rice for k in ["reach", "impact", "confidence", "effort"]):
                     await scoring_service.update_bug_rice(
                         suggestion.item_id,
