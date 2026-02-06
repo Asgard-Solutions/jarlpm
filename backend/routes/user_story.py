@@ -35,8 +35,8 @@ class UserStoryCreate(BaseModel):
     action: str
     benefit: str
     acceptance_criteria: Optional[List[str]] = None
-    story_points: Optional[int] = None
     source: str = "manual"
+    # NOTE: story_points removed - only set via Scoring/Poker features
 
 
 class UserStoryUpdate(BaseModel):
@@ -44,7 +44,7 @@ class UserStoryUpdate(BaseModel):
     action: Optional[str] = None
     benefit: Optional[str] = None
     acceptance_criteria: Optional[List[str]] = None
-    story_points: Optional[int] = None
+    # NOTE: story_points removed from update - only set via Scoring/Poker features
 
 
 class FeatureStoryChatMessage(BaseModel):
