@@ -78,7 +78,8 @@ class LLMService:
         request_body = {
             "model": model,
             "messages": messages,
-            "stream": True
+            "stream": True,
+            "max_tokens": 4096  # Match Anthropic's budget for complete responses
         }
         if temperature is not None:
             request_body["temperature"] = temperature
