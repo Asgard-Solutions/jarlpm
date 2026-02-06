@@ -247,10 +247,11 @@ Return ONLY the JSON array, no other text."""
 Return as JSON array."""
 
     try:
-        # Call LLM (non-streaming for simplicity)
+        # Call LLM using sessionless streaming
         full_response = ""
-        async for chunk in llm_service.generate_stream(
-            user_id=user_id,
+        llm = LLMService()  # No session needed
+        async for chunk in llm.stream_with_config(
+            config_data=config_data,
             system_prompt=system_prompt,
             user_prompt=user_prompt
         ):
@@ -264,16 +265,19 @@ Return as JSON array."""
         
         personas_data = json.loads(json_match.group(0))
         
-        # Create personas in database (without images)
+        # Create personas in database with a fresh session
+        from db import AsyncSessionLocal
         created_personas = []
-        for persona_data in personas_data:
-            persona = await persona_service.create_persona(
-                user_id=user_id,
-                epic_id=epic_id,
-                persona_data=persona_data,
-                portrait_image_base64=None  # Images generated separately
-            )
-            created_personas.append(persona_to_response(persona))
+        async with AsyncSessionLocal() as new_session:
+            new_persona_service = PersonaService(new_session)
+            for persona_data in personas_data:
+                persona = await new_persona_service.create_persona(
+                    user_id=user_id,
+                    epic_id=epic_id,
+                    persona_data=persona_data,
+                    portrait_image_base64=None  # Images generated separately
+                )
+                created_personas.append(persona_to_response(persona))
         
         return {
             "success": True,
