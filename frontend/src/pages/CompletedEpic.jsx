@@ -234,6 +234,7 @@ const CompletedEpic = () => {
                     <Lock className="w-3 h-3 mr-1" />
                     Epic Locked
                   </Badge>
+                  {epic.moscow_score && <MoSCoWBadge score={epic.moscow_score} />}
                   {epic.created_at && (
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
