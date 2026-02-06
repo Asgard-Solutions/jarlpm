@@ -519,7 +519,7 @@ async def save_scope_plan(
     existing_q = select(ScopePlan).where(
         ScopePlan.epic_id == epic_id,
         ScopePlan.user_id == user_id,
-        ScopePlan.is_active == True
+        ScopePlan.is_active.is_(True)
     )
     existing_result = await session.execute(existing_q)
     existing_plans = existing_result.scalars().all()
@@ -586,7 +586,7 @@ async def get_active_scope_plan(
     plan_q = select(ScopePlan).where(
         ScopePlan.epic_id == epic_id,
         ScopePlan.user_id == user_id,
-        ScopePlan.is_active == True
+        ScopePlan.is_active.is_(True)
     )
     plan_result = await session.execute(plan_q)
     plan = plan_result.scalar_one_or_none()
@@ -636,7 +636,7 @@ async def clear_scope_plan(
     plan_q = select(ScopePlan).where(
         ScopePlan.epic_id == epic_id,
         ScopePlan.user_id == user_id,
-        ScopePlan.is_active == True
+        ScopePlan.is_active.is_(True)
     )
     plan_result = await session.execute(plan_q)
     active_plans = plan_result.scalars().all()
@@ -781,7 +781,7 @@ async def get_scope_decision_summary(
     plan_q = select(ScopePlan).where(
         ScopePlan.epic_id == epic_id,
         ScopePlan.user_id == user_id,
-        ScopePlan.is_active == True
+        ScopePlan.is_active.is_(True)
     )
     plan_result = await session.execute(plan_q)
     plan = plan_result.scalar_one_or_none()
@@ -926,7 +926,7 @@ async def generate_cut_rationale(
     plan_q = select(ScopePlan).where(
         ScopePlan.epic_id == epic_id,
         ScopePlan.user_id == user_id,
-        ScopePlan.is_active == True
+        ScopePlan.is_active.is_(True)
     )
     plan_result = await session.execute(plan_q)
     plan = plan_result.scalar_one_or_none()
@@ -1143,7 +1143,7 @@ async def generate_risk_review(
     plan_q = select(ScopePlan).where(
         ScopePlan.epic_id == epic_id,
         ScopePlan.user_id == user_id,
-        ScopePlan.is_active == True
+        ScopePlan.is_active.is_(True)
     )
     plan_result = await session.execute(plan_q)
     plan = plan_result.scalar_one_or_none()
