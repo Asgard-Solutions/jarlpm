@@ -1549,11 +1549,10 @@ async def generate_initiative(
                 target_points=target_points
             )
             
-            # Use strict output with schema validation (very low temp for analytical critic)
-            critic_result = await run_llm_pass_with_validation(
-                llm_service=llm_service,
+            # Use sessionless strict output with schema validation (very low temp for analytical critic)
+            critic_result = await run_llm_pass_with_validation_sessionless(
+                config_data=config_data,
                 strict_service=strict_service,
-                user_id=user_id,
                 system=critic_system,
                 user=critic_prompt,
                 schema=Pass4CriticOutput,
