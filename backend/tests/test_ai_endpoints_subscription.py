@@ -64,7 +64,7 @@ class TestSetup:
                 json={"title": "Test Epic for Subscription Gating"}
             )
             epic_id = None
-            if epic_resp.status_code == 200:
+            if epic_resp.status_code in [200, 201]:
                 epic_id = epic_resp.json().get("epic_id")
             
             return {
