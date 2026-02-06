@@ -1375,15 +1375,20 @@ When an Epic is locked, users enter Feature Planning Mode:
 - `LLMService.stream_with_config(config_data, ...)` - Streams without needing session
 - `run_llm_pass_with_validation_sessionless()` - Sessionless version for initiative generation
 
-**Files Modified:**
-- `/app/backend/routes/initiative.py` - 4-pass generation now sessionless
+**Files Modified (Complete List):**
+- `/app/backend/routes/initiative.py` - 4-pass generation now sessionless, deprecated old helpers
 - `/app/backend/routes/sprints.py` - kickoff, standup, WIP endpoints
 - `/app/backend/routes/delivery_reality.py` - cut rationale, alternatives, risk review
-- `/app/backend/routes/scoring.py` - epic/feature/story/bug suggestions
+- `/app/backend/routes/scoring.py` - epic/feature/story/bug suggestions + bulk scoring
 - `/app/backend/routes/feature.py` - feature generation and chat
 - `/app/backend/routes/user_story.py` - story generation and chat
 - `/app/backend/routes/epic.py` - epic chat
 - `/app/backend/routes/bug.py` - bug refine and chat
+- `/app/backend/routes/persona.py` - persona generation
+- `/app/backend/routes/poker.py` - poker planning AI estimation
+- `/app/backend/routes/prd.py` - PRD markdown generation
 
 **Tests:** 23/23 backend tests passed (iteration_27.json)
+
+**Verification:** `grep -rn "generate_stream" /app/backend/routes/` returns 0 active usages (only deprecated functions)
 
