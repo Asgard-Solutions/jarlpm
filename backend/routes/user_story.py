@@ -72,6 +72,10 @@ class UserStoryResponse(BaseModel):
     rice_confidence: Optional[float] = None
     rice_effort: Optional[float] = None
     rice_total: Optional[float] = None
+    # Sprint planning fields
+    sprint_number: Optional[int] = None
+    status: Optional[str] = None
+    blocked_reason: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     approved_at: Optional[datetime] = None
