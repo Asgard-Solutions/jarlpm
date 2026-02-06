@@ -200,7 +200,7 @@ async def detailed_health_check(
     
     # Database check
     try:
-        result = await session.execute(text("SELECT 1"))
+        await session.execute(text("SELECT 1"))
         health["checks"]["database"] = {"status": "healthy"}
     except Exception as e:
         health["checks"]["database"] = {"status": "unhealthy", "error": str(e)}
