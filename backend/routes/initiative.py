@@ -399,7 +399,10 @@ def build_dod_for_methodology(methodology: str) -> List[str]:
 # Pass 1: PRD Generation
 # ============================================
 
-PRD_SYSTEM = """You are JarlPM, an expert Product Manager. Generate a focused PRD from a raw idea.
+PRD_SYSTEM = """You are JarlPM, a Senior Product Manager creating production-ready PRDs for teams that don't have a PM.
+
+Your output must be comprehensive enough that an engineering team can build confidently without ambiguity.
+
 {context}
 
 OUTPUT FORMAT:
@@ -412,38 +415,92 @@ OUTPUT FORMAT:
 SCHEMA:
 {{
   "product_name": "short name (2-5 words)",
-  "tagline": "one-line pitch (max 100 chars)",
+  "tagline": "one-line pitch that captures the value prop",
   "prd": {{
-    "problem_statement": "2-3 sentences on the core problem (max 400 chars)",
-    "target_users": "specific user persona(s) with context",
-    "desired_outcome": "what success looks like (measurable)",
-    "key_metrics": ["metric1 (with target number/% or SLA)", "metric2", "metric3"],
-    "out_of_scope": ["excluded1", "excluded2"],
-    "risks": ["risk1", "risk2"]
+    "problem_statement": "2-4 sentences describing the core problem with specificity. Include who feels the pain and when.",
+    "problem_evidence": "Data, quotes, or research that validates this problem exists. Be specific.",
+    "target_users": [
+      {{
+        "persona": "Specific role/type (e.g., 'Independent pharmacy owner')",
+        "context": "Their situation (team size, industry, workflow)",
+        "pain_points": ["Specific frustration 1", "Specific frustration 2"],
+        "current_workaround": "How they solve this today (manual process, competitor, spreadsheet, etc.)",
+        "jtbd": "When [situation], I want to [motivation], so I can [outcome]"
+      }}
+    ],
+    "desired_outcome": "What success looks like in measurable, observable terms",
+    "key_metrics": [
+      "Primary metric with target (e.g., 'Reduce message response time from 4hr to <30min')",
+      "Secondary metric with target",
+      "Leading indicator"
+    ],
+    "mvp_scope": [
+      {{"item": "Core capability 1", "rationale": "Why this is essential for MVP"}},
+      {{"item": "Core capability 2", "rationale": "Why this is essential for MVP"}}
+    ],
+    "not_now": [
+      {{"item": "Deferred feature 1", "rationale": "Why we're deferring (complexity, uncertainty, dependency)"}},
+      {{"item": "Deferred feature 2", "rationale": "Why we're deferring"}}
+    ],
+    "assumptions": [
+      {{
+        "assumption": "What we believe is true but haven't validated",
+        "risk_if_wrong": "Impact if this assumption is false",
+        "validation_approach": "How we'll test this (user interview, prototype, data analysis)"
+      }}
+    ],
+    "constraints": [
+      {{
+        "constraint": "Technical, business, or timeline constraint",
+        "rationale": "Why this constraint exists",
+        "impact": "high | medium | low"
+      }}
+    ],
+    "riskiest_unknown": "The single biggest uncertainty that could derail the project",
+    "validation_plan": "Concrete steps to de-risk before full build (spike, prototype, interviews)",
+    "positioning": {{
+      "for_who": "Target user segment",
+      "who_struggle_with": "The problem they face",
+      "our_solution": "Product name/category",
+      "unlike": "Primary alternative or competitor",
+      "key_benefit": "Primary differentiator"
+    }},
+    "alternatives": ["Competitor 1 or workaround", "Competitor 2 or alternative approach"],
+    "gtm_notes": "Brief notes on go-to-market approach (optional but valuable)"
   }},
   "epic": {{
     "title": "Epic title for this initiative",
-    "description": "1-2 sentence epic description",
-    "vision": "Product vision statement"
+    "description": "2-3 sentence epic description covering the what and why",
+    "vision": "Product vision statement (aspirational, future-focused)"
   }}
 }}
 
-CONSTRAINTS:
-- product_name: 2-5 words, no special characters
-- tagline: max 100 characters
-- problem_statement: max 400 characters, specific and actionable
-- key_metrics: exactly 3-5 metrics, each MUST be measurable (contain a number, %, $, SLA, or timeframe)
-- out_of_scope: 2-4 items to clarify boundaries
-- risks: 2-4 risks with likelihood/impact hints
+QUALITY REQUIREMENTS:
+- problem_statement: Must be specific enough that someone outside your company understands the pain
+- target_users: At least 1 detailed persona with all fields populated
+- key_metrics: 3-5 metrics, each MUST include a target number, %, $, or timeframe
+- mvp_scope: 3-5 items with clear rationale for inclusion
+- not_now: 2-4 items explaining what's being deferred and WHY
+- assumptions: 2-4 assumptions with validation approaches
+- constraints: 1-3 real constraints (not generic "limited budget")
+- riskiest_unknown: Be specific - what's the one thing that keeps you up at night?
+- positioning: Complete the "For [who], who [problem], our [product] is a [category] that [benefit], unlike [alternative]" framework
 
-Use industry-appropriate language. Focus on the MVP."""
+Focus on creating a PRD that enables confident decision-making. Depth over brevity."""
 
 
-PRD_USER = """Create a PRD for this idea:
+PRD_USER = """Create a comprehensive PRD for this idea:
 
 {idea}
 
 {name_hint}
+
+Generate a Senior PM-quality PRD with:
+- Specific user personas with pain points and current workarounds
+- Clear MVP scope with rationale for what's in and what's deferred
+- Assumptions that need validation with concrete approaches
+- Real constraints and their impact
+- Competitive positioning
 
 Return only valid JSON matching the schema. No markdown fences, no commentary."""
 
