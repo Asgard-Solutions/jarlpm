@@ -1,7 +1,7 @@
 """Add sprint_insights table for persisting AI-generated sprint insights
 
-Revision ID: 20260206_0530
-Revises: 20260206_0345
+Revision ID: 18517632ed2d
+Revises: 17517632ed2c
 Create Date: 2026-02-06 05:30:00.000000
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '20260206_0530'
-down_revision = '20260206_0345'
+revision = '18517632ed2d'
+down_revision = '17517632ed2c'
 branch_labels = None
 depends_on = None
 
