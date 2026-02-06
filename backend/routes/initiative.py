@@ -1149,106 +1149,23 @@ async def generate_initiative(
             story_count = sum(len(f.stories) for f in features)
             yield f"data: {json.dumps({'type': 'progress', 'pass': 2, 'message': f'Created {len(features)} features, {story_count} stories'})}\n\n"
             
-            # ========== PASS 3: PLANNING ==========
-            yield f"data: {json.dumps({'type': 'pass', 'pass': 3, 'message': 'Planning sprints...'})}\n\n"
-            
-            # Build stories list for planning prompt
-            stories_list = ""
-            for f in features:
-                stories_list += f"\n[{f.priority.upper()}] {f.name}:\n"
-                for s in f.stories:
-                    stories_list += f"  - {s.id}: {s.title}\n"
-                    stories_list += f"    As {s.persona}, I want to {s.action}\n"
-            
-            # Format planning system with context
-            planning_system = PLANNING_SYSTEM.format(
-                context=context_prompt,
-                velocity=ctx['velocity'],
-                sprint_length=ctx['sprint_length']
-            )
-            
-            planning_prompt = PLANNING_USER.format(
-                product_name=product_name,
-                desired_outcome=prd_data.get('desired_outcome', ''),
-                sprint_length=ctx['sprint_length'],
-                velocity=ctx['velocity'],
-                num_devs=ctx.get('num_devs', 3),
-                num_qa=ctx.get('num_qa', 1),
-                stories_list=stories_list
-            )
-            
-            # Use sessionless strict output with schema validation (low temperature for planning)
-            planning_result = await run_llm_pass_with_validation_sessionless(
-                config_data=config_data,
-                strict_service=strict_service,
-                system=planning_system,
-                user=planning_prompt,
-                schema=Pass3PlanningOutput,
-                task_type=TaskType.PLANNING,
-                pass_metrics=metrics.pass_3,
-                quality_mode="standard",  # No quality pass for planning - must be deterministic
-                pass_name="Pass3-Planning"
-            )
-            
-            # Apply estimates to stories
-            if planning_result:
-                estimates = {e['story_id']: e['points'] for e in planning_result.get('estimated_stories', [])}
-                
-                for feature in features:
-                    for story in feature.stories:
-                        if story.id in estimates:
-                            story.points = min(13, max(1, estimates[story.id]))
-                
-                # Build sprint plan
-                sp = planning_result.get('sprint_plan', {})
-                sprint_plan = SprintPlanSchema(
-                    sprint_1=SprintSchema(
-                        goal=sp.get('sprint_1', {}).get('goal', 'MVP Core'),
-                        story_ids=sp.get('sprint_1', {}).get('story_ids', []),
-                        total_points=sp.get('sprint_1', {}).get('total_points', 0)
-                    ),
-                    sprint_2=SprintSchema(
-                        goal=sp.get('sprint_2', {}).get('goal', 'Polish & Extend'),
-                        story_ids=sp.get('sprint_2', {}).get('story_ids', []),
-                        total_points=sp.get('sprint_2', {}).get('total_points', 0)
-                    )
-                )
-            else:
-                # Default planning if pass 3 fails
-                sprint_plan = SprintPlanSchema()
-                logger.warning("Planning pass failed, using default sprint plan")
-            
-            yield f"data: {json.dumps({'type': 'progress', 'pass': 3, 'message': 'Sprint plan complete'})}\n\n"
-            
-            # ========== PASS 4: PM REALITY CHECK ==========
-            yield f"data: {json.dumps({'type': 'pass', 'pass': 4, 'message': 'Running PM quality checks...'})}\n\n"
+            # ========== PASS 3: PM REALITY CHECK ==========
+            # NOTE: Planning pass was removed - scoring happens via Scoring/Poker features
+            yield f"data: {json.dumps({'type': 'pass', 'pass': 3, 'message': 'Running PM quality checks...'})}\n\n"
             
             # Build detailed stories list for critic
             stories_detail = ""
             for f in features:
                 stories_detail += f"\n[{f.priority.upper()}] {f.name}: {f.description}\n"
                 for s in f.stories:
-                    stories_detail += f"  • {s.id}: {s.title} ({s.points} pts)\n"
+                    stories_detail += f"  • {s.id}: {s.title}\n"
                     stories_detail += f"    As {s.persona}, I want to {s.action} so that {s.benefit}\n"
                     ac_preview = '; '.join(s.acceptance_criteria[:3]) if s.acceptance_criteria else 'None'
                     stories_detail += f"    AC: {ac_preview}\n"
             
-            # Calculate totals for critic
-            sprint1_points = sum(
-                next((s.points for f in features for s in f.stories if s.id == sid), 0)
-                for sid in (sprint_plan.sprint_1.story_ids if planning_result else [])
-            )
-            sprint2_points = sum(
-                next((s.points for f in features for s in f.stories if s.id == sid), 0)
-                for sid in (sprint_plan.sprint_2.story_ids if planning_result else [])
-            )
-            total_points = sum(s.points for f in features for s in f.stories)
-            target_points = ctx['velocity'] * 2  # 2 sprints
-            
             # Format critic system with context
             critic_system = CRITIC_SYSTEM.format(
-                context=context_prompt,
-                velocity=ctx['velocity']
+                context=context_prompt
             )
             
             critic_prompt = CRITIC_USER.format(
@@ -1258,13 +1175,7 @@ async def generate_initiative(
                 target_users=prd_data.get('target_users', ''),
                 metrics=', '.join(prd_data.get('key_metrics', [])),
                 stories_detail=stories_detail,
-                methodology=ctx['methodology'],
-                sprint_length=ctx['sprint_length'],
-                velocity=ctx['velocity'],
-                sprint1_points=sprint1_points,
-                sprint2_points=sprint2_points,
-                total_points=total_points,
-                target_points=target_points
+                methodology=ctx['methodology']
             )
             
             # Use sessionless strict output with schema validation (very low temp for analytical critic)
@@ -1273,11 +1184,11 @@ async def generate_initiative(
                 strict_service=strict_service,
                 system=critic_system,
                 user=critic_prompt,
-                schema=Pass4CriticOutput,
+                schema=Pass3CriticOutput,
                 task_type=TaskType.CRITIC,
-                pass_metrics=metrics.pass_4,
+                pass_metrics=metrics.pass_3,
                 quality_mode="standard",  # No quality pass for critic
-                pass_name="Pass4-Critic"
+                pass_name="Pass3-Critic"
             )
             
             # Apply critic fixes
