@@ -95,7 +95,7 @@ class WipSuggestions(BaseModel):
 async def get_delivery_context(user_id: str, session: AsyncSession) -> Optional[dict]:
     """Get user's delivery context"""
     result = await session.execute(
-        select(DeliveryContext).where(DeliveryContext.user_id == user_id)
+        select(ProductDeliveryContext).where(ProductDeliveryContext.user_id == user_id)
     )
     ctx = result.scalar_one_or_none()
     if not ctx:
