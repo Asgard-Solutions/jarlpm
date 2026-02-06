@@ -740,6 +740,15 @@ Generate the sprint kickoff plan."""
         ]
         result_data["top_stories"] = validated_top_stories
         
+        # ===== SAVE INSIGHT TO DATABASE =====
+        await save_sprint_insight(
+            session=session,
+            user_id=user_id,
+            sprint_number=sprint_info.sprint_number,
+            insight_type="kickoff_plan",
+            content=result_data
+        )
+        
         return SprintKickoffPlan(**result_data)
         
     except HTTPException:
