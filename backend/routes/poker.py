@@ -401,17 +401,9 @@ async def save_estimate(
 ):
     """Save the accepted story point estimate to the database"""
     
-    # Verify user is authenticated
-    await get_current_user_id(request, session)
-    
-    # Find the story
-    result = await session.execute(
-        select(UserStory).where(UserStory.story_id == body.story_id)
-    )
-    story = result.scalar_one_or_none()
-    
-    if not story:
-        raise HTTPException(status_code=404, detail="Story not found")
+    # Verify user is authenticated and owns the story
+    user_id = await get_current_user_id(request, session)
+    story = await verify_story_ownership(session, body.story_id, user_id)
     
     # Update story points
     story.story_points = body.story_points
@@ -420,7 +412,10 @@ async def save_estimate(
     # If session_id provided, mark that session as accepted
     if body.session_id:
         session_result = await session.execute(
-            select(PokerEstimateSession).where(PokerEstimateSession.session_id == body.session_id)
+            select(PokerEstimateSession).where(
+                PokerEstimateSession.session_id == body.session_id,
+                PokerEstimateSession.user_id == user_id  # Also verify session ownership
+            )
         )
         poker_session = session_result.scalar_one_or_none()
         if poker_session:
