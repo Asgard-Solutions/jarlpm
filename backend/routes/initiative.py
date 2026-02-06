@@ -1225,29 +1225,6 @@ async def generate_initiative(
                             if story.id == story_id and new_criteria:
                                 story.acceptance_criteria = new_criteria
                 
-                # Split large stories
-                for split in fixes.get('split_stories', []):
-                    original_id = split.get('original_story_id')
-                    new_stories_data = split.get('new_stories', [])
-                    
-                    # Find and replace the original story
-                    for feature in features:
-                        for i, story in enumerate(feature.stories):
-                            if story.id == original_id and new_stories_data:
-                                # Remove original, add split stories
-                                feature.stories.pop(i)
-                                for ns_data in new_stories_data:
-                                    new_story = StorySchema(
-                                        title=ns_data.get('title', 'Split Story'),
-                                        persona=ns_data.get('persona', story.persona),
-                                        action=ns_data.get('action', ''),
-                                        benefit=ns_data.get('benefit', story.benefit),
-                                        acceptance_criteria=ns_data.get('acceptance_criteria', []),
-                                        points=min(8, ns_data.get('points', 3))
-                                    )
-                                    feature.stories.insert(i, new_story)
-                                break
-                
                 # Add NFR stories to a new feature or existing
                 nfr_stories = fixes.get('added_nfr_stories', [])
                 if nfr_stories:
@@ -1273,17 +1250,17 @@ async def generate_initiative(
                             persona=nfr_data.get('persona', 'a developer'),
                             action=nfr_data.get('action', ''),
                             benefit=nfr_data.get('benefit', ''),
-                            acceptance_criteria=nfr_data.get('acceptance_criteria', []),
-                            points=nfr_data.get('points', 2)
+                            acceptance_criteria=nfr_data.get('acceptance_criteria', [])
+                            # NOTE: No points - scoring happens via Scoring/Poker features
                         )
                         nfr_feature.stories.append(nfr_story)
                 
                 auto_fixed_count = summary.get('auto_fixed', 0)
-                yield f"data: {json.dumps({'type': 'progress', 'pass': 4, 'message': f'Quality check complete: {auto_fixed_count} auto-fixes applied'})}\n\n"
+                yield f"data: {json.dumps({'type': 'progress', 'pass': 3, 'message': f'Quality check complete: {auto_fixed_count} auto-fixes applied'})}\n\n"
             else:
                 summary = {}
                 logger.warning("Critic pass failed, skipping quality checks")
-                yield f"data: {json.dumps({'type': 'progress', 'pass': 4, 'message': 'Quality check skipped'})}\n\n"
+                yield f"data: {json.dumps({'type': 'progress', 'pass': 3, 'message': 'Quality check skipped'})}\n\n"
             
             # ========== BUILD FINAL OUTPUT ==========
             initiative = InitiativeSchema(
