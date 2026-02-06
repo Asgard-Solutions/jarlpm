@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,8 +13,6 @@ import {
   Zap, TrendingUp, ShieldCheck, Sparkles, Calendar, Edit3
 } from 'lucide-react';
 import { epicAPI, leanCanvasAPI } from '@/api';
-import PageHeader from '@/components/PageHeader';
-import EmptyState from '@/components/EmptyState';
 
 const CANVAS_SECTIONS = [
   { 
