@@ -724,12 +724,13 @@ async def preview_linear_push(
 @router.post("/linear/push")
 async def push_to_linear(
     request: Request,
-    body: PushRequest,
+    body: LinearPushRequest,
     session: AsyncSession = Depends(get_db)
 ):
     """
     Push epic (and optionally features/stories) to Linear.
     Creates new issues or updates existing ones based on mappings.
+    Supports priority mapping and label management.
     """
     user_id = await get_current_user_id(request, session)
     await check_subscription_required(session, user_id)
@@ -742,6 +743,12 @@ async def push_to_linear(
     # Get Linear service
     graphql = await get_linear_service(session, user_id)
     push_service = LinearPushService(graphql)
+    
+    # Get configuration from integration or request body
+    field_mappings = integration.field_mappings or {}
+    priority_mapping = body.priority_mapping or field_mappings.get("priority_mapping")
+    label_policy = body.label_policy or field_mappings.get("label_policy", "create-missing")
+    epic_mapping_strategy = body.epic_mapping or field_mappings.get("epic_mapping", "issue")
     
     # Get epic with related data
     epic_result = await session.execute(
@@ -786,6 +793,10 @@ async def push_to_linear(
         )
         existing_mappings = {m.entity_id: m for m in mappings_result.scalars().all()}
         
+        # Prepare labels for epic
+        epic_labels = ["epic", "jarlpm"]
+        epic_label_ids = await push_service.ensure_labels(body.team_id, epic_labels, label_policy) if not body.dry_run else []
+        
         # Push epic
         epic_title = f"[Epic] {epic.title}"
         snapshot = epic.snapshot
@@ -809,7 +820,8 @@ async def push_to_linear(
                 entity_type=EntityType.EPIC.value,
                 entity_id=epic.epic_id,
                 existing_external_id=existing_epic_mapping.external_id if existing_epic_mapping else None,
-                project_id=body.project_id
+                project_id=body.project_id,
+                label_ids=epic_label_ids
             )
             
             # Create or update mapping
@@ -853,6 +865,9 @@ async def push_to_linear(
         else:
             parent_epic_external_id = None
         
+        # Prepare feature labels
+        feature_label_ids = await push_service.ensure_labels(body.team_id, ["feature", "jarlpm"], label_policy) if not body.dry_run else []
+        
         # Push features if scope includes them
         if body.push_scope in ["epic_features", "epic_features_stories"]:
             features_result = await session.execute(
@@ -868,6 +883,12 @@ async def push_to_linear(
                     "acceptance_criteria": feature.acceptance_criteria
                 })
                 
+                # Map feature priority (MoSCoW)
+                feature_priority = push_service.map_priority(
+                    feature.moscow_priority if hasattr(feature, 'moscow_priority') else None,
+                    priority_mapping
+                )
+                
                 existing_feature_mapping = existing_mappings.get(feature.feature_id)
                 
                 if not body.dry_run:
@@ -880,7 +901,9 @@ async def push_to_linear(
                             entity_id=feature.feature_id,
                             existing_external_id=existing_feature_mapping.external_id if existing_feature_mapping else None,
                             parent_external_id=parent_epic_external_id,
-                            project_id=body.project_id
+                            priority=feature_priority,
+                            project_id=body.project_id,
+                            label_ids=feature_label_ids
                         )
                         
                         if existing_feature_mapping:
@@ -939,6 +962,9 @@ async def push_to_linear(
                     )
                     stories = stories_result.scalars().all()
                     
+                    # Prepare story labels
+                    story_label_ids = await push_service.ensure_labels(body.team_id, ["story", "jarlpm"], label_policy) if not body.dry_run else []
+                    
                     for story in stories:
                         story_title = story.title if story.title else story.story_text[:80]
                         story_description = push_service.format_story_description({
@@ -949,6 +975,12 @@ async def push_to_linear(
                             "acceptance_criteria": story.acceptance_criteria,
                             "story_points": story.story_points
                         })
+                        
+                        # Map story priority (MoSCoW)
+                        story_priority = push_service.map_priority(
+                            story.moscow_priority if hasattr(story, 'moscow_priority') else None,
+                            priority_mapping
+                        )
                         
                         existing_story_mapping = existing_mappings.get(story.story_id)
                         
@@ -963,7 +995,9 @@ async def push_to_linear(
                                     existing_external_id=existing_story_mapping.external_id if existing_story_mapping else None,
                                     parent_external_id=parent_feature_external_id,
                                     estimate=story.story_points,
-                                    project_id=body.project_id
+                                    priority=story_priority,
+                                    project_id=body.project_id,
+                                    label_ids=story_label_ids
                                 )
                                 
                                 if existing_story_mapping:
