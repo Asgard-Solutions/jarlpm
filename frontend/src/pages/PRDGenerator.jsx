@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,11 +16,10 @@ import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { epicAPI, featureAPI, prdAPI } from '@/api';
-import PageHeader from '@/components/PageHeader';
-import EmptyState from '@/components/EmptyState';
 
 const PRDGenerator = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [prdList, setPrdList] = useState([]);
   const [availableEpics, setAvailableEpics] = useState([]);
@@ -45,6 +44,26 @@ const PRDGenerator = () => {
   useEffect(() => {
     loadData();
   }, []);
+  
+  // Handle URL parameters for deep linking
+  useEffect(() => {
+    const epicParam = searchParams.get('epic');
+    const createParam = searchParams.get('create');
+    
+    if (epicParam && !loading) {
+      // Deep link to specific epic's PRD
+      const existingPRD = prdList.find(p => p.epic_id === epicParam);
+      if (existingPRD) {
+        // Open existing PRD
+        openPRD(epicParam, existingPRD.epic_title);
+      } else if (createParam === 'true') {
+        // Open in create mode for this epic
+        openPRD(epicParam, '');
+      }
+      // Clear the URL params after handling
+      navigate('/prd', { replace: true });
+    }
+  }, [searchParams, loading, prdList]);
 
   const loadData = async () => {
     setLoading(true);
