@@ -81,19 +81,10 @@ class Pass2DecompOutput(BaseModel):
         extra = "allow"
 
 
-# --- Pass 3: Planning Output Schema ---
-class Pass3PlanningOutput(BaseModel):
-    """Schema for Pass 3 (Planning) output validation"""
-    estimated_stories: List[dict] = Field(default_factory=list)
-    sprint_plan: dict = Field(default_factory=dict)
-    
-    class Config:
-        extra = "allow"
-
-
-# --- Pass 4: Critic Output Schema ---
-class Pass4CriticOutput(BaseModel):
-    """Schema for Pass 4 (Critic) output validation"""
+# --- Pass 3: Critic Output Schema ---
+# NOTE: Old Pass 3 (Planning) was removed - scoring happens via Scoring/Poker features
+class Pass3CriticOutput(BaseModel):
+    """Schema for Pass 3 (Critic) output validation"""
     issues: List[dict] = Field(default_factory=list)
     fixes: dict = Field(default_factory=dict)
     summary: dict = Field(default_factory=dict)
