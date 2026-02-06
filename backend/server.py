@@ -52,6 +52,7 @@ from routes.lean_canvas import router as lean_canvas_router
 from routes.prd import router as prd_router
 from routes.sprints import router as sprints_router
 from routes.integrations import router as integrations_router
+from routes.admin import router as admin_router
 
 api_router.include_router(auth_router)
 api_router.include_router(subscription_router)
@@ -73,6 +74,7 @@ api_router.include_router(lean_canvas_router)
 api_router.include_router(prd_router)
 api_router.include_router(sprints_router)
 api_router.include_router(integrations_router)
+api_router.include_router(admin_router)
 
 # Health check endpoint
 @api_router.get("/")
