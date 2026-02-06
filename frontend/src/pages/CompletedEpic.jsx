@@ -440,6 +440,9 @@ const CompletedEpic = () => {
                                     {featureStoryPoints} pts
                                   </span>
                                 )}
+                                {/* MoSCoW and RICE scores */}
+                                {feature.moscow_score && <MoSCoWBadge score={feature.moscow_score} />}
+                                {feature.rice_total !== null && feature.rice_total !== undefined && <RICEBadge score={feature.rice_total} />}
                               </div>
                             </div>
                           </div>
