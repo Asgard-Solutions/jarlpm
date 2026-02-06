@@ -568,7 +568,7 @@ const Scoring = () => {
             {scoredEpics.length === 0 ? (
               <Card className="border-dashed">
                 <CardContent className="p-8 text-center text-muted-foreground">
-                  No scored epics yet. Click "Initiate Scoring" to get started.
+                  No scored epics yet. Click &quot;Initiate Scoring&quot; to get started.
                 </CardContent>
               </Card>
             ) : (
