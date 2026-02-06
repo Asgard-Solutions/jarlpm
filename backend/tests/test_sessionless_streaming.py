@@ -439,22 +439,21 @@ class TestBugAIEndpoints:
     """Test bug AI endpoints (sessionless streaming)"""
     
     @pytest.fixture(scope="class")
-    def auth_token(self):
-        """Get authentication token"""
-        response = requests.post(
+    def auth_session(self):
+        """Get authenticated session with cookies"""
+        session = requests.Session()
+        response = session.post(
             f"{BASE_URL}/api/auth/login",
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
-            data = response.json()
-            return data.get("session_token") or data.get("token")
+            return session
         pytest.skip("Authentication failed")
     
-    def test_bug_ai_chat_accessible(self, auth_token):
+    def test_bug_ai_chat_accessible(self, auth_session):
         """Bug AI chat endpoint should be accessible"""
-        response = requests.post(
+        response = auth_session.post(
             f"{BASE_URL}/api/bugs/ai/chat",
-            headers={"Authorization": f"Bearer {auth_token}"},
             json={"content": "I found a bug where the login button doesn't work"}
         )
         # Expected: 400 (no LLM) or 200 - NOT 500
