@@ -7,6 +7,7 @@ Features tested:
 2. LLM config check - AI endpoints return 400 if LLM provider not configured
 3. Non-AI endpoints work without subscription
 4. AI endpoints work with valid subscription and LLM config
+5. StrictOutputService integration - validates story IDs to prevent hallucination
 """
 import pytest
 import requests
@@ -29,7 +30,7 @@ class TestSetup:
     """Setup and helper methods"""
     
     @staticmethod
-    def get_session_with_auth(email: str, password: str) -> requests.Session:
+    def get_session_with_auth(email: str, password: str) -> tuple:
         """Login and return authenticated session"""
         session = requests.Session()
         response = session.post(
@@ -41,15 +42,14 @@ class TestSetup:
     @staticmethod
     def create_test_user_without_subscription() -> dict:
         """Create a test user without subscription for testing 402 responses"""
-        # Use a unique email for each test run
         timestamp = int(time.time())
         email = f"test_no_sub_{timestamp}@jarlpm.com"
         password = "Test123!"
         
         session = requests.Session()
-        # Try to register the user
+        # Signup creates user with inactive subscription
         response = session.post(
-            f"{BASE_URL}/api/auth/register",
+            f"{BASE_URL}/api/auth/signup",
             json={
                 "email": email,
                 "password": password,
@@ -57,16 +57,22 @@ class TestSetup:
             }
         )
         
-        if response.status_code in [200, 201]:
-            return {"email": email, "password": password, "session": session}
-        elif response.status_code == 400 and "already exists" in response.text.lower():
-            # User exists, try to login
-            login_resp = session.post(
-                f"{BASE_URL}/api/auth/login",
-                json={"email": email, "password": password}
+        if response.status_code == 200:
+            # Create an epic for this user to test delivery reality endpoints
+            epic_resp = session.post(
+                f"{BASE_URL}/api/epics",
+                json={"title": "Test Epic for Subscription Gating"}
             )
-            if login_resp.status_code == 200:
-                return {"email": email, "password": password, "session": session}
+            epic_id = None
+            if epic_resp.status_code == 200:
+                epic_id = epic_resp.json().get("epic_id")
+            
+            return {
+                "email": email, 
+                "password": password, 
+                "session": session,
+                "epic_id": epic_id
+            }
         
         return None
 
@@ -230,77 +236,73 @@ class TestAIEndpointsSubscriptionGating:
         self.no_sub_user = TestSetup.create_test_user_without_subscription()
         if self.no_sub_user:
             self.session = self.no_sub_user["session"]
+            self.epic_id = self.no_sub_user.get("epic_id")
+            
+            # Verify subscription is inactive
+            sub_resp = self.session.get(f"{BASE_URL}/api/subscription/status")
+            if sub_resp.status_code == 200:
+                sub_data = sub_resp.json()
+                if sub_data.get("status") != "inactive":
+                    pytest.skip("User has active subscription - cannot test 402")
         else:
-            # If we can't create a user, skip these tests
             pytest.skip("Could not create test user without subscription")
     
     def test_cut_rationale_returns_402_without_subscription(self):
         """POST /api/delivery-reality/initiative/{id}/ai/cut-rationale should return 402 without subscription"""
+        if not self.epic_id:
+            pytest.skip("No epic created for user")
+        
         response = self.session.post(
-            f"{BASE_URL}/api/delivery-reality/initiative/{TEST_EPIC_ID}/ai/cut-rationale"
+            f"{BASE_URL}/api/delivery-reality/initiative/{self.epic_id}/ai/cut-rationale"
         )
-        # User without subscription should get 402 or 404 (if epic not found for this user)
-        if response.status_code == 404:
-            print(f"✓ Cut rationale returns 404 (epic not found for user without subscription)")
-        else:
-            assert response.status_code == 402, f"Expected 402, got {response.status_code}: {response.text}"
-            assert "subscription" in response.text.lower()
-            print(f"✓ Cut rationale returns 402 without subscription")
+        assert response.status_code == 402, f"Expected 402, got {response.status_code}: {response.text}"
+        assert "subscription" in response.text.lower()
+        print(f"✓ Cut rationale returns 402 without subscription")
     
     def test_alternative_cuts_returns_402_without_subscription(self):
         """POST /api/delivery-reality/initiative/{id}/ai/alternative-cuts should return 402 without subscription"""
+        if not self.epic_id:
+            pytest.skip("No epic created for user")
+        
         response = self.session.post(
-            f"{BASE_URL}/api/delivery-reality/initiative/{TEST_EPIC_ID}/ai/alternative-cuts"
+            f"{BASE_URL}/api/delivery-reality/initiative/{self.epic_id}/ai/alternative-cuts"
         )
-        if response.status_code == 404:
-            print(f"✓ Alternative cuts returns 404 (epic not found for user without subscription)")
-        else:
-            assert response.status_code == 402, f"Expected 402, got {response.status_code}: {response.text}"
-            assert "subscription" in response.text.lower()
-            print(f"✓ Alternative cuts returns 402 without subscription")
+        assert response.status_code == 402, f"Expected 402, got {response.status_code}: {response.text}"
+        assert "subscription" in response.text.lower()
+        print(f"✓ Alternative cuts returns 402 without subscription")
     
     def test_risk_review_returns_402_without_subscription(self):
         """POST /api/delivery-reality/initiative/{id}/ai/risk-review should return 402 without subscription"""
+        if not self.epic_id:
+            pytest.skip("No epic created for user")
+        
         response = self.session.post(
-            f"{BASE_URL}/api/delivery-reality/initiative/{TEST_EPIC_ID}/ai/risk-review"
+            f"{BASE_URL}/api/delivery-reality/initiative/{self.epic_id}/ai/risk-review"
         )
-        if response.status_code == 404:
-            print(f"✓ Risk review returns 404 (epic not found for user without subscription)")
-        else:
-            assert response.status_code == 402, f"Expected 402, got {response.status_code}: {response.text}"
-            assert "subscription" in response.text.lower()
-            print(f"✓ Risk review returns 402 without subscription")
+        assert response.status_code == 402, f"Expected 402, got {response.status_code}: {response.text}"
+        assert "subscription" in response.text.lower()
+        print(f"✓ Risk review returns 402 without subscription")
     
     def test_kickoff_plan_returns_402_without_subscription(self):
         """POST /api/sprints/ai/kickoff-plan should return 402 without subscription"""
         response = self.session.post(f"{BASE_URL}/api/sprints/ai/kickoff-plan")
-        # Could be 402 (no subscription) or 400 (no sprint configured)
-        if response.status_code == 400:
-            print(f"✓ Kickoff plan returns 400 (no sprint configured for new user)")
-        else:
-            assert response.status_code == 402, f"Expected 402, got {response.status_code}: {response.text}"
-            assert "subscription" in response.text.lower()
-            print(f"✓ Kickoff plan returns 402 without subscription")
+        assert response.status_code == 402, f"Expected 402, got {response.status_code}: {response.text}"
+        assert "subscription" in response.text.lower()
+        print(f"✓ Kickoff plan returns 402 without subscription")
     
     def test_standup_summary_returns_402_without_subscription(self):
         """POST /api/sprints/ai/standup-summary should return 402 without subscription"""
         response = self.session.post(f"{BASE_URL}/api/sprints/ai/standup-summary")
-        if response.status_code == 400:
-            print(f"✓ Standup summary returns 400 (no sprint configured for new user)")
-        else:
-            assert response.status_code == 402, f"Expected 402, got {response.status_code}: {response.text}"
-            assert "subscription" in response.text.lower()
-            print(f"✓ Standup summary returns 402 without subscription")
+        assert response.status_code == 402, f"Expected 402, got {response.status_code}: {response.text}"
+        assert "subscription" in response.text.lower()
+        print(f"✓ Standup summary returns 402 without subscription")
     
     def test_wip_suggestions_returns_402_without_subscription(self):
         """POST /api/sprints/ai/wip-suggestions should return 402 without subscription"""
         response = self.session.post(f"{BASE_URL}/api/sprints/ai/wip-suggestions")
-        if response.status_code == 400:
-            print(f"✓ WIP suggestions returns 400 (no sprint configured for new user)")
-        else:
-            assert response.status_code == 402, f"Expected 402, got {response.status_code}: {response.text}"
-            assert "subscription" in response.text.lower()
-            print(f"✓ WIP suggestions returns 402 without subscription")
+        assert response.status_code == 402, f"Expected 402, got {response.status_code}: {response.text}"
+        assert "subscription" in response.text.lower()
+        print(f"✓ WIP suggestions returns 402 without subscription")
 
 
 class TestAIEndpointsLLMConfigCheck:
