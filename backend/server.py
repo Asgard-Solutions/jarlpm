@@ -100,6 +100,22 @@ async def startup_event():
     """Initialize database and default data"""
     logger.info("Starting JarlPM API...")
     
+    # Optionally run Alembic migrations on startup (for simple deployments)
+    # Recommended: Run migrations separately via `alembic upgrade head` before starting
+    if os.environ.get('RUN_MIGRATIONS_ON_STARTUP', 'false').lower() == 'true':
+        logger.info("RUN_MIGRATIONS_ON_STARTUP=true - Running Alembic migrations...")
+        import subprocess
+        result = subprocess.run(
+            ['alembic', 'upgrade', 'head'],
+            cwd=ROOT_DIR,
+            capture_output=True,
+            text=True
+        )
+        if result.returncode != 0:
+            logger.error(f"Migration failed: {result.stderr}")
+            raise RuntimeError(f"Database migration failed: {result.stderr}")
+        logger.info("Migrations completed successfully")
+    
     # Initialize PostgreSQL database
     from db.database import init_db, AsyncSessionLocal
     await init_db()
