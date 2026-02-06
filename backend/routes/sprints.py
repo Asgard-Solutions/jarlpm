@@ -88,6 +88,22 @@ class WipSuggestions(BaseModel):
     reasoning: str
 
 
+class SavedInsight(BaseModel):
+    """A saved sprint insight"""
+    insight_id: str
+    insight_type: str
+    content: dict
+    generated_at: str
+
+
+class SprintInsightsResponse(BaseModel):
+    """Response with all saved insights for a sprint"""
+    sprint_number: int
+    kickoff_plan: Optional[SavedInsight] = None
+    standup_summary: Optional[SavedInsight] = None
+    wip_suggestions: Optional[SavedInsight] = None
+
+
 # ============================================
 # Helper Functions
 # ============================================
