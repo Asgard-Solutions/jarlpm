@@ -948,17 +948,45 @@ async def run_llm_pass_with_validation(
         quality_response = ""
         async for chunk in llm_service.generate_stream(
             user_id=user_id,
-            system_prompt="You are a quality reviewer. Improve the output while keeping the same JSON structure.",
+            system_prompt="You are a quality reviewer. Improve the output while keeping the same JSON structure. Return ONLY the improved JSON, no commentary.",
             user_prompt=quality_prompt,
             conversation_history=None,
             temperature=0.3
         ):
             quality_response += chunk
         
+        # Extract and RE-VALIDATE the improved JSON against the schema
         improved_data = strict_service.extract_json(quality_response)
         if improved_data:
-            result.data = improved_data
-            logger.info(f"[{pass_name}] Quality pass improved output")
+            # Re-validate to ensure quality pass didn't break structure
+            async def quality_repair_callback(repair_prompt: str) -> str:
+                repair_response = ""
+                async for chunk in llm_service.generate_stream(
+                    user_id=user_id,
+                    system_prompt="Fix the JSON to match the required schema. Return ONLY valid JSON.",
+                    user_prompt=repair_prompt,
+                    conversation_history=None,
+                    temperature=0.1
+                ):
+                    repair_response += chunk
+                return repair_response
+            
+            quality_validation = await strict_service.validate_and_repair(
+                raw_response=quality_response,
+                schema=schema,
+                repair_callback=quality_repair_callback,
+                max_repairs=1,  # One repair attempt for quality pass
+                original_prompt=quality_prompt
+            )
+            
+            if quality_validation.valid:
+                result.data = quality_validation.data
+                logger.info(f"[{pass_name}] Quality pass improved and validated output")
+            else:
+                # Quality pass broke structure - keep original valid result
+                logger.warning(f"[{pass_name}] Quality pass failed validation, keeping original: {quality_validation.errors[:2]}")
+        else:
+            logger.warning(f"[{pass_name}] Quality pass returned no valid JSON, keeping original")
     
     # Update metrics
     if pass_metrics:
