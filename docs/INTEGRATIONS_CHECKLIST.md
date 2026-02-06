@@ -243,7 +243,12 @@ No server-side environment variables required. Users provide their own PAT via t
 ```
 /app/backend/
 ├── routes/
-│   └── integrations.py          # All integration API routes
+│   └── integrations/            # Modular integration routes
+│       ├── __init__.py          # Main router + shared endpoints
+│       ├── shared.py            # Common models, helpers, services
+│       ├── linear.py            # Linear OAuth + push routes
+│       ├── jira.py              # Jira OAuth + push routes
+│       └── azure_devops.py      # Azure DevOps PAT + push routes
 ├── services/
 │   ├── linear_service.py        # Linear OAuth + GraphQL + Push
 │   ├── jira_service.py          # Jira OAuth + REST + Push
