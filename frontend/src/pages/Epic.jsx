@@ -224,6 +224,15 @@ const Epic = () => {
           setHasLinearIntegration(false);
         }
         
+        // Check if Jira integration is connected
+        try {
+          const jiraRes = await integrationsAPI.getProviderStatus('jira');
+          setHasJiraIntegration(jiraRes.data?.connected || false);
+        } catch (e) {
+          // Ignore - may not have subscription or integration
+          setHasJiraIntegration(false);
+        }
+        
         // If fully complete (all features approved, all have approved stories), redirect to review
         if (featuresData.length > 0 && allFeaturesComplete && hasAnyStories) {
           navigate(`/epic/${epicId}/review`);
