@@ -76,6 +76,15 @@ const Settings = () => {
   const [jiraProjects, setJiraProjects] = useState([]);
   const [selectedJiraProject, setSelectedJiraProject] = useState('');
   const [configuringJira, setConfiguringJira] = useState(false);
+  
+  // Azure DevOps integration state
+  const [connectingADO, setConnectingADO] = useState(false);
+  const [disconnectingADO, setDisconnectingADO] = useState(false);
+  const [adoOrgUrl, setAdoOrgUrl] = useState('');
+  const [adoPat, setAdoPat] = useState('');
+  const [adoProjects, setAdoProjects] = useState([]);
+  const [selectedAdoProject, setSelectedAdoProject] = useState('');
+  const [configuringADO, setConfiguringADO] = useState(false);
 
   // Tab state - controlled by query param
   const [activeTab, setActiveTab] = useState('delivery');
