@@ -1301,7 +1301,6 @@ async def generate_initiative(
 
     async def generate():
         # Create local metrics tracking (will save to DB at the end with a fresh session)
-        from services.analytics_service import GenerationMetrics, PassMetrics
         metrics = GenerationMetrics(
             user_id=user_id,
             idea=request_idea,
