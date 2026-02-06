@@ -191,6 +191,20 @@ const Epic = () => {
         
         setFeatureStoryCounts(storyCounts);
         
+        // Check if PRD and Lean Canvas exist for this epic
+        try {
+          const [prdRes, canvasRes] = await Promise.all([
+            prdAPI.get(epicId),
+            leanCanvasAPI.get(epicId)
+          ]);
+          setHasPRD(prdRes.data?.exists || false);
+          setHasLeanCanvas(canvasRes.data?.exists || false);
+        } catch (e) {
+          // Ignore errors - just means they don't exist
+          setHasPRD(false);
+          setHasLeanCanvas(false);
+        }
+        
         // If fully complete (all features approved, all have approved stories), redirect to review
         if (featuresData.length > 0 && allFeaturesComplete && hasAnyStories) {
           navigate(`/epic/${epicId}/review`);
