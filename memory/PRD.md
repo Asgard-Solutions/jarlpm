@@ -1579,3 +1579,66 @@ JIRA_OAUTH_REDIRECT_URI=
 - `get_organization_labels` - Fetch all org labels
 
 **Status:** Complete - Ready for OAuth credential testing
+
+
+### 2026-02-06: Azure DevOps Integration (PAT-Based - Phase 1 Complete)
+**Goal:** Allow paid users to push Epics, Features, and Stories to Azure DevOps using Personal Access Token (PAT) authentication.
+
+**Implementation:**
+
+1. **Azure DevOps Service** (`/app/backend/services/azure_devops_service.py`):
+   - `AzureDevOpsRESTService` - PAT-based authentication with REST API v7.1
+   - `AzureDevOpsPushService` - Formats JarlPM items for ADO, handles idempotent create/update
+   - Markdown to HTML conversion for descriptions
+   - Work item linking (parent-child hierarchy)
+
+2. **Backend Routes** (`/app/backend/routes/integrations.py`):
+   - `POST /api/integrations/azure-devops/connect` - Connect using PAT
+   - `POST /api/integrations/azure-devops/disconnect` - Disconnect
+   - `PUT /api/integrations/azure-devops/configure` - Set default project, area path, iteration
+   - `GET /api/integrations/azure-devops/projects` - List projects
+   - `GET /api/integrations/azure-devops/projects/{name}/teams` - List teams
+   - `GET /api/integrations/azure-devops/projects/{name}/iterations` - List iterations
+   - `GET /api/integrations/azure-devops/projects/{name}/areas` - List area paths
+   - `GET /api/integrations/azure-devops/projects/{name}/work-item-types` - List work item types
+   - `GET /api/integrations/azure-devops/projects/{name}/fields` - List fields
+   - `POST /api/integrations/azure-devops/preview` - Preview push (dry run)
+   - `POST /api/integrations/azure-devops/push` - Execute push
+
+3. **Frontend - Settings Integrations Tab** (`/app/frontend/src/pages/Settings.jsx`):
+   - Azure DevOps card with PAT connection form
+   - Organization URL input
+   - Personal Access Token input
+   - Connect/Disconnect buttons
+   - Project selection after connection
+
+4. **Frontend - Push to Azure DevOps Modal** (`/app/frontend/src/components/PushToAzureDevOpsModal.jsx`):
+   - Project selection dropdown
+   - Area Path selection (optional)
+   - Iteration/Sprint selection (optional)
+   - Push scope options (Epic only, +Features, +Stories)
+   - Preview with create/update counts
+   - Push execution with results display
+
+5. **Epic Page Integration** (`/app/frontend/src/pages/Epic.jsx`):
+   - "Push to Azure DevOps" button (visible when ADO connected)
+   - Opens PushToAzureDevOpsModal
+
+**Mapping Rules:**
+- JarlPM Epic → ADO Work Item Type: "Epic" (configurable)
+- JarlPM Feature → ADO Work Item Type: "Feature" (configurable)
+- JarlPM Story → ADO Work Item Type: "User Story" (configurable)
+- JarlPM Bug → ADO Work Item Type: "Bug"
+- Parent-child hierarchy via System.LinkTypes.Hierarchy
+- Story points via configurable field (default: Microsoft.VSTS.Scheduling.StoryPoints)
+
+**Authentication:**
+- Uses Personal Access Token (PAT) for simpler setup
+- PAT encrypted at rest using Fernet encryption
+- Required PAT scopes: Work Items (Read & Write), Project and Team (Read)
+
+**Testing Status:** 100% pass rate
+- Backend: 18/18 API tests passed
+- Frontend: 7/7 UI checks passed
+
+**Status:** Complete - Ready for user testing with valid PAT
