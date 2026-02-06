@@ -108,6 +108,10 @@ const Epic = () => {
   // Push to Linear state
   const [showPushToLinear, setShowPushToLinear] = useState(false);
   const [hasLinearIntegration, setHasLinearIntegration] = useState(false);
+  
+  // Push to Jira state
+  const [showPushToJira, setShowPushToJira] = useState(false);
+  const [hasJiraIntegration, setHasJiraIntegration] = useState(false);
 
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
