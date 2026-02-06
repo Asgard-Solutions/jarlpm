@@ -1119,14 +1119,62 @@ TONE: Professional, calm, direct, insightful."""
 
     user_prompt = body.content
     
-    # Get conversation history
+    # Get conversation history before entering generator
     history = await story_service.get_conversation_history(story_id, limit=10)
+    
+    # Capture story data for use in generator
+    story_persona = story.persona
+    story_action = story.action
+    story_benefit = story.benefit
+    story_text = story.story_text
+    story_acceptance_criteria = story.acceptance_criteria or []
+    story_points_val = story.story_points or 'Not estimated'
+    
+    # Build refinement prompt with captured data
+    system_prompt = f"""{delivery_context_text}
+
+You are a Senior Product Manager helping refine a User Story.
+
+CURRENT USER STORY:
+- Persona: {story_persona}
+- Action: {story_action}
+- Benefit: {story_benefit}
+- Full Text: "{story_text}"
+- Acceptance Criteria:
+{chr(10).join(f'  - {c}' for c in story_acceptance_criteria)}
+- Story Points: {story_points_val}
+
+YOUR ROLE:
+- Help the user refine this story based on their feedback
+- Keep the standard format: "As a [persona], I want to [action] so that [benefit]"
+- Ensure acceptance criteria use Given/When/Then format
+- Keep the story focused on user value, not implementation
+- Ensure it's completable in one sprint
+
+RESPONSE FORMAT:
+When providing an updated story, include it in this JSON format:
+
+[STORY_UPDATE]
+{{
+  "persona": "the user role",
+  "action": "what they want to do",
+  "benefit": "why they want to do it",
+  "acceptance_criteria": ["Given..., When..., Then...", "..."],
+  "story_points": 3
+}}
+[/STORY_UPDATE]
+
+If you're just discussing and not proposing changes yet, respond conversationally without the JSON block.
+
+TONE: Professional, calm, direct, insightful."""
     
     async def generate():
         full_response = ""
         try:
-            async for chunk in llm_service.generate_stream(
-                user_id=user_id,
+            # Use sessionless streaming
+            llm = LLMService()  # No session needed
+            async for chunk in llm.stream_with_config(
+                config_data=config_data,
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
                 conversation_history=history[:-1] if history else None
@@ -1142,15 +1190,18 @@ TONE: Professional, calm, direct, insightful."""
                     update_json = re.search(r'\{[\s\S]*\}', update_match.group(1))
                     if update_json:
                         update_data = json.loads(update_json.group(0))
-                        # Apply the update
-                        await story_service.update_user_story(
-                            story_id=story_id,
-                            persona=update_data.get("persona"),
-                            action=update_data.get("action"),
-                            benefit=update_data.get("benefit"),
-                            acceptance_criteria=update_data.get("acceptance_criteria"),
-                            story_points=update_data.get("story_points")
-                        )
+                        # Apply the update with a fresh session
+                        from db import AsyncSessionLocal
+                        async with AsyncSessionLocal() as new_session:
+                            new_story_service = UserStoryService(new_session)
+                            await new_story_service.update_user_story(
+                                story_id=story_id,
+                                persona=update_data.get("persona"),
+                                action=update_data.get("action"),
+                                benefit=update_data.get("benefit"),
+                                acceptance_criteria=update_data.get("acceptance_criteria"),
+                                story_points=update_data.get("story_points")
+                            )
                         yield f"data: {json.dumps({'type': 'story_updated', 'update': update_data})}\n\n"
                 except (json.JSONDecodeError, ValueError) as e:
                     logger.warning(f"Failed to parse story update: {e}")
