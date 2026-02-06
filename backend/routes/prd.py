@@ -175,6 +175,7 @@ async def save_prd(
         existing_prd.title = body.title or epic.title
         existing_prd.version = body.version
         existing_prd.status = body.status
+        existing_prd.source = "manual"
         existing_prd.updated_at = datetime.now(timezone.utc)
     else:
         # Create new PRD
@@ -184,7 +185,8 @@ async def save_prd(
             sections={"content": body.content},  # Store as JSON object
             title=body.title or epic.title,
             version=body.version,
-            status=body.status
+            status=body.status,
+            source="manual"
         )
         session.add(new_prd)
     
