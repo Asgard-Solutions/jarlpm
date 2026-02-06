@@ -245,7 +245,7 @@ const Settings = () => {
         quality_mode: deliveryContext.quality_mode || 'standard',
       };
       
-      await deliveryContextAPI.save(payload);
+      await deliveryContextAPI.update(payload);
       setContextSuccess(true);
       toast.success('Delivery context saved!');
       setTimeout(() => setContextSuccess(false), 3000);
