@@ -1392,3 +1392,30 @@ When an Epic is locked, users enter Feature Planning Mode:
 
 **Verification:** `grep -rn "generate_stream" /app/backend/routes/` returns 0 active usages (only deprecated functions)
 
+
+### 2026-02-06: Scoring Separation - No Points on Creation (COMPLETE)
+**Issue:** MoSCoW, RICE scores, and Poker story points were being assigned during creation. These should ONLY be set via the Scoring or Poker Planning features.
+
+**Changes Applied:**
+1. **Initiative Generation (Pass 3 removed):** The Planning pass that assigned story points and created sprint plans has been removed. Initiative generation is now a 3-pass process: PRD → Decomposition → Critic.
+2. **Create Endpoints Reject Scoring:** Removed `story_points` from `UserStoryCreate` and `UserStoryUpdate` schemas. Story points can only be set via Scoring/Poker.
+3. **AI Never Includes Points:** Updated prompts in user_story.py to explicitly NOT generate story points.
+
+**Files Modified:**
+- `/app/backend/routes/initiative.py`:
+  - Removed `points` field from `StorySchema`
+  - Removed `sprint_plan` and `total_points` from `InitiativeSchema`
+  - Removed Pass 3 (Planning) entirely
+  - Renamed Pass 4 (Critic) to Pass 3
+  - Updated critic prompts to remove point/capacity references
+  - DB persistence no longer saves `story_points`
+- `/app/backend/routes/user_story.py`:
+  - Removed `story_points` from `UserStoryCreate` and `UserStoryUpdate`
+  - Updated AI generation prompts to not include points
+
+**Summary:**
+- Epics, Features, User Stories, and Bugs are created without any scoring fields
+- Scoring (MoSCoW, RICE, story points) only happens via:
+  - `/api/scoring/*` endpoints
+  - `/api/poker/*` endpoints
+
