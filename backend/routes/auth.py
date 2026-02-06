@@ -143,6 +143,7 @@ def generate_verification_token() -> str:
 # ============================================
 
 @router.post("/signup", response_model=AuthResponse)
+@limiter.limit(RATE_LIMITS["auth_signup"], key_func=get_ip_only)
 async def signup(
     body: SignupRequest,
     request: Request,
