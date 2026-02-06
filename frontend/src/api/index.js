@@ -447,7 +447,13 @@ export const sprintAPI = {
   // Get stories from Delivery Reality scope plan
   getFromDeliveryReality: (epicId) => api.get(`/sprints/from-delivery-reality/${epicId}`),
   
-  // AI Features
+  // Get saved AI insights for current sprint
+  getSavedInsights: () => api.get('/sprints/insights/current'),
+  
+  // Get saved AI insights for specific sprint
+  getInsightsBySprint: (sprintNumber) => api.get(`/sprints/insights/${sprintNumber}`),
+  
+  // AI Features (generate and save)
   generateKickoffPlan: () => api.post('/sprints/ai/kickoff-plan'),
   generateStandupSummary: () => api.post('/sprints/ai/standup-summary'),
   generateWipSuggestions: () => api.post('/sprints/ai/wip-suggestions'),
