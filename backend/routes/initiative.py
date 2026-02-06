@@ -292,6 +292,7 @@ class InitiativeSchema(BaseModel):
 class NewInitiativeRequest(BaseModel):
     idea: str
     product_name: Optional[str] = None
+    quality_mode: Optional[str] = None  # "standard" or "quality" - overrides delivery context setting
 
 
 # ============================================
