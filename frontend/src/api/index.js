@@ -539,6 +539,21 @@ export const integrationsAPI = {
   getJiraIssueTypes: (projectKey) => api.get(`/integrations/jira/projects/${projectKey}/issue-types`),
   getJiraFields: () => api.get('/integrations/jira/fields'),
   
+  // Azure DevOps
+  connectAzureDevOps: (data) => api.post('/integrations/azure-devops/connect', data),
+  disconnectAzureDevOps: () => api.post('/integrations/azure-devops/disconnect'),
+  configureAzureDevOps: (data) => api.put('/integrations/azure-devops/configure', data),
+  testAzureDevOps: () => api.get('/integrations/azure-devops/test'),
+  getAzureDevOpsProjects: () => api.get('/integrations/azure-devops/projects'),
+  getAzureDevOpsTeams: (projectName) => api.get(`/integrations/azure-devops/projects/${projectName}/teams`),
+  getAzureDevOpsIterations: (projectName, teamName = null) => {
+    const params = teamName ? `?team_name=${encodeURIComponent(teamName)}` : '';
+    return api.get(`/integrations/azure-devops/projects/${projectName}/iterations${params}`);
+  },
+  getAzureDevOpsAreas: (projectName) => api.get(`/integrations/azure-devops/projects/${projectName}/areas`),
+  getAzureDevOpsWorkItemTypes: (projectName) => api.get(`/integrations/azure-devops/projects/${projectName}/work-item-types`),
+  getAzureDevOpsFields: (projectName) => api.get(`/integrations/azure-devops/projects/${projectName}/fields`),
+  
   // Push operations
   previewPush: (provider, data) => api.post(`/integrations/${provider}/preview`, data),
   push: (provider, data) => api.post(`/integrations/${provider}/push`, data),
