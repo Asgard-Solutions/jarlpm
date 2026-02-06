@@ -35,21 +35,25 @@ class TestAuthentication:
     """Test authentication for subsequent tests"""
     
     @pytest.fixture(scope="class")
-    def auth_token(self):
-        """Get authentication token"""
-        response = requests.post(
+    def auth_session(self):
+        """Get authenticated session with cookies"""
+        session = requests.Session()
+        response = session.post(
             f"{BASE_URL}/api/auth/login",
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
-            data = response.json()
-            return data.get("session_token") or data.get("token")
+            # Token is set as cookie
+            return session
         pytest.skip(f"Authentication failed: {response.status_code} - {response.text}")
     
-    def test_login_works(self, auth_token):
+    def test_login_works(self, auth_session):
         """Login should work with test credentials"""
-        assert auth_token is not None
-        print(f"✓ Login successful, got token")
+        assert auth_session is not None
+        # Verify we can access authenticated endpoint
+        response = auth_session.get(f"{BASE_URL}/api/auth/me")
+        assert response.status_code == 200
+        print(f"✓ Login successful, session authenticated")
 
 
 class TestInitiativeGeneration:
