@@ -231,3 +231,19 @@ async def detailed_health_check(
         health["checks"]["audit_logs"] = {"status": "unhealthy", "error": str(e)}
     
     return health
+
+
+@router.get("/metrics")
+async def get_metrics(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Get application metrics for monitoring.
+    """
+    await verify_admin_access(request, session)
+    
+    return {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "metrics": metrics.get_metrics()
+    }
