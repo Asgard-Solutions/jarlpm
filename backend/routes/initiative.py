@@ -1300,6 +1300,16 @@ async def generate_initiative(
     request_product_name = body.product_name
 
     async def generate():
+        # Create local metrics tracking (will save to DB at the end with a fresh session)
+        from services.analytics_service import GenerationMetrics, PassMetrics
+        metrics = GenerationMetrics(
+            user_id=user_id,
+            idea=request_idea,
+            product_name_provided=bool(request_product_name),
+            llm_provider=metrics_data["llm_provider"],
+            model_name=metrics_data["model_name"],
+        )
+        
         try:
             # Send model warning if detected
             if model_warning:
@@ -1313,18 +1323,17 @@ async def generate_initiative(
             yield f"data: {json.dumps({'type': 'pass', 'pass': 1, 'message': 'Defining the problem...'})}\n\n"
             
             prd_prompt = PRD_USER.format(
-                idea=body.idea,
-                name_hint=f"Product name hint: {body.product_name}" if body.product_name else ""
+                idea=request_idea,
+                name_hint=f"Product name hint: {request_product_name}" if request_product_name else ""
             )
             
             # Format PRD system prompt with context
             prd_system = PRD_SYSTEM.format(context=context_prompt)
             
-            # Use strict output with schema validation
-            prd_result = await run_llm_pass_with_validation(
-                llm_service=llm_service,
+            # Use sessionless strict output with schema validation
+            prd_result = await run_llm_pass_with_validation_sessionless(
+                config_data=config_data,
                 strict_service=strict_service,
-                user_id=user_id,
                 system=prd_system,
                 user=prd_prompt,
                 schema=Pass1PRDOutput,
@@ -1340,7 +1349,7 @@ async def generate_initiative(
                 return
             
             # Extract PRD data
-            product_name = prd_result.get('product_name', body.product_name or 'New Product')
+            product_name = prd_result.get('product_name', request_product_name or 'New Product')
             tagline = prd_result.get('tagline', '')
             prd_data = prd_result.get('prd', {})
             epic_data = prd_result.get('epic', {})
@@ -1366,11 +1375,10 @@ async def generate_initiative(
             # Format decomp system prompt with context
             decomp_system = DECOMP_SYSTEM.format(context=context_prompt)
             
-            # Use strict output with schema validation
-            decomp_result = await run_llm_pass_with_validation(
-                llm_service=llm_service,
+            # Use sessionless strict output with schema validation
+            decomp_result = await run_llm_pass_with_validation_sessionless(
+                config_data=config_data,
                 strict_service=strict_service,
-                user_id=user_id,
                 system=decomp_system,
                 user=decomp_prompt,
                 schema=Pass2DecompOutput,
