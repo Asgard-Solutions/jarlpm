@@ -871,16 +871,23 @@ Generate the standup summary."""
     # ===== USE STRICT OUTPUT SERVICE FOR ROBUST PARSING =====
     strict_service = StrictOutputService(session)
     
+    # Prepare for streaming - extract config BEFORE releasing session
+    config_data = llm_service.prepare_for_streaming(llm_config)
+    llm_provider = llm_config.provider
+    llm_model = llm_config.model_name
+    
     try:
-        # Generate response
+        # Generate response using sessionless streaming
         full_response = ""
-        async for chunk in llm_service.generate_stream(user_id, system_prompt, user_prompt):
+        llm = LLMService()  # No session needed
+        async for chunk in llm.stream_with_config(config_data, system_prompt, user_prompt):
             full_response += chunk
         
-        # Repair callback for StrictOutputService
+        # Repair callback for StrictOutputService (also sessionless)
         async def repair_callback(repair_prompt: str) -> str:
             repair_response = ""
-            async for chunk in llm_service.generate_stream(user_id, system_prompt, repair_prompt):
+            repair_llm = LLMService()  # No session
+            async for chunk in repair_llm.stream_with_config(config_data, system_prompt, repair_prompt):
                 repair_response += chunk
             return repair_response
         
@@ -893,14 +900,17 @@ Generate the standup summary."""
             original_prompt=user_prompt
         )
         
-        # Track model health
-        await strict_service.track_call(
-            user_id=user_id,
-            provider=llm_config.provider,
-            model_name=llm_config.model_name,
-            success=validation_result.valid,
-            repaired=validation_result.repair_attempts > 0
-        )
+        # Track model health (needs a fresh session)
+        from db import AsyncSessionLocal
+        async with AsyncSessionLocal() as track_session:
+            track_strict = StrictOutputService(track_session)
+            await track_strict.track_call(
+                user_id=user_id,
+                provider=llm_provider,
+                model_name=llm_model,
+                success=validation_result.valid,
+                repaired=validation_result.repair_attempts > 0
+            )
         
         if not validation_result.valid:
             logger.error(f"Failed to parse AI standup-summary response after repairs: {validation_result.errors}")
@@ -909,14 +919,16 @@ Generate the standup summary."""
                 detail=f"Failed to generate standup summary: {', '.join(validation_result.errors)}"
             )
         
-        # ===== SAVE INSIGHT TO DATABASE =====
-        await save_sprint_insight(
-            session=session,
-            user_id=user_id,
-            sprint_number=sprint_info.sprint_number,
-            insight_type="standup_summary",
-            content=validation_result.data
-        )
+        # ===== SAVE INSIGHT TO DATABASE (fresh session) =====
+        from db import AsyncSessionLocal
+        async with AsyncSessionLocal() as save_session:
+            await save_sprint_insight(
+                session=save_session,
+                user_id=user_id,
+                sprint_number=sprint_info.sprint_number,
+                insight_type="standup_summary",
+                content=validation_result.data
+            )
         
         return StandupSummary(**validation_result.data)
         
