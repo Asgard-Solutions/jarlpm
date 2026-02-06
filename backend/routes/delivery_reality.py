@@ -647,3 +647,578 @@ async def clear_scope_plan(
     await session.commit()
     
     return {"message": "Scope plan cleared", "epic_id": epic_id}
+
+
+# ============================================
+# ENHANCED UX FEATURES
+# ============================================
+
+def generate_cuts_summary(deferred_stories: List[dict], total_deferred_points: int) -> str:
+    """
+    Generate a human-readable summary of why these cuts were made.
+    Example: "To fit capacity, defer 3 nice-to-haves totaling 8 pts (Search filters, CSV export, Dark mode polish)."
+    """
+    if not deferred_stories:
+        return ""
+    
+    # Group by priority
+    priority_groups = {}
+    for story in deferred_stories:
+        priority = story.get("priority", "should-have") or "should-have"
+        if priority not in priority_groups:
+            priority_groups[priority] = []
+        priority_groups[priority].append(story)
+    
+    # Build summary parts
+    parts = []
+    priority_labels = {
+        "nice-to-have": "nice-to-haves",
+        "should-have": "should-haves", 
+        "must-have": "must-haves"
+    }
+    
+    for priority in ["nice-to-have", "should-have", "must-have"]:
+        if priority in priority_groups:
+            stories = priority_groups[priority]
+            count = len(stories)
+            points = sum(s.get("points", 0) for s in stories)
+            titles = [s.get("title") or s.get("story_text", "")[:30] for s in stories[:3]]
+            
+            label = priority_labels.get(priority, priority)
+            titles_str = ", ".join(titles)
+            if len(stories) > 3:
+                titles_str += f", +{len(stories) - 3} more"
+            
+            parts.append(f"{count} {label} ({points} pts): {titles_str}")
+    
+    if not parts:
+        return ""
+    
+    return f"To fit capacity, defer {', '.join(parts)}."
+
+
+def check_mvp_feasibility(must_have_points: int, two_sprint_capacity: int) -> dict:
+    """
+    Check if must-haves alone fit within capacity.
+    Returns feasibility status and recommendation.
+    """
+    delta = two_sprint_capacity - must_have_points
+    
+    if delta >= 0:
+        return {
+            "mvp_feasible": True,
+            "must_have_points": must_have_points,
+            "capacity": two_sprint_capacity,
+            "buffer": delta,
+            "message": f"Must-haves ({must_have_points} pts) fit within capacity with {delta} pts buffer."
+        }
+    else:
+        return {
+            "mvp_feasible": False,
+            "must_have_points": must_have_points,
+            "capacity": two_sprint_capacity,
+            "over_by": abs(delta),
+            "message": f"HARD PROBLEM: Must-haves alone ({must_have_points} pts) exceed capacity by {abs(delta)} pts. Consider reframing scope or extending timeline."
+        }
+
+
+class ScopeDecisionSummary(BaseModel):
+    """Shareable scope decision artifact"""
+    epic_id: str
+    title: str
+    generated_at: str
+    capacity: int
+    total_points: int
+    # MVP Analysis
+    mvp_analysis: dict
+    # Sprint breakdown
+    sprint_1_scope: List[dict] = []
+    sprint_2_scope: List[dict] = []
+    deferred_scope: List[dict] = []
+    # Summary stats
+    sprint_1_points: int = 0
+    sprint_2_points: int = 0
+    deferred_points: int = 0
+    # Notes
+    cuts_summary: str = ""
+    notes: Optional[str] = None
+
+
+@router.get("/initiative/{epic_id}/scope-summary", response_model=ScopeDecisionSummary)
+async def get_scope_decision_summary(
+    request: Request,
+    epic_id: str,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Generate a shareable Scope Decision Summary for an initiative.
+    
+    This is the artifact PMs can export to PRD or send to the team.
+    """
+    from db.models import ScopePlan
+    
+    user_id = await get_current_user_id(request, session)
+    
+    # Verify epic ownership
+    epic_q = select(Epic).where(Epic.epic_id == epic_id, Epic.user_id == user_id)
+    epic_result = await session.execute(epic_q)
+    epic = epic_result.scalar_one_or_none()
+    
+    if not epic:
+        raise HTTPException(status_code=404, detail="Initiative not found")
+    
+    # Get delivery context
+    ctx = await get_delivery_context(user_id, session)
+    sprint_capacity = ctx["sprint_capacity"]
+    two_sprint_capacity = ctx["two_sprint_capacity"]
+    
+    # Get points breakdown
+    points_data = await get_initiative_points(epic_id, session)
+    total_points = points_data["total_points"]
+    stories = points_data["stories"]
+    
+    # Get active scope plan if exists
+    plan_q = select(ScopePlan).where(
+        ScopePlan.epic_id == epic_id,
+        ScopePlan.user_id == user_id,
+        ScopePlan.is_active == True
+    )
+    plan_result = await session.execute(plan_q)
+    plan = plan_result.scalar_one_or_none()
+    
+    deferred_ids = set(plan.deferred_story_ids) if plan else set()
+    
+    # Separate stories into included and deferred
+    included_stories = [s for s in stories if s["story_id"] not in deferred_ids]
+    deferred_stories = [s for s in stories if s["story_id"] in deferred_ids]
+    
+    # Sort included stories by priority (must-have first) then points
+    priority_order = {"must-have": 0, "should-have": 1, "nice-to-have": 2, None: 1}
+    included_stories.sort(key=lambda s: (priority_order.get(s.get("priority"), 1), -(s.get("points") or 0)))
+    
+    # Split into Sprint 1 and Sprint 2
+    sprint_1_scope = []
+    sprint_2_scope = []
+    sprint_1_points = 0
+    sprint_2_points = 0
+    
+    for story in included_stories:
+        story_points = story.get("points") or 0
+        if sprint_1_points + story_points <= sprint_capacity:
+            sprint_1_scope.append({
+                "story_id": story["story_id"],
+                "title": story.get("title") or story["story_text"][:50],
+                "points": story_points,
+                "priority": story.get("priority"),
+                "feature": story.get("feature_title")
+            })
+            sprint_1_points += story_points
+        else:
+            sprint_2_scope.append({
+                "story_id": story["story_id"],
+                "title": story.get("title") or story["story_text"][:50],
+                "points": story_points,
+                "priority": story.get("priority"),
+                "feature": story.get("feature_title")
+            })
+            sprint_2_points += story_points
+    
+    # Format deferred scope
+    deferred_scope = [{
+        "story_id": s["story_id"],
+        "title": s.get("title") or s["story_text"][:50],
+        "points": s.get("points") or 0,
+        "priority": s.get("priority"),
+        "feature": s.get("feature_title")
+    } for s in deferred_stories]
+    
+    deferred_points = sum(s.get("points") or 0 for s in deferred_stories)
+    
+    # Generate cuts summary
+    cuts_summary = generate_cuts_summary(deferred_stories, deferred_points)
+    
+    # MVP Analysis
+    mvp_analysis = check_mvp_feasibility(points_data["must_have_points"], two_sprint_capacity)
+    
+    return ScopeDecisionSummary(
+        epic_id=epic_id,
+        title=epic.title,
+        generated_at=datetime.now(timezone.utc).isoformat(),
+        capacity=two_sprint_capacity,
+        total_points=total_points,
+        mvp_analysis=mvp_analysis,
+        sprint_1_scope=sprint_1_scope,
+        sprint_2_scope=sprint_2_scope,
+        deferred_scope=deferred_scope,
+        sprint_1_points=sprint_1_points,
+        sprint_2_points=sprint_2_points,
+        deferred_points=deferred_points,
+        cuts_summary=cuts_summary,
+        notes=plan.notes if plan else None
+    )
+
+
+# ============================================
+# AI-POWERED FEATURES
+# ============================================
+
+class ScopeCutRationale(BaseModel):
+    """AI-generated rationale for scope cuts"""
+    rationale: str
+    user_impact_tradeoff: str
+    what_to_validate_first: str
+
+
+class AlternativeCutSet(BaseModel):
+    """An alternative way to cut scope"""
+    name: str
+    description: str
+    strategy: str  # 'cut_polish', 'cut_integrations', 'cut_low_adoption'
+    stories_to_defer: List[str]  # story_ids
+    total_deferred_points: int
+
+
+class AlternativeCutSetsResponse(BaseModel):
+    """Multiple alternative cut options"""
+    alternatives: List[AlternativeCutSet]
+
+
+class RiskReview(BaseModel):
+    """AI-generated risk review for the plan"""
+    top_delivery_risks: List[str]
+    top_assumptions: List[str]
+    suggested_spike: Optional[dict] = None  # {title, points, description}
+
+
+@router.post("/initiative/{epic_id}/ai/cut-rationale", response_model=ScopeCutRationale)
+async def generate_cut_rationale(
+    request: Request,
+    epic_id: str,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Generate AI-powered rationale for the scope cuts.
+    
+    Uses user's configured LLM to generate:
+    - Rationale for the cuts
+    - User impact tradeoff analysis
+    - What to validate first
+    """
+    from services.llm_service import LLMService
+    import json as json_lib
+    
+    user_id = await get_current_user_id(request, session)
+    
+    # Verify epic ownership
+    epic_q = select(Epic).where(Epic.epic_id == epic_id, Epic.user_id == user_id)
+    epic_result = await session.execute(epic_q)
+    epic = epic_result.scalar_one_or_none()
+    
+    if not epic:
+        raise HTTPException(status_code=404, detail="Initiative not found")
+    
+    # Get delivery context and points data
+    ctx = await get_delivery_context(user_id, session)
+    points_data = await get_initiative_points(epic_id, session)
+    
+    # Get scope plan
+    from db.models import ScopePlan
+    plan_q = select(ScopePlan).where(
+        ScopePlan.epic_id == epic_id,
+        ScopePlan.user_id == user_id,
+        ScopePlan.is_active == True
+    )
+    plan_result = await session.execute(plan_q)
+    plan = plan_result.scalar_one_or_none()
+    
+    deferred_ids = set(plan.deferred_story_ids) if plan else set()
+    
+    # Build context for AI
+    deferred_stories = [s for s in points_data["stories"] if s["story_id"] in deferred_ids]
+    included_stories = [s for s in points_data["stories"] if s["story_id"] not in deferred_ids]
+    
+    must_haves = [s for s in included_stories if s.get("priority") == "must-have"]
+    
+    # Calculate deferred points
+    deferred_points = sum(s.get("points", 0) for s in deferred_stories)
+    
+    system_prompt = """You are a Senior Product Manager helping communicate scope decisions.
+
+Given the scope cuts made for an initiative, generate a clear rationale that can be shared with stakeholders.
+
+Return ONLY valid JSON (no markdown fences) in this format:
+{
+  "rationale": "1-2 sentences explaining why these specific items were deferred",
+  "user_impact_tradeoff": "1-2 sentences on what users will/won't get and why that's acceptable",
+  "what_to_validate_first": "1 sentence on what assumption or risk should be validated first"
+}"""
+
+    user_prompt = f"""Initiative: {epic.title}
+
+Capacity: {ctx['two_sprint_capacity']} points (2 sprints)
+Total scope: {points_data['total_points']} points
+
+INCLUDED (must-haves that will ship):
+{chr(10).join([f"- {s.get('title', s['story_text'][:40])} ({s.get('points', 0)} pts)" for s in must_haves[:5]])}
+
+DEFERRED ({deferred_points} points cut):
+{chr(10).join([f"- {s.get('title', s['story_text'][:40])} ({s.get('points', 0)} pts, {s.get('priority', 'should-have')})" for s in deferred_stories])}
+
+Generate the rationale for these cuts."""
+
+    llm_service = LLMService(session)
+    
+    try:
+        full_response = ""
+        async for chunk in llm_service.generate_stream(user_id, system_prompt, user_prompt):
+            full_response += chunk
+        
+        # Parse JSON response
+        full_response = full_response.strip()
+        if full_response.startswith("```"):
+            full_response = full_response.split("```")[1]
+            if full_response.startswith("json"):
+                full_response = full_response[4:]
+        
+        result = json_lib.loads(full_response)
+        
+        return ScopeCutRationale(
+            rationale=result.get("rationale", ""),
+            user_impact_tradeoff=result.get("user_impact_tradeoff", ""),
+            what_to_validate_first=result.get("what_to_validate_first", "")
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except json_lib.JSONDecodeError as e:
+        logger.error(f"Failed to parse AI response: {full_response}")
+        raise HTTPException(status_code=500, detail="Failed to parse AI response")
+
+
+@router.post("/initiative/{epic_id}/ai/alternative-cuts", response_model=AlternativeCutSetsResponse)
+async def generate_alternative_cuts(
+    request: Request,
+    epic_id: str,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Generate AI-powered alternative cut strategies.
+    
+    Offers 2-3 alternatives with different prioritization heuristics:
+    - Cut polish (UX refinements, edge cases)
+    - Cut integrations (3rd party, advanced features)
+    - Cut low adoption risk (features with uncertain usage)
+    """
+    from services.llm_service import LLMService
+    import json as json_lib
+    
+    user_id = await get_current_user_id(request, session)
+    
+    # Verify epic ownership
+    epic_q = select(Epic).where(Epic.epic_id == epic_id, Epic.user_id == user_id)
+    epic_result = await session.execute(epic_q)
+    epic = epic_result.scalar_one_or_none()
+    
+    if not epic:
+        raise HTTPException(status_code=404, detail="Initiative not found")
+    
+    # Get context
+    ctx = await get_delivery_context(user_id, session)
+    points_data = await get_initiative_points(epic_id, session)
+    
+    delta = ctx["two_sprint_capacity"] - points_data["total_points"]
+    points_to_cut = abs(delta) if delta < 0 else 0
+    
+    if points_to_cut == 0:
+        return AlternativeCutSetsResponse(alternatives=[])
+    
+    # Build story list for AI
+    stories_for_ai = [{
+        "id": s["story_id"],
+        "title": s.get("title") or s["story_text"][:50],
+        "points": s.get("points", 0),
+        "priority": s.get("priority", "should-have"),
+        "feature": s.get("feature_title", "")
+    } for s in points_data["stories"]]
+    
+    system_prompt = """You are a Senior Product Manager helping with scope decisions.
+
+Given a list of stories and points to cut, generate 3 alternative cut strategies.
+
+STRATEGIES:
+1. "Cut Polish" - Defer UX refinements, edge cases, nice-to-haves
+2. "Cut Integrations" - Defer 3rd party integrations, advanced features
+3. "Cut Low Adoption" - Defer features with uncertain user adoption
+
+For each strategy, select stories to defer that total AT LEAST the required points to cut.
+
+Return ONLY valid JSON (no markdown fences):
+{
+  "alternatives": [
+    {
+      "name": "Cut Polish",
+      "description": "Brief description of what gets deferred",
+      "strategy": "cut_polish",
+      "story_ids": ["story_id1", "story_id2"],
+      "total_points": 15
+    },
+    ...
+  ]
+}"""
+
+    user_prompt = f"""Initiative: {epic.title}
+Points to cut: {points_to_cut} (to fit {ctx['two_sprint_capacity']} pt capacity)
+
+STORIES:
+{json_lib.dumps(stories_for_ai, indent=2)}
+
+Generate 3 alternative cut strategies, each cutting at least {points_to_cut} points."""
+
+    llm_service = LLMService(session)
+    
+    try:
+        full_response = ""
+        async for chunk in llm_service.generate_stream(user_id, system_prompt, user_prompt):
+            full_response += chunk
+        
+        # Parse JSON response
+        full_response = full_response.strip()
+        if full_response.startswith("```"):
+            full_response = full_response.split("```")[1]
+            if full_response.startswith("json"):
+                full_response = full_response[4:]
+        
+        result = json_lib.loads(full_response)
+        
+        alternatives = []
+        for alt in result.get("alternatives", []):
+            alternatives.append(AlternativeCutSet(
+                name=alt.get("name", ""),
+                description=alt.get("description", ""),
+                strategy=alt.get("strategy", ""),
+                stories_to_defer=alt.get("story_ids", []),
+                total_deferred_points=alt.get("total_points", 0)
+            ))
+        
+        return AlternativeCutSetsResponse(alternatives=alternatives)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except json_lib.JSONDecodeError as e:
+        logger.error(f"Failed to parse AI response: {full_response}")
+        raise HTTPException(status_code=500, detail="Failed to parse AI response")
+
+
+@router.post("/initiative/{epic_id}/ai/risk-review", response_model=RiskReview)
+async def generate_risk_review(
+    request: Request,
+    epic_id: str,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Generate AI-powered risk review for the saved scope plan.
+    
+    Returns:
+    - Top 3 delivery risks
+    - Top 3 assumptions to validate
+    - Suggested spike story (1-2 pts)
+    """
+    from services.llm_service import LLMService
+    import json as json_lib
+    
+    user_id = await get_current_user_id(request, session)
+    
+    # Verify epic ownership
+    epic_q = select(Epic).where(Epic.epic_id == epic_id, Epic.user_id == user_id)
+    epic_result = await session.execute(epic_q)
+    epic = epic_result.scalar_one_or_none()
+    
+    if not epic:
+        raise HTTPException(status_code=404, detail="Initiative not found")
+    
+    # Get context
+    ctx = await get_delivery_context(user_id, session)
+    points_data = await get_initiative_points(epic_id, session)
+    
+    # Get scope plan
+    from db.models import ScopePlan
+    plan_q = select(ScopePlan).where(
+        ScopePlan.epic_id == epic_id,
+        ScopePlan.user_id == user_id,
+        ScopePlan.is_active == True
+    )
+    plan_result = await session.execute(plan_q)
+    plan = plan_result.scalar_one_or_none()
+    
+    deferred_ids = set(plan.deferred_story_ids) if plan else set()
+    
+    included_stories = [s for s in points_data["stories"] if s["story_id"] not in deferred_ids]
+    deferred_stories = [s for s in points_data["stories"] if s["story_id"] in deferred_ids]
+    
+    system_prompt = """You are a Senior Product Manager reviewing a scope plan for delivery risks.
+
+Given the planned scope and deferred items, identify:
+1. Top 3 delivery risks (things that could go wrong)
+2. Top 3 assumptions that need validation
+3. A suggested spike story to de-risk the plan (1-2 points)
+
+Return ONLY valid JSON (no markdown fences):
+{
+  "top_delivery_risks": [
+    "Risk 1: Brief description",
+    "Risk 2: Brief description",
+    "Risk 3: Brief description"
+  ],
+  "top_assumptions": [
+    "Assumption 1: Brief description",
+    "Assumption 2: Brief description",
+    "Assumption 3: Brief description"
+  ],
+  "suggested_spike": {
+    "title": "Spike title",
+    "points": 2,
+    "description": "What this spike validates"
+  }
+}"""
+
+    user_prompt = f"""Initiative: {epic.title}
+
+DELIVERY CONTEXT:
+- Team: {ctx['num_developers']} developers
+- Sprint capacity: {ctx['sprint_capacity']} points
+- 2-sprint capacity: {ctx['two_sprint_capacity']} points
+
+PLANNED SCOPE ({sum(s.get('points', 0) for s in included_stories)} points):
+{chr(10).join([f"- {s.get('title', s['story_text'][:40])} ({s.get('points', 0)} pts, {s.get('priority', 'should-have')})" for s in included_stories[:10]])}
+{f'... and {len(included_stories) - 10} more stories' if len(included_stories) > 10 else ''}
+
+DEFERRED ({sum(s.get('points', 0) for s in deferred_stories)} points):
+{chr(10).join([f"- {s.get('title', s['story_text'][:40])} ({s.get('points', 0)} pts)" for s in deferred_stories]) if deferred_stories else 'None'}
+
+Generate the risk review."""
+
+    llm_service = LLMService(session)
+    
+    try:
+        full_response = ""
+        async for chunk in llm_service.generate_stream(user_id, system_prompt, user_prompt):
+            full_response += chunk
+        
+        # Parse JSON response
+        full_response = full_response.strip()
+        if full_response.startswith("```"):
+            full_response = full_response.split("```")[1]
+            if full_response.startswith("json"):
+                full_response = full_response[4:]
+        
+        result = json_lib.loads(full_response)
+        
+        return RiskReview(
+            top_delivery_risks=result.get("top_delivery_risks", []),
+            top_assumptions=result.get("top_assumptions", []),
+            suggested_spike=result.get("suggested_spike")
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except json_lib.JSONDecodeError as e:
+        logger.error(f"Failed to parse AI response: {full_response}")
+        raise HTTPException(status_code=500, detail="Failed to parse AI response")
+
