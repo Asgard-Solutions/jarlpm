@@ -140,6 +140,7 @@ class TestRateLimitExceededHandler:
         """Test that handler returns 429 status code."""
         from services.rate_limit import rate_limit_exceeded_handler
         from slowapi.errors import RateLimitExceeded
+        from limits import parse
         from fastapi import Request
         from unittest.mock import MagicMock
         
@@ -152,7 +153,9 @@ class TestRateLimitExceededHandler:
         mock_request.url.path = "/api/auth/login"
         mock_request.method = "POST"
         
-        exc = RateLimitExceeded("5/minute")
+        # Create a proper RateLimitExceeded with parsed limit
+        limit = parse("5/minute")
+        exc = RateLimitExceeded(limit)
         
         response = rate_limit_exceeded_handler(mock_request, exc)
         
@@ -162,6 +165,7 @@ class TestRateLimitExceededHandler:
         """Test that handler includes Retry-After header."""
         from services.rate_limit import rate_limit_exceeded_handler
         from slowapi.errors import RateLimitExceeded
+        from limits import parse
         from fastapi import Request
         from unittest.mock import MagicMock
         
@@ -174,7 +178,9 @@ class TestRateLimitExceededHandler:
         mock_request.url.path = "/api/auth/login"
         mock_request.method = "POST"
         
-        exc = RateLimitExceeded("5/minute")
+        # Create a proper RateLimitExceeded with parsed limit
+        limit = parse("5/minute")
+        exc = RateLimitExceeded(limit)
         
         response = rate_limit_exceeded_handler(mock_request, exc)
         
