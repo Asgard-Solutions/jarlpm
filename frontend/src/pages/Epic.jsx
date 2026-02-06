@@ -21,6 +21,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { MoSCoWBadge, RICEBadge, FeatureScoringDialog } from '@/components/ScoringComponents';
 import { LinkedBugs } from '@/components/LinkedBugs';
 import PushToLinearModal from '@/components/PushToLinearModal';
+import PushToJiraModal from '@/components/PushToJiraModal';
 import { 
   ArrowLeft, Send, Loader2, Lock, CheckCircle2, 
   XCircle, FileText, History, AlertCircle, Layers,
