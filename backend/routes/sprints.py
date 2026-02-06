@@ -287,7 +287,7 @@ async def update_story_status(
     session: AsyncSession = Depends(get_db)
 ):
     """Update story status (including blocked with reason)"""
-    user_id = await get_current_user_id(request, session)
+    await get_current_user_id(request, session)  # Auth check
     
     valid_statuses = ["draft", "ready", "in_progress", "done", "blocked"]
     if body.status not in valid_statuses:
