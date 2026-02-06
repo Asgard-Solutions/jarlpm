@@ -483,6 +483,53 @@ async def save_sprint_insight(
     return insight
 
 
+@router.get("/insights/current", response_model=SprintInsightsResponse)
+async def get_current_sprint_insights(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Get all saved AI-generated insights for the current sprint.
+    """
+    user_id = await get_current_user_id(request, session)
+    
+    # Get current sprint number
+    ctx = await get_delivery_context(user_id, session)
+    sprint_info = calculate_sprint_info(ctx) if ctx else None
+    
+    if not sprint_info:
+        return SprintInsightsResponse(sprint_number=0)
+    
+    # Get all insights for current sprint
+    result = await session.execute(
+        select(SprintInsight)
+        .where(
+            SprintInsight.user_id == user_id,
+            SprintInsight.sprint_number == sprint_info.sprint_number
+        )
+        .order_by(SprintInsight.generated_at.desc())
+    )
+    insights = result.scalars().all()
+    
+    # Group by type, keeping only the most recent
+    insights_by_type = {}
+    for insight in insights:
+        if insight.insight_type not in insights_by_type:
+            insights_by_type[insight.insight_type] = SavedInsight(
+                insight_id=insight.insight_id,
+                insight_type=insight.insight_type,
+                content=insight.content,
+                generated_at=insight.generated_at.isoformat() if insight.generated_at else ""
+            )
+    
+    return SprintInsightsResponse(
+        sprint_number=sprint_info.sprint_number,
+        kickoff_plan=insights_by_type.get("kickoff_plan"),
+        standup_summary=insights_by_type.get("standup_summary"),
+        wip_suggestions=insights_by_type.get("wip_suggestions")
+    )
+
+
 @router.get("/insights/{sprint_number}", response_model=SprintInsightsResponse)
 async def get_sprint_insights(
     request: Request,
@@ -523,46 +570,6 @@ async def get_sprint_insights(
         standup_summary=insights_by_type.get("standup_summary"),
         wip_suggestions=insights_by_type.get("wip_suggestions")
     )
-
-
-@router.get("/insights/current", response_model=SprintInsightsResponse)
-async def get_current_sprint_insights(
-    request: Request,
-    session: AsyncSession = Depends(get_db)
-):
-    """
-    Get all saved AI-generated insights for the current sprint.
-    """
-    user_id = await get_current_user_id(request, session)
-    
-    # Get current sprint number
-    ctx = await get_delivery_context(user_id, session)
-    sprint_info = calculate_sprint_info(ctx) if ctx else None
-    
-    if not sprint_info:
-        return SprintInsightsResponse(sprint_number=0)
-    
-    # Get all insights for current sprint
-    result = await session.execute(
-        select(SprintInsight)
-        .where(
-            SprintInsight.user_id == user_id,
-            SprintInsight.sprint_number == sprint_info.sprint_number
-        )
-        .order_by(SprintInsight.generated_at.desc())
-    )
-    insights = result.scalars().all()
-    
-    # Group by type, keeping only the most recent
-    insights_by_type = {}
-    for insight in insights:
-        if insight.insight_type not in insights_by_type:
-            insights_by_type[insight.insight_type] = SavedInsight(
-                insight_id=insight.insight_id,
-                insight_type=insight.insight_type,
-                content=insight.content,
-                generated_at=insight.generated_at.isoformat() if insight.generated_at else ""
-            )
     
     return SprintInsightsResponse(
         sprint_number=sprint_info.sprint_number,
