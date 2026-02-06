@@ -313,6 +313,13 @@ export const scoringAPI = {
   // Comprehensive bulk scoring (Features, Stories, Bugs)
   bulkScoreAll: (epicId) => api.post(`/scoring/epic/${epicId}/bulk-score-all`),
   applyAllScores: (epicId, data) => api.post(`/scoring/epic/${epicId}/apply-all-scores`, data),
+  
+  // List-first scoring endpoints
+  getScoredItems: () => api.get('/scoring/scored-items'),
+  getItemsForScoring: () => api.get('/scoring/items-for-scoring'),
+  getEpicScores: (epicId) => api.get(`/scoring/epic/${epicId}/scores`),
+  scoreStandaloneStory: (storyId, data) => api.post(`/scoring/standalone-story/${storyId}/score`, data),
+  scoreStandaloneBug: (bugId, data) => api.post(`/scoring/standalone-bug/${bugId}/score`, data),
 };
 
 // AI Poker Planning API
