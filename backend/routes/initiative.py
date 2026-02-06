@@ -258,8 +258,7 @@ class InitiativeSchema(BaseModel):
     prd: PRDSchema = Field(default_factory=PRDSchema)
     epic: EpicSchema = Field(default_factory=EpicSchema)
     features: List[FeatureSchema] = Field(default_factory=list)
-    sprint_plan: SprintPlanSchema = Field(default_factory=SprintPlanSchema)
-    total_points: int = 0
+    # NOTE: sprint_plan and total_points removed - scoring happens via Scoring/Poker features
     
     def assign_ids(self):
         """Ensure all entities have stable IDs"""
