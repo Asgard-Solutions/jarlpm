@@ -790,7 +790,6 @@ async def get_epic_poker_sessions(
     )
     stories = stories_result.scalars().all()
     story_ids = [s.story_id for s in stories]
-    story_map = {s.story_id: s for s in stories}
     
     if not story_ids:
         return {"epic": {"epic_id": epic_id, "title": epic.title}, "stories": []}
