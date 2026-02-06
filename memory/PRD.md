@@ -1163,3 +1163,48 @@ When an Epic is locked, users enter Feature Planning Mode:
 **Tests:** All APIs verified via curl, UI screenshots confirm list and editor views working
 
 
+### 2026-02-06: Scoring Page List-First UX (COMPLETE)
+**Feature:** Complete refactor of Scoring page with list-first UX pattern showing all scored items
+
+**Backend Changes:**
+- **New endpoints in `/app/backend/routes/scoring.py`:**
+  - `GET /api/scoring/scored-items` - Returns all scored items (Epics, Standalone Stories, Standalone Bugs) with score details
+  - `GET /api/scoring/items-for-scoring` - Returns items available for scoring (locked epics, standalone stories/bugs)
+  - `GET /api/scoring/epic/{epic_id}/scores` - Returns detailed epic scores with all features, stories, and bugs
+  - `POST /api/scoring/standalone-story/{story_id}/score` - Score standalone story with RICE
+  - `POST /api/scoring/standalone-bug/{bug_id}/score` - Score standalone bug with RICE
+
+**Frontend Changes:**
+- **Scoring page rewrite (`/app/frontend/src/pages/Scoring.jsx`):**
+  - List view with stats cards: Scored Epics, Scored Stories, Scored Bugs, Total Scored
+  - Tabs: Epics | Standalone Stories | Standalone Bugs
+  - Epic cards show children_scored/children_total count
+  - "Initiate Scoring" dialog with:
+    - Item type selection (Epic/Standalone Story/Standalone Bug)
+    - Item dropdown filtered by type
+    - Info card explaining scoring types (Epic=MoSCoW, Features=MoSCoW+RICE, Stories=RICE, Bugs=RICE)
+  - Detail view when clicking epic:
+    - Epic Priority section with MoSCoW badge
+    - Features section with MoSCoW + RICE badges
+    - User Stories section with RICE badges
+    - Bugs section with RICE badges
+    - "AI Score All" button to generate scores
+    - "Apply Scores" button to save AI suggestions
+
+- **Epic Review page updates (`/app/frontend/src/pages/CompletedEpic.jsx`):**
+  - Added "Scoring" button in Epic Details card
+  - Deep-link to `/scoring?epic={epic_id}` pre-opens detail view
+  - MoSCoW badges on features (Must Have, Should Have, etc.)
+  - RICE badges on features showing score (RICE: 4.0)
+  - RICE badges on user stories
+
+**Scoring Rules:**
+- Epics → MoSCoW only
+- Features → MoSCoW + RICE
+- User Stories → RICE only
+- Bugs → RICE only
+- RICE calculation: (Reach × Impact × Confidence) / Effort
+
+**Tests:** 23/23 backend tests passed, 100% frontend coverage
+
+
