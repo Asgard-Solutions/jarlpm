@@ -1620,6 +1620,7 @@ async def get_epic_scores(
         "epic_id": epic.epic_id,
         "title": epic.title,
         "moscow_score": epic.moscow_score,
+        "moscow_reasoning": epic.moscow_reasoning,
         "features": [],
         "stories": [],
         "bugs": []
@@ -1636,11 +1637,13 @@ async def get_epic_scores(
             "feature_id": feature.feature_id,
             "title": feature.title,
             "moscow_score": feature.moscow_score,
+            "moscow_reasoning": feature.moscow_reasoning,
             "rice_reach": feature.rice_reach,
             "rice_impact": feature.rice_impact,
             "rice_confidence": feature.rice_confidence,
             "rice_effort": feature.rice_effort,
-            "rice_total": feature.rice_total
+            "rice_total": feature.rice_total,
+            "rice_reasoning": feature.rice_reasoning
         })
         
         # Get stories for this feature
@@ -1659,6 +1662,7 @@ async def get_epic_scores(
                 "rice_confidence": story.rice_confidence,
                 "rice_effort": story.rice_effort,
                 "rice_total": story.rice_total,
+                "rice_reasoning": story.rice_reasoning,
                 "story_points": story.story_points
             })
     
@@ -1685,7 +1689,8 @@ async def get_epic_scores(
                 "rice_impact": bug.rice_impact,
                 "rice_confidence": bug.rice_confidence,
                 "rice_effort": bug.rice_effort,
-                "rice_total": bug.rice_total
+                "rice_total": bug.rice_total,
+                "rice_reasoning": bug.rice_reasoning
             })
     
     return result
