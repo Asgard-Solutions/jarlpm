@@ -257,7 +257,9 @@ async def update_story_sprint(
     session: AsyncSession = Depends(get_db)
 ):
     """Assign or unassign a story to a sprint"""
-    await get_current_user_id(request, session)  # Auth check
+    from db.feature_models import Feature
+    
+    user_id = await get_current_user_id(request, session)
     
     # Get the story
     result = await session.execute(
@@ -267,6 +269,27 @@ async def update_story_sprint(
     
     if not story:
         raise HTTPException(status_code=404, detail="Story not found")
+    
+    # ===== OWNERSHIP CHECK =====
+    # For standalone stories, check user_id directly
+    if story.is_standalone:
+        if story.user_id != user_id:
+            raise HTTPException(status_code=403, detail="Not authorized to modify this story")
+    else:
+        # For feature-based stories, verify ownership via feature→epic→user_id
+        feature_result = await session.execute(
+            select(Feature).where(Feature.feature_id == story.feature_id)
+        )
+        feature = feature_result.scalar_one_or_none()
+        if not feature:
+            raise HTTPException(status_code=404, detail="Story's feature not found")
+        
+        epic_result = await session.execute(
+            select(Epic).where(Epic.epic_id == feature.epic_id, Epic.user_id == user_id)
+        )
+        epic = epic_result.scalar_one_or_none()
+        if not epic:
+            raise HTTPException(status_code=403, detail="Not authorized to modify this story")
     
     # Update sprint number
     story.sprint_number = body.sprint_number
