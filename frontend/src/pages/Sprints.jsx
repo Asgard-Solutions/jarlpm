@@ -128,6 +128,26 @@ const Sprints = () => {
       setLoading(true);
       const response = await sprintAPI.getCurrentSprint();
       setSprintData(response.data);
+      
+      // Also load any saved AI insights
+      try {
+        const insightsResponse = await sprintAPI.getSavedInsights();
+        const insights = insightsResponse.data;
+        
+        // Load saved insights into state
+        if (insights.kickoff_plan?.content) {
+          setKickoffPlan(insights.kickoff_plan.content);
+        }
+        if (insights.standup_summary?.content) {
+          setStandupSummary(insights.standup_summary.content);
+        }
+        if (insights.wip_suggestions?.content) {
+          setWipSuggestions(insights.wip_suggestions.content);
+        }
+      } catch (insightError) {
+        // Insights are optional - don't fail if they're not available
+        console.log('No saved insights found:', insightError);
+      }
     } catch (error) {
       console.error('Failed to fetch sprint data:', error);
       toast.error('Failed to load sprint data');
