@@ -28,6 +28,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import {
@@ -42,12 +53,19 @@ import {
   TrendingDown,
   Minus,
   ChevronRight,
+  ChevronDown,
   RefreshCw,
   Scissors,
   Download,
   Zap,
   Save,
   RotateCcw,
+  Sparkles,
+  FileText,
+  Shield,
+  Lightbulb,
+  Copy,
+  ExternalLink,
 } from 'lucide-react';
 
 const ASSESSMENT_CONFIG = {
@@ -102,6 +120,18 @@ const DeliveryReality = () => {
   const [scopePlan, setScopePlan] = useState(null);
   const [planNotes, setPlanNotes] = useState('');
   const [savingPlan, setSavingPlan] = useState(false);
+  
+  // New state for enhanced features
+  const [scopeSummary, setScopeSummary] = useState(null);
+  const [cutRationale, setCutRationale] = useState(null);
+  const [alternativeCuts, setAlternativeCuts] = useState(null);
+  const [riskReview, setRiskReview] = useState(null);
+  const [aiLoading, setAiLoading] = useState({
+    rationale: false,
+    alternatives: false,
+    risks: false,
+  });
+  const [showScopeSummary, setShowScopeSummary] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -132,6 +162,12 @@ const DeliveryReality = () => {
     try {
       setDetailLoading(true);
       setSelectedInitiative(id);
+      
+      // Reset AI states
+      setCutRationale(null);
+      setAlternativeCuts(null);
+      setRiskReview(null);
+      setScopeSummary(null);
       
       const [detailRes, planRes] = await Promise.all([
         deliveryRealityAPI.getInitiative(id),
@@ -171,6 +207,10 @@ const DeliveryReality = () => {
     setDeferredStories(new Set());
     setScopePlan(null);
     setPlanNotes('');
+    setCutRationale(null);
+    setAlternativeCuts(null);
+    setRiskReview(null);
+    setScopeSummary(null);
     // Remove epicId from URL if present
     if (epicId) {
       navigate('/delivery-reality');
@@ -228,6 +268,82 @@ const DeliveryReality = () => {
     }
   };
 
+  // AI Feature handlers
+  const generateCutRationale = async () => {
+    if (!initiativeDetail) return;
+    
+    try {
+      setAiLoading(prev => ({ ...prev, rationale: true }));
+      const response = await deliveryRealityAPI.generateCutRationale(initiativeDetail.epic_id);
+      setCutRationale(response.data);
+      toast.success('Rationale generated');
+    } catch (error) {
+      console.error('Failed to generate rationale:', error);
+      const msg = error.response?.data?.detail || 'Failed to generate rationale. Make sure you have an LLM provider configured.';
+      toast.error(msg);
+    } finally {
+      setAiLoading(prev => ({ ...prev, rationale: false }));
+    }
+  };
+
+  const generateAlternatives = async () => {
+    if (!initiativeDetail) return;
+    
+    try {
+      setAiLoading(prev => ({ ...prev, alternatives: true }));
+      const response = await deliveryRealityAPI.generateAlternativeCuts(initiativeDetail.epic_id);
+      setAlternativeCuts(response.data.alternatives);
+      toast.success('Alternative cut strategies generated');
+    } catch (error) {
+      console.error('Failed to generate alternatives:', error);
+      const msg = error.response?.data?.detail || 'Failed to generate alternatives. Make sure you have an LLM provider configured.';
+      toast.error(msg);
+    } finally {
+      setAiLoading(prev => ({ ...prev, alternatives: false }));
+    }
+  };
+
+  const generateRisks = async () => {
+    if (!initiativeDetail) return;
+    
+    try {
+      setAiLoading(prev => ({ ...prev, risks: true }));
+      const response = await deliveryRealityAPI.generateRiskReview(initiativeDetail.epic_id);
+      setRiskReview(response.data);
+      toast.success('Risk review generated');
+    } catch (error) {
+      console.error('Failed to generate risk review:', error);
+      const msg = error.response?.data?.detail || 'Failed to generate risk review. Make sure you have an LLM provider configured.';
+      toast.error(msg);
+    } finally {
+      setAiLoading(prev => ({ ...prev, risks: false }));
+    }
+  };
+
+  const loadScopeSummary = async () => {
+    if (!initiativeDetail) return;
+    
+    try {
+      const response = await deliveryRealityAPI.getScopeSummary(initiativeDetail.epic_id);
+      setScopeSummary(response.data);
+      setShowScopeSummary(true);
+    } catch (error) {
+      console.error('Failed to load scope summary:', error);
+      toast.error('Failed to load scope summary');
+    }
+  };
+
+  const applyAlternativeCut = (alt) => {
+    if (!alt.stories_to_defer) return;
+    setDeferredStories(new Set(alt.stories_to_defer));
+    toast.success(`Applied "${alt.name}" strategy`);
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard');
+  };
+
   // Calculate deferred points based on current selection
   const calculateDeferredPoints = () => {
     if (!initiativeDetail) return 0;
@@ -241,6 +357,42 @@ const DeliveryReality = () => {
     return Math.min(Math.round((totalPoints / capacity) * 100), 150);
   };
 
+  // Generate cuts summary text
+  const generateCutsSummaryText = () => {
+    if (!initiativeDetail) return '';
+    
+    const deferred = initiativeDetail.recommended_defer.filter(s => deferredStories.has(s.story_id));
+    if (deferred.length === 0) return '';
+    
+    const deferredPoints = deferred.reduce((sum, s) => sum + s.points, 0);
+    const titles = deferred.slice(0, 3).map(s => s.title || 'Untitled').join(', ');
+    const more = deferred.length > 3 ? ` +${deferred.length - 3} more` : '';
+    
+    return `To fit capacity, defer ${deferred.length} items totaling ${deferredPoints} pts (${titles}${more}).`;
+  };
+
+  // Check MVP feasibility
+  const getMvpStatus = () => {
+    if (!initiativeDetail) return null;
+    
+    const mustHavePoints = initiativeDetail.must_have_points;
+    const capacity = initiativeDetail.two_sprint_capacity;
+    
+    if (mustHavePoints <= capacity) {
+      return {
+        feasible: true,
+        buffer: capacity - mustHavePoints,
+        message: `Must-haves (${mustHavePoints} pts) fit within capacity with ${capacity - mustHavePoints} pts buffer.`
+      };
+    } else {
+      return {
+        feasible: false,
+        overBy: mustHavePoints - capacity,
+        message: `HARD PROBLEM: Must-haves alone (${mustHavePoints} pts) exceed capacity by ${mustHavePoints - capacity} pts.`
+      };
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64" data-testid="delivery-reality-loading">
@@ -251,6 +403,8 @@ const DeliveryReality = () => {
 
   const ctx = summary?.delivery_context;
   const hasCapacity = ctx?.num_developers > 0;
+  const mvpStatus = initiativeDetail ? getMvpStatus() : null;
+  const cutsSummary = generateCutsSummaryText();
 
   return (
     <div className="space-y-6" data-testid="delivery-reality-page">
@@ -466,7 +620,7 @@ const DeliveryReality = () => {
 
       {/* Initiative Detail Dialog */}
       <Dialog open={!!selectedInitiative} onOpenChange={(open) => !open && closeDetail()}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           {detailLoading ? (
             <div className="flex items-center justify-center h-32">
               <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -516,13 +670,36 @@ const DeliveryReality = () => {
                 </div>
               </div>
 
+              {/* MVP Feasibility Alert - NEW */}
+              {mvpStatus && !mvpStatus.feasible && (
+                <Card className="bg-red-500/5 border-red-500/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-red-600">Hard Problem: MVP Exceeds Capacity</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {mvpStatus.message}
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Consider: reframing scope, extending timeline, or adding resources.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <Separator />
 
               {/* Points Breakdown */}
               <div className="grid grid-cols-3 gap-4 text-center">
-                <div className="p-3 bg-red-500/5 rounded-lg">
+                <div className={`p-3 rounded-lg ${mvpStatus && !mvpStatus.feasible ? 'bg-red-500/10 border border-red-500/20' : 'bg-red-500/5'}`}>
                   <p className="text-sm text-muted-foreground">Must Have</p>
                   <p className="text-xl font-bold">{initiativeDetail.must_have_points} pts</p>
+                  {mvpStatus && !mvpStatus.feasible && (
+                    <p className="text-xs text-red-500 mt-1">Exceeds capacity!</p>
+                  )}
                 </div>
                 <div className="p-3 bg-amber-500/5 rounded-lg">
                   <p className="text-sm text-muted-foreground">Should Have</p>
@@ -544,13 +721,32 @@ const DeliveryReality = () => {
                         <Scissors className="h-4 w-4" />
                         {scopePlan ? 'Saved Scope Plan' : 'Recommended Scope Cuts'}
                       </h4>
-                      {scopePlan && (
-                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
-                          <Save className="h-3 w-3 mr-1" />
-                          Plan Saved
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {scopePlan && (
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                            <Save className="h-3 w-3 mr-1" />
+                            Plan Saved
+                          </Badge>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={loadScopeSummary}
+                          className="gap-1"
+                        >
+                          <FileText className="h-3 w-3" />
+                          Export Summary
+                        </Button>
+                      </div>
                     </div>
+
+                    {/* Why These Cuts - NEW */}
+                    {cutsSummary && (
+                      <div className="mb-4 p-3 bg-violet-500/5 rounded-lg border border-violet-500/20">
+                        <p className="text-sm text-violet-700 dark:text-violet-300">{cutsSummary}</p>
+                      </div>
+                    )}
+
                     <p className="text-sm text-muted-foreground mb-4">
                       {scopePlan 
                         ? 'This is your saved deferral plan. Changes are not applied to stories — they remain reversible.'
@@ -645,6 +841,197 @@ const DeliveryReality = () => {
                 </>
               )}
 
+              <Separator />
+
+              {/* AI Features Section - NEW */}
+              <div className="space-y-4">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-violet-500" />
+                  AI-Powered Insights
+                  <Badge variant="outline" className="text-xs">Uses your LLM</Badge>
+                </h4>
+                
+                <Tabs defaultValue="rationale" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="rationale" className="gap-1">
+                      <Lightbulb className="h-3 w-3" />
+                      Rationale
+                    </TabsTrigger>
+                    <TabsTrigger value="alternatives" className="gap-1">
+                      <Scissors className="h-3 w-3" />
+                      Alternatives
+                    </TabsTrigger>
+                    <TabsTrigger value="risks" className="gap-1">
+                      <Shield className="h-3 w-3" />
+                      Risk Review
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  {/* Rationale Tab */}
+                  <TabsContent value="rationale" className="space-y-3 mt-4">
+                    {cutRationale ? (
+                      <div className="space-y-3">
+                        <div className="p-3 bg-violet-500/5 rounded-lg border border-violet-500/20">
+                          <p className="text-xs font-medium text-violet-600 mb-1">Rationale</p>
+                          <p className="text-sm">{cutRationale.rationale}</p>
+                        </div>
+                        <div className="p-3 bg-amber-500/5 rounded-lg border border-amber-500/20">
+                          <p className="text-xs font-medium text-amber-600 mb-1">User Impact Tradeoff</p>
+                          <p className="text-sm">{cutRationale.user_impact_tradeoff}</p>
+                        </div>
+                        <div className="p-3 bg-blue-500/5 rounded-lg border border-blue-500/20">
+                          <p className="text-xs font-medium text-blue-600 mb-1">Validate First</p>
+                          <p className="text-sm">{cutRationale.what_to_validate_first}</p>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => copyToClipboard(`Rationale: ${cutRationale.rationale}\n\nUser Impact: ${cutRationale.user_impact_tradeoff}\n\nValidate First: ${cutRationale.what_to_validate_first}`)}
+                          className="gap-1"
+                        >
+                          <Copy className="h-3 w-3" />
+                          Copy
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-center py-6">
+                        <Lightbulb className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Generate PM-quality explanation for your scope decisions
+                        </p>
+                        <Button 
+                          onClick={generateCutRationale}
+                          disabled={aiLoading.rationale}
+                          className="gap-2"
+                        >
+                          {aiLoading.rationale ? (
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4" />
+                          )}
+                          Generate Rationale
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  {/* Alternatives Tab */}
+                  <TabsContent value="alternatives" className="space-y-3 mt-4">
+                    {alternativeCuts && alternativeCuts.length > 0 ? (
+                      <div className="space-y-3">
+                        {alternativeCuts.map((alt, i) => (
+                          <Card key={i} className="bg-muted/30">
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <p className="font-medium">{alt.name}</p>
+                                  <p className="text-sm text-muted-foreground mt-1">{alt.description}</p>
+                                  <Badge variant="secondary" className="mt-2">
+                                    -{alt.total_deferred_points} pts
+                                  </Badge>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => applyAlternativeCut(alt)}
+                                >
+                                  Apply
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6">
+                        <Scissors className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Get 2-3 alternative ways to cut scope
+                        </p>
+                        <Button 
+                          onClick={generateAlternatives}
+                          disabled={aiLoading.alternatives || initiativeDetail.delta >= 0}
+                          className="gap-2"
+                        >
+                          {aiLoading.alternatives ? (
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4" />
+                          )}
+                          Generate Alternatives
+                        </Button>
+                        {initiativeDetail.delta >= 0 && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            No cuts needed - you&apos;re under capacity
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  {/* Risks Tab */}
+                  <TabsContent value="risks" className="space-y-3 mt-4">
+                    {riskReview ? (
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-xs font-medium text-red-600 mb-2">Top Delivery Risks</p>
+                          <ul className="space-y-1">
+                            {riskReview.top_delivery_risks.map((risk, i) => (
+                              <li key={i} className="text-sm flex items-start gap-2">
+                                <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                                {risk}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-amber-600 mb-2">Assumptions to Validate</p>
+                          <ul className="space-y-1">
+                            {riskReview.top_assumptions.map((assumption, i) => (
+                              <li key={i} className="text-sm flex items-start gap-2">
+                                <Lightbulb className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                                {assumption}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        {riskReview.suggested_spike && (
+                          <Card className="bg-blue-500/5 border-blue-500/20">
+                            <CardContent className="p-3">
+                              <p className="text-xs font-medium text-blue-600 mb-1">Suggested Spike Story</p>
+                              <p className="font-medium">{riskReview.suggested_spike.title}</p>
+                              <p className="text-sm text-muted-foreground">{riskReview.suggested_spike.description}</p>
+                              <Badge variant="outline" className="mt-2">
+                                {riskReview.suggested_spike.points} pts
+                              </Badge>
+                            </CardContent>
+                          </Card>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6">
+                        <Shield className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Identify risks and assumptions for your plan
+                        </p>
+                        <Button 
+                          onClick={generateRisks}
+                          disabled={aiLoading.risks}
+                          className="gap-2"
+                        >
+                          {aiLoading.risks ? (
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4" />
+                          )}
+                          Generate Risk Review
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </div>
+
               {/* Actions */}
               <div className="flex justify-between pt-4">
                 <Button variant="outline" onClick={closeDetail}>
@@ -685,6 +1072,129 @@ const DeliveryReality = () => {
               </div>
             </>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* Scope Summary Dialog - NEW */}
+      <Dialog open={showScopeSummary} onOpenChange={setShowScopeSummary}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Scope Decision Summary
+            </DialogTitle>
+            <DialogDescription>
+              Shareable artifact for stakeholders
+            </DialogDescription>
+          </DialogHeader>
+          
+          {scopeSummary && (
+            <div className="space-y-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">{scopeSummary.title}</CardTitle>
+                  <CardDescription>
+                    Generated: {new Date(scopeSummary.generated_at).toLocaleString()}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* MVP Analysis */}
+                  <div className={`p-3 rounded-lg ${scopeSummary.mvp_analysis.mvp_feasible ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
+                    <p className="text-sm font-medium">
+                      {scopeSummary.mvp_analysis.mvp_feasible ? '✓ MVP Feasible' : '⚠ MVP Problem'}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{scopeSummary.mvp_analysis.message}</p>
+                  </div>
+                  
+                  {/* Sprint 1 */}
+                  <div>
+                    <p className="font-medium mb-2">Sprint 1 ({scopeSummary.sprint_1_points} pts)</p>
+                    <ul className="text-sm space-y-1">
+                      {scopeSummary.sprint_1_scope.slice(0, 5).map((s, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                          {s.title} ({s.points} pts)
+                        </li>
+                      ))}
+                      {scopeSummary.sprint_1_scope.length > 5 && (
+                        <li className="text-muted-foreground">+{scopeSummary.sprint_1_scope.length - 5} more</li>
+                      )}
+                    </ul>
+                  </div>
+                  
+                  {/* Sprint 2 */}
+                  <div>
+                    <p className="font-medium mb-2">Sprint 2 ({scopeSummary.sprint_2_points} pts)</p>
+                    <ul className="text-sm space-y-1">
+                      {scopeSummary.sprint_2_scope.slice(0, 5).map((s, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <CheckCircle2 className="h-3 w-3 text-blue-500" />
+                          {s.title} ({s.points} pts)
+                        </li>
+                      ))}
+                      {scopeSummary.sprint_2_scope.length > 5 && (
+                        <li className="text-muted-foreground">+{scopeSummary.sprint_2_scope.length - 5} more</li>
+                      )}
+                    </ul>
+                  </div>
+                  
+                  {/* Deferred */}
+                  {scopeSummary.deferred_scope.length > 0 && (
+                    <div>
+                      <p className="font-medium mb-2 text-amber-600">Deferred ({scopeSummary.deferred_points} pts)</p>
+                      <ul className="text-sm space-y-1">
+                        {scopeSummary.deferred_scope.map((s, i) => (
+                          <li key={i} className="flex items-center gap-2 text-muted-foreground">
+                            <Minus className="h-3 w-3" />
+                            {s.title} ({s.points} pts)
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {/* Cuts Summary */}
+                  {scopeSummary.cuts_summary && (
+                    <div className="p-3 bg-violet-500/5 rounded-lg">
+                      <p className="text-sm">{scopeSummary.cuts_summary}</p>
+                    </div>
+                  )}
+                  
+                  {/* Notes */}
+                  {scopeSummary.notes && (
+                    <div className="p-3 bg-muted rounded-lg">
+                      <p className="text-xs font-medium mb-1">Notes</p>
+                      <p className="text-sm">{scopeSummary.notes}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const text = `# Scope Decision: ${scopeSummary.title}\n\n` +
+                      `**Capacity:** ${scopeSummary.capacity} pts\n` +
+                      `**Total Scope:** ${scopeSummary.total_points} pts\n\n` +
+                      `## Sprint 1 (${scopeSummary.sprint_1_points} pts)\n` +
+                      scopeSummary.sprint_1_scope.map(s => `- ${s.title} (${s.points} pts)`).join('\n') + '\n\n' +
+                      `## Sprint 2 (${scopeSummary.sprint_2_points} pts)\n` +
+                      scopeSummary.sprint_2_scope.map(s => `- ${s.title} (${s.points} pts)`).join('\n') + '\n\n' +
+                      (scopeSummary.deferred_scope.length > 0 ? 
+                        `## Deferred (${scopeSummary.deferred_points} pts)\n` +
+                        scopeSummary.deferred_scope.map(s => `- ${s.title} (${s.points} pts)`).join('\n') : '') +
+                      (scopeSummary.cuts_summary ? `\n\n**Summary:** ${scopeSummary.cuts_summary}` : '');
+                    copyToClipboard(text);
+                  }}
+                  className="gap-2"
+                >
+                  <Copy className="h-4 w-4" />
+                  Copy as Markdown
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
