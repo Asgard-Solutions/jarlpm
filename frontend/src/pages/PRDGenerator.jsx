@@ -16,6 +16,8 @@ import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { epicAPI, featureAPI, prdAPI } from '@/api';
+import PageHeader from '@/components/PageHeader';
+import EmptyState from '@/components/EmptyState';
 
 const PRDGenerator = () => {
   const navigate = useNavigate();
