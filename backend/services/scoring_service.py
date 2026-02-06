@@ -91,7 +91,7 @@ class ScoringService:
         )
         return result.scalar_one_or_none()
     
-    async def update_feature_moscow(self, feature_id: str, moscow_score: str) -> Feature:
+    async def update_feature_moscow(self, feature_id: str, moscow_score: str, reasoning: str = None) -> Feature:
         """Update MoSCoW score for a Feature"""
         feature = await self.get_feature(feature_id)
         if not feature:
@@ -102,12 +102,14 @@ class ScoringService:
             raise ValueError(error)
         
         feature.moscow_score = moscow_score
+        if reasoning:
+            feature.moscow_reasoning = reasoning
         await self.session.commit()
         await self.session.refresh(feature)
         return feature
     
     async def update_feature_rice(
-        self, feature_id: str, reach: int, impact: float, confidence: float, effort: float
+        self, feature_id: str, reach: int, impact: float, confidence: float, effort: float, reasoning: str = None
     ) -> Feature:
         """Update RICE score for a Feature"""
         feature = await self.get_feature(feature_id)
@@ -123,6 +125,8 @@ class ScoringService:
         feature.rice_confidence = confidence
         feature.rice_effort = effort
         feature.rice_total = self.calculate_rice_total(reach, impact, confidence, effort)
+        if reasoning:
+            feature.rice_reasoning = reasoning
         
         await self.session.commit()
         await self.session.refresh(feature)
