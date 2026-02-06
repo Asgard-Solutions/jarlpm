@@ -420,6 +420,14 @@ export const deliveryRealityAPI = {
   getScopePlan: (epicId) => api.get(`/delivery-reality/initiative/${epicId}/scope-plan`),
   saveScopePlan: (epicId, data) => api.post(`/delivery-reality/initiative/${epicId}/scope-plan`, data),
   clearScopePlan: (epicId) => api.delete(`/delivery-reality/initiative/${epicId}/scope-plan`),
+  
+  // Enhanced UX - Scope Decision Summary
+  getScopeSummary: (epicId) => api.get(`/delivery-reality/initiative/${epicId}/scope-summary`),
+  
+  // AI-powered features
+  generateCutRationale: (epicId) => api.post(`/delivery-reality/initiative/${epicId}/ai/cut-rationale`),
+  generateAlternativeCuts: (epicId) => api.post(`/delivery-reality/initiative/${epicId}/ai/alternative-cuts`),
+  generateRiskReview: (epicId) => api.post(`/delivery-reality/initiative/${epicId}/ai/risk-review`),
 };
 
 // Dashboard API
