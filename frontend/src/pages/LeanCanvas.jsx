@@ -91,6 +91,7 @@ const CANVAS_SECTIONS = [
 
 const LeanCanvas = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [canvasList, setCanvasList] = useState([]);
   const [availableEpics, setAvailableEpics] = useState([]);
@@ -113,6 +114,26 @@ const LeanCanvas = () => {
   useEffect(() => {
     loadData();
   }, []);
+  
+  // Handle URL parameters for deep linking
+  useEffect(() => {
+    const epicParam = searchParams.get('epic');
+    const createParam = searchParams.get('create');
+    
+    if (epicParam && !loading) {
+      // Deep link to specific epic's canvas
+      const existingCanvas = canvasList.find(c => c.epic_id === epicParam);
+      if (existingCanvas) {
+        // Open existing canvas
+        openCanvas(epicParam, existingCanvas.epic_title);
+      } else if (createParam === 'true') {
+        // Open in create mode for this epic
+        openCanvas(epicParam, '');
+      }
+      // Clear the URL params after handling
+      navigate('/lean-canvas', { replace: true });
+    }
+  }, [searchParams, loading, canvasList]);
 
   const loadData = async () => {
     setLoading(true);
