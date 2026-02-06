@@ -247,21 +247,54 @@ const CompletedEpic = () => {
               </div>
             </div>
             
-            {/* Stats */}
-            <div className="flex items-center gap-6 bg-card rounded-xl p-4 border border-border">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-violet-400">{totalFeatures}</p>
-                <p className="text-xs text-muted-foreground">Features</p>
-              </div>
-              <div className="h-8 w-px bg-border" />
-              <div className="text-center">
-                <p className="text-2xl font-bold text-blue-400">{totalStories}</p>
-                <p className="text-xs text-muted-foreground">Stories</p>
-              </div>
-              <div className="h-8 w-px bg-border" />
-              <div className="text-center">
-                <p className="text-2xl font-bold text-amber-400">{totalStoryPoints}</p>
-                <p className="text-xs text-muted-foreground">Story Points</p>
+            {/* PRD and Lean Canvas Buttons + Stats */}
+            <div className="flex items-center gap-4">
+              {/* Quick Links */}
+              {(hasPRD || hasLeanCanvas) && (
+                <div className="flex items-center gap-2">
+                  {hasLeanCanvas && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate('/lean-canvas')}
+                      className="bg-purple-500/10 border-purple-500/30 hover:bg-purple-500/20"
+                      data-testid="view-lean-canvas-btn"
+                    >
+                      <LayoutGrid className="w-4 h-4 mr-2 text-purple-400" />
+                      Lean Canvas
+                    </Button>
+                  )}
+                  {hasPRD && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate('/prd')}
+                      className="bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20"
+                      data-testid="view-prd-btn"
+                    >
+                      <FileText className="w-4 h-4 mr-2 text-blue-400" />
+                      PRD
+                    </Button>
+                  )}
+                </div>
+              )}
+              
+              {/* Stats */}
+              <div className="flex items-center gap-6 bg-card rounded-xl p-4 border border-border">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-violet-400">{totalFeatures}</p>
+                  <p className="text-xs text-muted-foreground">Features</p>
+                </div>
+                <div className="h-8 w-px bg-border" />
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-blue-400">{totalStories}</p>
+                  <p className="text-xs text-muted-foreground">Stories</p>
+                </div>
+                <div className="h-8 w-px bg-border" />
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-amber-400">{totalStoryPoints}</p>
+                  <p className="text-xs text-muted-foreground">Story Points</p>
+                </div>
               </div>
             </div>
           </div>
