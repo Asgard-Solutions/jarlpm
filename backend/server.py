@@ -63,6 +63,7 @@ api_router.include_router(dashboard_router)
 api_router.include_router(lean_canvas_router)
 api_router.include_router(prd_router)
 api_router.include_router(sprints_router)
+api_router.include_router(integrations_router)
 
 # Health check endpoint
 @api_router.get("/")
