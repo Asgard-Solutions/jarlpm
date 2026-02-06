@@ -243,8 +243,10 @@ async def signup(
 
 
 @router.post("/login", response_model=AuthResponse)
+@limiter.limit(RATE_LIMITS["auth_login"], key_func=get_ip_only)
 async def login(
     body: LoginRequest,
+    request: Request,
     response: Response,
     session: AsyncSession = Depends(get_db)
 ):
