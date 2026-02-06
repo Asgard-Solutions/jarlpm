@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 from db import get_db
 from db.models import Epic, EpicSnapshot, Subscription, SubscriptionStatus, LeanCanvas
 from services.llm_service import LLMService
+from services.subscription_helper import is_subscription_active, get_user_subscription
 
 logger = logging.getLogger(__name__)
 
