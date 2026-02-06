@@ -84,10 +84,6 @@ engine = create_async_engine(
     connect_args={"ssl": ssl_context}
 ) if DATABASE_URL else None
 
-# Log pool configuration on startup
-if engine:
-    logger.info(f"Database pool configured: size={DB_POOL_SIZE}, max_overflow={DB_MAX_OVERFLOW}, timeout={DB_POOL_TIMEOUT}s, recycle={DB_POOL_RECYCLE}s")
-
 # Create async session factory
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
