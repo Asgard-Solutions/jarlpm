@@ -480,24 +480,21 @@ class TestScoringAIEndpoints:
     """Test scoring AI endpoints (sessionless streaming)"""
     
     @pytest.fixture(scope="class")
-    def auth_token(self):
-        """Get authentication token"""
-        response = requests.post(
+    def auth_session(self):
+        """Get authenticated session with cookies"""
+        session = requests.Session()
+        response = session.post(
             f"{BASE_URL}/api/auth/login",
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
-            data = response.json()
-            return data.get("session_token") or data.get("token")
+            return session
         pytest.skip("Authentication failed")
     
     @pytest.fixture(scope="class")
-    def test_epic_id(self, auth_token):
+    def test_epic_id(self, auth_session):
         """Get a locked epic ID"""
-        response = requests.get(
-            f"{BASE_URL}/api/epics",
-            headers={"Authorization": f"Bearer {auth_token}"}
-        )
+        response = auth_session.get(f"{BASE_URL}/api/epics")
         if response.status_code == 200:
             data = response.json()
             epics = data.get("epics", [])
@@ -506,14 +503,13 @@ class TestScoringAIEndpoints:
                     return epic.get("epic_id")
         return None
     
-    def test_epic_moscow_suggest_accessible(self, auth_token, test_epic_id):
+    def test_epic_moscow_suggest_accessible(self, auth_session, test_epic_id):
         """Epic MoSCoW suggest endpoint should be accessible"""
         if not test_epic_id:
             pytest.skip("No locked epic available for testing")
         
-        response = requests.post(
-            f"{BASE_URL}/api/scoring/epic/{test_epic_id}/moscow/suggest",
-            headers={"Authorization": f"Bearer {auth_token}"}
+        response = auth_session.post(
+            f"{BASE_URL}/api/scoring/epic/{test_epic_id}/moscow/suggest"
         )
         # Expected: 402, 400, or 200 - NOT 500
         assert response.status_code != 500, f"Server error: {response.text}"
