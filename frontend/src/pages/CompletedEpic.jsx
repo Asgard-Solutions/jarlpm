@@ -513,7 +513,7 @@ const CompletedEpic = () => {
                                   data-testid={`story-tree-${story.story_id}`}
                                 >
                                   <div className="flex items-start justify-between mb-2">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                       <BookOpen className={`w-4 h-4 ${storyApproved ? 'text-blue-400' : 'text-amber-400'}`} />
                                       <Badge variant="outline" className={`text-xs ${storyApproved ? 'bg-success/10 text-success border-success/30' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'}`}>
                                         {storyApproved && <Lock className="w-3 h-3 mr-1" />}
@@ -524,6 +524,8 @@ const CompletedEpic = () => {
                                           {story.story_points} pts
                                         </Badge>
                                       )}
+                                      {/* RICE score for stories */}
+                                      {story.rice_total !== null && story.rice_total !== undefined && <RICEBadge score={story.rice_total} />}
                                     </div>
                                     {!storyApproved && (
                                       <Button 
