@@ -106,7 +106,7 @@ class StorySchema(BaseModel):
     """Export-ready user story schema with all fields needed for Jira/Azure DevOps/Linear export"""
     id: str = Field(default_factory=lambda: generate_id("story_"))
     title: str  # Short, actionable title
-    description: str = ""  # Structured description (auto-generated from user story format)
+    description: str = ""  # PM-level context: success criteria, non-goals, edge cases
     persona: str
     action: str
     benefit: str
@@ -116,6 +116,14 @@ class StorySchema(BaseModel):
     points: int = Field(default=3, ge=1, le=13)
     dependencies: List[str] = Field(default_factory=list)  # Story IDs or descriptions
     risks: List[str] = Field(default_factory=list)  # Risk descriptions
+    
+    # Senior PM-level fields
+    success_criteria: str = ""  # What "done" looks like beyond AC
+    non_goals: List[str] = Field(default_factory=list)  # What this story explicitly does NOT do
+    edge_cases: List[str] = Field(default_factory=list)  # Edge cases to handle or explicitly ignore
+    ux_notes: str = ""  # UX considerations, loading states, error handling
+    instrumentation: List[str] = Field(default_factory=list)  # Analytics events/metrics to track
+    notes_for_engineering: str = ""  # Technical tradeoffs, data storage, perf/security considerations
     
     @validator('points', pre=True, always=True)
     def validate_fibonacci(cls, v):
