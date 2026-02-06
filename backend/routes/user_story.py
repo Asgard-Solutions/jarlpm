@@ -242,6 +242,9 @@ async def generate_stories(
     if not llm_config:
         raise HTTPException(status_code=400, detail="No LLM provider configured")
     
+    # Prepare for streaming - extract config BEFORE releasing session
+    config_data = llm_service.prepare_for_streaming(llm_config)
+    
     # Get delivery context
     delivery_context = await prompt_service.get_delivery_context(user_id)
     delivery_context_text = prompt_service.format_delivery_context(delivery_context)
@@ -259,21 +262,29 @@ async def generate_stories(
     epic_with_snapshot = result.scalar_one_or_none()
     snapshot = epic_with_snapshot.snapshot if epic_with_snapshot else None
     
+    # Capture values for use in generator
+    epic_title = epic.title
+    feature_title = feature.title
+    feature_description = feature.description
+    feature_acceptance_criteria = feature.acceptance_criteria or ['N/A']
+    snapshot_problem = snapshot.problem_statement if snapshot else 'N/A'
+    snapshot_outcome = snapshot.desired_outcome if snapshot else 'N/A'
+    
     # Build the user story generation prompt
     system_prompt = f"""{delivery_context_text}
 
 You are a Senior Product Manager helping break down an approved Feature into User Stories.
 
 EPIC CONTEXT (for reference):
-- Title: {epic.title}
-- Problem: {snapshot.problem_statement if snapshot else 'N/A'}
-- Outcome: {snapshot.desired_outcome if snapshot else 'N/A'}
+- Title: {epic_title}
+- Problem: {snapshot_problem}
+- Outcome: {snapshot_outcome}
 
 APPROVED FEATURE TO BREAK DOWN:
-- Title: {feature.title}
-- Description: {feature.description}
+- Title: {feature_title}
+- Description: {feature_description}
 - Feature Acceptance Criteria:
-{chr(10).join(f'  - {c}' for c in (feature.acceptance_criteria or ['N/A']))}
+{chr(10).join(f'  - {c}' for c in feature_acceptance_criteria)}
 
 YOUR TASK:
 Generate user stories that together accomplish this feature. Each story should:
