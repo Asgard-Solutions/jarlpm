@@ -1168,12 +1168,15 @@ TONE: Professional, calm, direct, insightful."""
                 except (json.JSONDecodeError, ValueError) as e:
                     logger.warning(f"Failed to parse story update: {e}")
             
-            # Save assistant response
-            await story_service.add_conversation_event(
-                story_id=story_id,
-                role="assistant",
-                content=full_response
-            )
+            # Save assistant response with a fresh session
+            from db import AsyncSessionLocal
+            async with AsyncSessionLocal() as new_session:
+                new_story_service = UserStoryService(new_session)
+                await new_story_service.add_conversation_event(
+                    story_id=story_id,
+                    role="assistant",
+                    content=full_response
+                )
             
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
             
