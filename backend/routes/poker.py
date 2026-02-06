@@ -215,7 +215,6 @@ async def estimate_story(
     delivery_context_text = prompt_service.format_delivery_context(delivery_context)
     
     # Capture story data for generator
-    story_id = body.story_id
     story_title = story.title or 'Untitled'
     story_persona = story.persona
     story_action = story.action
