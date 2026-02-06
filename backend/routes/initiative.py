@@ -929,6 +929,7 @@ async def run_llm_pass(
 # ============================================
 
 @router.post("/generate")
+@limiter.limit(RATE_LIMITS["ai_generate"])
 async def generate_initiative(
     request: Request,
     body: NewInitiativeRequest,
