@@ -1273,15 +1273,15 @@ Return format:
             )
             if matching:
                 bug_suggestions.append(ItemScoreSuggestion(
-                    item_id=matching.bug_id,
+                    item_id=matching[0],
                     item_type="bug",
-                    title=matching.title,
+                    title=matching[1],
                     rice=suggestion.get("rice", {})
                 ))
         
         return ComprehensiveScoringResponse(
             epic_id=epic_id,
-            epic_title=epic.title,
+            epic_title=epic_title,
             feature_suggestions=feature_suggestions,
             story_suggestions=story_suggestions,
             bug_suggestions=bug_suggestions,
