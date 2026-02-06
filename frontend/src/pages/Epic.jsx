@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { epicAPI, featureAPI, userStoryAPI, llmProviderAPI, subscriptionAPI, leanCanvasAPI, prdAPI } from '@/api';
+import { epicAPI, featureAPI, userStoryAPI, llmProviderAPI, subscriptionAPI, leanCanvasAPI, prdAPI, integrationsAPI } from '@/api';
 import { useSubscriptionStore, useLLMProviderStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,12 +20,13 @@ import {
 import ThemeToggle from '@/components/ThemeToggle';
 import { MoSCoWBadge, RICEBadge, FeatureScoringDialog } from '@/components/ScoringComponents';
 import { LinkedBugs } from '@/components/LinkedBugs';
+import PushToLinearModal from '@/components/PushToLinearModal';
 import { 
   ArrowLeft, Send, Loader2, Lock, CheckCircle2, 
   XCircle, FileText, History, AlertCircle, Layers,
   User, Bot, Settings, Plus, Puzzle, BookOpen, Bug, Trash2,
   ChevronRight, Sparkles, RefreshCw, Edit3, MessageSquare, Target, Flag, TrendingUp,
-  LayoutGrid
+  LayoutGrid, Upload
 } from 'lucide-react';
 
 const STAGES = [
