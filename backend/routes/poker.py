@@ -192,14 +192,8 @@ async def estimate_story(
     llm_service = LLMService(session)
     prompt_service = PromptService(session)
     
-    # Get the story
-    result = await session.execute(
-        select(UserStory).where(UserStory.story_id == body.story_id)
-    )
-    story = result.scalar_one_or_none()
-    
-    if not story:
-        raise HTTPException(status_code=404, detail="User story not found")
+    # Get the story and verify ownership
+    story = await verify_story_ownership(session, body.story_id, user_id)
     
     # Check subscription
     from services.epic_service import EpicService
