@@ -1348,7 +1348,9 @@ async def get_scored_items(
     from db.models import Epic, Bug
     from db.feature_models import Feature
     from db.user_story_models import UserStory
+    from db.models import EpicSnapshot
     from sqlalchemy import select, func
+    from sqlalchemy.orm import selectinload
     
     user_id = await get_current_user_id(request, session)
     
@@ -1360,7 +1362,7 @@ async def get_scored_items(
             Epic.user_id == user_id,
             Epic.is_archived.is_(False),
             Epic.current_stage == 'epic_locked'
-        )
+        ).options(selectinload(Epic.snapshot))
     )
     epics = epics_result.scalars().all()
     
