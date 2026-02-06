@@ -761,6 +761,9 @@ async def suggest_bug_rice(
     if not llm_config:
         raise HTTPException(status_code=400, detail="No LLM provider configured")
     
+    # Prepare for streaming - extract all needed data BEFORE releasing session
+    config_data = llm_service.prepare_for_streaming(llm_config)
+    
     # Get delivery context
     delivery_context = await prompt_service.get_delivery_context(user_id)
     delivery_context_text = prompt_service.format_delivery_context(delivery_context)
@@ -804,8 +807,10 @@ Provide analysis, then end with:
     async def generate():
         full_response = ""
         try:
-            async for chunk in llm_service.generate_stream(
-                user_id=user_id,
+            # Use stream_with_config which doesn't need a session
+            llm = LLMService()  # No session needed for streaming
+            async for chunk in llm.stream_with_config(
+                config_data=config_data,
                 system_prompt=system_prompt,
                 user_prompt=user_prompt
             ):
