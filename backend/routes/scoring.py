@@ -26,6 +26,40 @@ router = APIRouter(prefix="/scoring", tags=["scoring"])
 
 
 # ============================================
+# Helper Functions
+# ============================================
+
+def normalize_rice_values(rice: dict) -> dict:
+    """Normalize AI-generated RICE values to allowed discrete values"""
+    if not rice:
+        return rice
+    
+    normalized = rice.copy()
+    
+    # Normalize impact to allowed values: [0.25, 0.5, 1.0, 2.0, 3.0]
+    if 'impact' in normalized:
+        impact = float(normalized['impact'])
+        allowed_impacts = [0.25, 0.5, 1.0, 2.0, 3.0]
+        normalized['impact'] = min(allowed_impacts, key=lambda x: abs(x - impact))
+    
+    # Normalize confidence to allowed values: [0.5, 0.8, 1.0]
+    if 'confidence' in normalized:
+        confidence = float(normalized['confidence'])
+        allowed_confidences = [0.5, 0.8, 1.0]
+        normalized['confidence'] = min(allowed_confidences, key=lambda x: abs(x - confidence))
+    
+    # Ensure reach is integer between 1-10
+    if 'reach' in normalized:
+        normalized['reach'] = max(1, min(10, int(round(normalized['reach']))))
+    
+    # Ensure effort is between 0.5-10
+    if 'effort' in normalized:
+        normalized['effort'] = max(0.5, min(10.0, float(normalized['effort'])))
+    
+    return normalized
+
+
+# ============================================
 # Request/Response Models
 # ============================================
 
