@@ -953,18 +953,9 @@ async def generate_initiative(
     user_id = await get_current_user_id(request, session)
     
     # Check subscription
-    sub_result = await session.execute(
-        select(Subscription).where(Subscription.user_id == user_id)
-    )
-    subscription = sub_result.scalar_one_or_none()
+    subscription = await get_user_subscription(session, user_id)
     
-    is_active = subscription and subscription.status in [
-        SubscriptionStatus.ACTIVE.value, 
-        SubscriptionStatus.ACTIVE,
-        "active"
-    ]
-    
-    if not is_active:
+    if not is_subscription_active(subscription):
         raise HTTPException(status_code=402, detail="Active subscription required for AI features")
     
     # Check LLM config
