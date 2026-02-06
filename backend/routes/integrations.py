@@ -107,6 +107,32 @@ class JiraPushRequest(BaseModel):
     dry_run: bool = False
 
 
+# Azure DevOps models
+class ConnectAzureDevOpsRequest(BaseModel):
+    organization_url: str  # e.g., "https://dev.azure.com/myorg"
+    pat: str  # Personal Access Token (will be encrypted)
+
+class ConfigureAzureDevOpsRequest(BaseModel):
+    organization_url: str
+    project_name: str
+    project_id: Optional[str] = None
+    default_area_path: Optional[str] = None
+    default_iteration_path: Optional[str] = None
+    story_points_field: Optional[str] = "Microsoft.VSTS.Scheduling.StoryPoints"
+    description_format: Optional[str] = "html"  # "html" or "markdown"
+    tag_policy: Optional[str] = "add"  # "add" or "none"
+    work_item_types: Optional[dict] = None  # e.g., {"epic": "Epic", "feature": "Feature", "story": "User Story"}
+
+class AzureDevOpsPushRequest(BaseModel):
+    epic_id: str
+    project_name: str
+    area_path: Optional[str] = None
+    iteration_path: Optional[str] = None
+    push_scope: Literal["epic_only", "epic_features", "epic_features_stories", "full"] = "epic_features_stories"
+    include_bugs: bool = False
+    dry_run: bool = False
+
+
 # Helper functions
 async def check_subscription_required(session: AsyncSession, user_id: str):
     """Check if user has an active subscription. Raise 402 if not."""
