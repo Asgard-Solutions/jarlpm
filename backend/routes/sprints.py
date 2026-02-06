@@ -553,8 +553,16 @@ async def generate_standup_summary(
     Output: What changed, what's blocked, what to do next
     """
     from services.llm_service import LLMService
+    from services.strict_output_service import StrictOutputService
+    from services.epic_service import EpicService
     
     user_id = await get_current_user_id(request, session)
+    
+    # ===== SUBSCRIPTION CHECK =====
+    epic_service = EpicService(session)
+    has_subscription = await epic_service.check_subscription_active(user_id)
+    if not has_subscription:
+        raise HTTPException(status_code=402, detail="Active subscription required for AI features")
     
     # Get current sprint data
     ctx = await get_delivery_context(user_id, session)
@@ -562,6 +570,12 @@ async def generate_standup_summary(
     
     if not sprint_info:
         raise HTTPException(status_code=400, detail="Sprint not configured")
+    
+    # Get LLM config
+    llm_service = LLMService(session)
+    llm_config = await llm_service.get_user_llm_config(user_id)
+    if not llm_config:
+        raise HTTPException(status_code=400, detail="No LLM provider configured. Please add your API key in Settings.")
     
     # Get stories for this sprint
     epics_result = await session.execute(
@@ -623,33 +637,56 @@ Completed: {sum(s.story_points or 0 for s in stories_by_status['done'])}
 
 Generate the standup summary."""
 
-    llm_service = LLMService(session)
+    # ===== USE STRICT OUTPUT SERVICE FOR ROBUST PARSING =====
+    strict_service = StrictOutputService(session)
     
     try:
+        # Generate response
         full_response = ""
         async for chunk in llm_service.generate_stream(user_id, system_prompt, user_prompt):
             full_response += chunk
         
-        # Parse JSON response
-        full_response = full_response.strip()
-        if full_response.startswith("```"):
-            full_response = full_response.split("```")[1]
-            if full_response.startswith("json"):
-                full_response = full_response[4:]
+        # Repair callback for StrictOutputService
+        async def repair_callback(repair_prompt: str) -> str:
+            repair_response = ""
+            async for chunk in llm_service.generate_stream(user_id, system_prompt, repair_prompt):
+                repair_response += chunk
+            return repair_response
         
-        result = json_lib.loads(full_response)
-        
-        return StandupSummary(
-            what_changed=result.get("what_changed", []),
-            whats_blocked=result.get("whats_blocked", []),
-            what_to_do_next=result.get("what_to_do_next", []),
-            summary=result.get("summary", "")
+        # Validate and repair with StrictOutputService
+        validation_result = await strict_service.validate_and_repair(
+            raw_response=full_response,
+            schema=StandupSummary,
+            repair_callback=repair_callback,
+            max_repairs=2,
+            original_prompt=user_prompt
         )
+        
+        # Track model health
+        await strict_service.track_call(
+            user_id=user_id,
+            provider=llm_config.provider,
+            model_name=llm_config.model_name,
+            success=validation_result.valid,
+            repaired=validation_result.repair_attempts > 0
+        )
+        
+        if not validation_result.valid:
+            logger.error(f"Failed to parse AI standup-summary response after repairs: {validation_result.errors}")
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Failed to generate standup summary: {', '.join(validation_result.errors)}"
+            )
+        
+        return StandupSummary(**validation_result.data)
+        
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except json_lib.JSONDecodeError:
-        logger.error(f"Failed to parse AI response: {full_response}")
-        raise HTTPException(status_code=500, detail="Failed to parse AI response")
+    except Exception as e:
+        logger.error(f"Standup summary generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate standup summary: {str(e)}")
 
 
 @router.post("/ai/wip-suggestions", response_model=WipSuggestions)
