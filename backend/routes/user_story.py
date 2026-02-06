@@ -477,8 +477,8 @@ async def update_standalone_story(
             persona=body.persona,
             action=body.action,
             benefit=body.benefit,
-            acceptance_criteria=body.acceptance_criteria,
-            story_points=body.story_points
+            acceptance_criteria=body.acceptance_criteria
+            # NOTE: story_points not updated - only set via Scoring/Poker features
         )
         return story_to_response(updated)
     except ValueError as e:
