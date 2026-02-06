@@ -1007,7 +1007,8 @@ async def apply_bulk_scores(
             
             # Update RICE
             if suggestion.rice:
-                rice = suggestion.rice
+                # Normalize RICE values to allowed discrete values
+                rice = normalize_rice_values(suggestion.rice)
                 if all(k in rice for k in ["reach", "impact", "confidence", "effort"]):
                     await scoring_service.update_feature_rice(
                         suggestion.feature_id,
