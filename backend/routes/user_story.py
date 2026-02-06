@@ -131,6 +131,11 @@ def story_to_response(story: UserStory) -> UserStoryResponse:
         story_points=story.story_points,
         priority=story.priority,
         is_standalone=story.is_standalone,
+        rice_reach=story.rice_reach,
+        rice_impact=story.rice_impact,
+        rice_confidence=story.rice_confidence,
+        rice_effort=story.rice_effort,
+        rice_total=story.rice_total,
         created_at=story.created_at,
         updated_at=story.updated_at,
         approved_at=story.approved_at
