@@ -878,13 +878,8 @@ async def bulk_score_epic_features(
     user_id = await get_current_user_id(request, session)
     
     # Check subscription
-    sub_result = await session.execute(
-        select(Subscription).where(
-            Subscription.user_id == user_id,
-            Subscription.status == SubscriptionStatus.ACTIVE.value
-        )
-    )
-    if not sub_result.scalar_one_or_none():
+    subscription = await get_user_subscription(session, user_id)
+    if not is_subscription_active(subscription):
         raise HTTPException(status_code=402, detail="Active subscription required")
     
     # Get epic
