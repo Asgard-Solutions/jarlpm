@@ -261,24 +261,21 @@ class TestFeatureGeneration:
     """Test feature generation endpoint (sessionless streaming)"""
     
     @pytest.fixture(scope="class")
-    def auth_token(self):
-        """Get authentication token"""
-        response = requests.post(
+    def auth_session(self):
+        """Get authenticated session with cookies"""
+        session = requests.Session()
+        response = session.post(
             f"{BASE_URL}/api/auth/login",
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
-            data = response.json()
-            return data.get("session_token") or data.get("token")
+            return session
         pytest.skip("Authentication failed")
     
     @pytest.fixture(scope="class")
-    def locked_epic_id(self, auth_token):
+    def locked_epic_id(self, auth_session):
         """Get a locked epic ID for feature generation"""
-        response = requests.get(
-            f"{BASE_URL}/api/epics",
-            headers={"Authorization": f"Bearer {auth_token}"}
-        )
+        response = auth_session.get(f"{BASE_URL}/api/epics")
         if response.status_code == 200:
             data = response.json()
             epics = data.get("epics", [])
@@ -287,14 +284,13 @@ class TestFeatureGeneration:
                     return epic.get("epic_id")
         return None
     
-    def test_feature_generate_accessible(self, auth_token, locked_epic_id):
+    def test_feature_generate_accessible(self, auth_session, locked_epic_id):
         """Feature generation endpoint should be accessible"""
         if not locked_epic_id:
             pytest.skip("No locked epic available for testing")
         
-        response = requests.post(
+        response = auth_session.post(
             f"{BASE_URL}/api/features/epic/{locked_epic_id}/generate",
-            headers={"Authorization": f"Bearer {auth_token}"},
             json={"count": 3}
         )
         # Expected: 402, 400, or 200 - NOT 500
