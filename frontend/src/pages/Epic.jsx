@@ -22,6 +22,7 @@ import { MoSCoWBadge, RICEBadge, FeatureScoringDialog } from '@/components/Scori
 import { LinkedBugs } from '@/components/LinkedBugs';
 import PushToLinearModal from '@/components/PushToLinearModal';
 import PushToJiraModal from '@/components/PushToJiraModal';
+import PushToAzureDevOpsModal from '@/components/PushToAzureDevOpsModal';
 import { 
   ArrowLeft, Send, Loader2, Lock, CheckCircle2, 
   XCircle, FileText, History, AlertCircle, Layers,
@@ -112,6 +113,10 @@ const Epic = () => {
   // Push to Jira state
   const [showPushToJira, setShowPushToJira] = useState(false);
   const [hasJiraIntegration, setHasJiraIntegration] = useState(false);
+
+  // Push to Azure DevOps state
+  const [showPushToAzureDevOps, setShowPushToAzureDevOps] = useState(false);
+  const [hasAzureDevOpsIntegration, setHasAzureDevOpsIntegration] = useState(false);
 
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
