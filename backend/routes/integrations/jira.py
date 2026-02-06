@@ -393,6 +393,7 @@ async def test_jira_connection(
 # ============================================
 
 @router.post("/preview")
+@limiter.limit(RATE_LIMITS["integration_preview"])
 async def preview_jira_push(
     request: Request,
     body: PushPreviewRequest,
