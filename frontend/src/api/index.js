@@ -508,6 +508,9 @@ export const prdAPI = {
   
   // Delete PRD
   delete: (epicId) => api.delete(`/prd/${epicId}`),
+  
+  // Generate PRD with AI
+  generate: (epicId) => api.post(`/prd/generate/${epicId}`),
 };
 
 export default api;
