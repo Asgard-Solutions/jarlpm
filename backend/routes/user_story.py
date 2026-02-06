@@ -1061,6 +1061,9 @@ async def chat_with_story(
     if not llm_config:
         raise HTTPException(status_code=400, detail="No LLM provider configured")
     
+    # Prepare for streaming - extract config BEFORE releasing session
+    config_data = llm_service.prepare_for_streaming(llm_config)
+    
     # Move to refining stage if in draft
     if story.current_stage == UserStoryStage.DRAFT.value:
         await story_service.start_refinement(story_id)
