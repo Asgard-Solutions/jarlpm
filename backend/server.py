@@ -42,6 +42,7 @@ from routes.dashboard import router as dashboard_router
 from routes.lean_canvas import router as lean_canvas_router
 from routes.prd import router as prd_router
 from routes.sprints import router as sprints_router
+from routes.integrations import router as integrations_router
 
 api_router.include_router(auth_router)
 api_router.include_router(subscription_router)
