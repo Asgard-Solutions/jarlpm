@@ -325,39 +325,31 @@ const Bugs = () => {
     <div className="flex flex-col overflow-hidden -m-6" style={{ height: 'calc(100vh - 4rem)' }} data-testid="bugs-page">
       {/* Page Title Bar */}
       <div className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => navigate('/dashboard')} 
-                className="text-muted-foreground hover:text-foreground"
-                data-testid="back-btn"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <span className="text-lg font-semibold text-foreground">Bug Tracker</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button 
-                onClick={startAIChat}
-                className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white"
-                data-testid="ai-new-bug-btn"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Report Bug with AI
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => setShowCreateDialog(true)}
-                data-testid="manual-new-bug-btn"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Manual
-              </Button>
-            </div>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <PageHeader
+            title="Bugs"
+            description="Track, triage, and resolve issues."
+            actions={
+              <>
+                <Button variant="ghost" onClick={() => navigate('/dashboard')} className="gap-2" data-testid="back-btn">
+                  <ArrowLeft className="w-4 h-4" />
+                  Back
+                </Button>
+                <Button
+                  onClick={startAIChat}
+                  className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white"
+                  data-testid="ai-new-bug-btn"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Report with AI
+                </Button>
+                <Button variant="outline" onClick={() => setShowCreateDialog(true)} data-testid="manual-new-bug-btn">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Manual
+                </Button>
+              </>
+            }
+          />
         </div>
       </div>
 
