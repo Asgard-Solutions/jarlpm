@@ -632,7 +632,7 @@ const PokerPlanning = () => {
               {aiEstimates.length === 0 && !estimating && !currentPersona ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Click "Run AI Estimation" to get team estimates</p>
+                  <p>Click &quot;Run AI Estimation&quot; to get team estimates</p>
                 </div>
               ) : (
                 <ScrollArea className="h-[400px]">
