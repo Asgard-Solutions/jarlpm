@@ -597,86 +597,8 @@ Return only valid JSON. No markdown fences, no commentary."""
 
 
 # ============================================
-# Pass 3: Sprint Planning + Points
-# ============================================
-
-PLANNING_SYSTEM = """You are JarlPM. Given features and stories, assign story points and create a sprint plan.
-{context}
-
-OUTPUT FORMAT:
-- Return ONLY valid JSON, nothing else
-- No markdown code fences (no ```json)
-- No commentary before or after the JSON
-- Use double quotes for all strings
-- No trailing commas
-
-SCHEMA:
-{{
-  "estimated_stories": [
-    {{
-      "story_id": "the story id from input",
-      "title": "story title (for reference)",
-      "points": 3
-    }}
-  ],
-  "sprint_plan": {{
-    "sprint_1": {{
-      "goal": "Sprint 1 goal - what's delivered",
-      "story_ids": ["story_id1", "story_id2"],
-      "total_points": 13
-    }},
-    "sprint_2": {{
-      "goal": "Sprint 2 goal - what's delivered",
-      "story_ids": ["story_id3", "story_id4"],
-      "total_points": 8
-    }}
-  }}
-}}
-
-FIBONACCI SCALE:
-- 1: Trivial (few hours)
-- 2: Small (half day)
-- 3: Medium (1-2 days)
-- 5: Large (2-3 days)
-- 8: Very Large (3-5 days)
-- 13: Huge (1 week, consider splitting)
-
-HARD CONSTRAINTS:
-- Points MUST be Fibonacci: 1, 2, 3, 5, 8, or 13 only
-- Respect team velocity: target {velocity} points per sprint
-- Sprint length: {sprint_length} days
-- CRITICAL: story_ids in sprint_plan MUST be a subset of the story_ids provided in FEATURES & STORIES
-- Do NOT invent new story IDs - only use the exact IDs given to you
-- Every story from the input MUST appear in estimated_stories
-
-SPRINT ALLOCATION RULES:
-- Must-have stories → Sprint 1 (prioritize)
-- Should-have stories → Split between sprints based on capacity
-- Nice-to-have stories → Sprint 2 (if capacity allows)
-- Balance sprints for sustainable pace (avoid one overloaded sprint)"""
-
-
-PLANNING_USER = """Estimate story points and create a sprint plan for:
-
-PRODUCT: {product_name}
-GOAL: {desired_outcome}
-
-TEAM CAPACITY:
-- Sprint Length: {sprint_length} days
-- Team Velocity: ~{velocity} points/sprint
-- Team: {num_devs} developers, {num_qa} QA
-
-FEATURES & STORIES (use these exact story_ids):
-{stories_list}
-
-Assign Fibonacci points (1,2,3,5,8,13) to each story.
-Organize into 2 sprints respecting team capacity.
-CRITICAL: Only use story_ids from the list above - do not invent new IDs.
-Return only valid JSON. No markdown fences, no commentary."""
-
-
-# ============================================
-# Pass 4: PM Reality Check (Critic)
+# Pass 3: PM Reality Check (Critic)
+# NOTE: Pass 3 (Planning) was removed - scoring happens via Scoring/Poker features
 # ============================================
 
 CRITIC_SYSTEM = """You are a Senior PM reviewing an initiative for quality and completeness.
@@ -696,7 +618,7 @@ SCHEMA:
 {{
   "issues": [
     {{
-      "type": "metric_not_measurable | ac_not_testable | story_too_large | missing_nfr | scope_risk | other",
+      "type": "metric_not_measurable | ac_not_testable | missing_nfr | scope_risk | other",
       "severity": "error | warning",
       "location": "where the issue is (e.g., 'Story: User Login', 'Metric: User satisfaction')",
       "problem": "what's wrong",
