@@ -14,11 +14,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import ThemeToggle from '@/components/ThemeToggle';
+import { MoSCoWBadge, RICEBadge } from '@/components/ScoringComponents';
 import { 
   ArrowLeft, Loader2, Lock, CheckCircle2, 
   ChevronDown, ChevronRight, FileText, Settings,
   Layers, Puzzle, BookOpen, Trophy, Calendar,
-  Users, Sparkles, User, AlertCircle, LayoutGrid
+  Users, Sparkles, User, AlertCircle, LayoutGrid, Gauge
 } from 'lucide-react';
 
 const CompletedEpic = () => {
