@@ -1069,6 +1069,242 @@ const Settings = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Integrations Tab */}
+          <TabsContent value="integrations" data-testid="integrations-tab">
+            <Card className="bg-nordic-bg-secondary border-nordic-border">
+              <CardHeader>
+                <CardTitle className="text-nordic-text-primary flex items-center gap-2">
+                  <Link2 className="w-5 h-5 text-nordic-accent" />
+                  External Integrations
+                </CardTitle>
+                <CardDescription className="text-nordic-text-muted">
+                  Connect JarlPM to external project management tools to push your epics, features, and stories
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Subscription Required Notice */}
+                {!isActive && (
+                  <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                    <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                    <div>
+                      <p className="text-nordic-text-primary font-medium">Subscription Required</p>
+                      <p className="text-sm text-nordic-text-muted">
+                        External integrations are available for Pro subscribers.{' '}
+                        <button
+                          onClick={() => setActiveTab('subscription')}
+                          className="text-nordic-accent hover:underline"
+                        >
+                          Subscribe now
+                        </button>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Linear Integration */}
+                <div className="border border-nordic-border rounded-lg overflow-hidden">
+                  <div className="p-4 bg-nordic-bg-primary border-b border-nordic-border">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-[#5E6AD2] flex items-center justify-center">
+                          <svg viewBox="0 0 100 100" className="w-6 h-6 text-white" fill="currentColor">
+                            <path d="M1.22541 61.5228c-.2225-.9485.90748-1.5459 1.59638-.857L39.3342 97.1782c.6889.6889.0915 1.8189-.857 1.5765C20.8 94.1102 5.95513 79.2002 1.22541 61.5228ZM.0222626 45.9876C-.077182 46.6422.387617 47.2239 1.04521 47.3005c16.9076 1.9666 31.9987 11.4328 41.0064 25.1052 1.0186 1.5445 3.302.8691 3.3451-.9911.0423-1.8237.0638-3.6541.0638-5.4903 0-36.8177-29.8487-66.6665-66.66657-66.6665-1.83593 0-3.66607.02185-5.49023.0645-1.86018.04289-2.53569 2.32647-.99128 3.34495C86.3328 12.9984 95.799 28.0895 97.7657 45.0064c.0766.6576.6583 1.1224 1.3129 1.0228 36.3254-5.5188 64.2133-35.9725 64.6528-73.2026.0024-.2045-.1662-.3716-.3707-.3692C28.9325 76.4257 0 47.4911.0222626 45.9876Z"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-nordic-text-primary">Linear</h3>
+                          <p className="text-sm text-nordic-text-muted">Push issues to Linear workspaces</p>
+                        </div>
+                      </div>
+                      <Badge
+                        className={
+                          integrations?.linear?.status === 'connected'
+                            ? 'bg-nordic-green text-white'
+                            : integrations?.linear?.configured
+                            ? 'bg-nordic-bg-primary text-nordic-text-muted border border-nordic-border'
+                            : 'bg-amber-500/20 text-amber-500 border border-amber-500/30'
+                        }
+                      >
+                        {integrations?.linear?.status === 'connected'
+                          ? 'Connected'
+                          : integrations?.linear?.configured
+                          ? 'Not Connected'
+                          : 'Not Configured'}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 space-y-4">
+                    {integrations?.linear?.status === 'connected' ? (
+                      <>
+                        {/* Connected State */}
+                        <div className="flex items-center gap-2 text-sm text-nordic-text-secondary">
+                          <CheckCircle className="w-4 h-4 text-nordic-green" />
+                          Connected to: <span className="font-medium text-nordic-text-primary">{integrations.linear.account_name || 'Linear Workspace'}</span>
+                        </div>
+                        
+                        {integrations.linear.default_team && (
+                          <div className="text-sm text-nordic-text-secondary">
+                            Default team: <span className="font-medium text-nordic-text-primary">{integrations.linear.default_team.name}</span>
+                          </div>
+                        )}
+                        
+                        {/* Team Selection */}
+                        {!integrations.linear.default_team && linearTeams.length > 0 && (
+                          <div className="space-y-3 p-3 bg-nordic-bg-primary rounded-lg border border-nordic-border">
+                            <Label className="text-nordic-text-secondary">Select Default Team</Label>
+                            <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                              <SelectTrigger className="bg-background border-border text-foreground">
+                                <SelectValue placeholder="Choose a team" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-popover border-border shadow-lg">
+                                {linearTeams.map((team) => (
+                                  <SelectItem key={team.id} value={team.id}>
+                                    {team.name} ({team.key})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              onClick={handleConfigureLinear}
+                              disabled={!selectedTeam || configuringLinear}
+                              size="sm"
+                              className="bg-nordic-accent hover:bg-nordic-accent/90 text-white"
+                            >
+                              {configuringLinear ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Saving...
+                                </>
+                              ) : (
+                                'Save Configuration'
+                              )}
+                            </Button>
+                          </div>
+                        )}
+                        
+                        <Button
+                          onClick={handleDisconnectLinear}
+                          disabled={disconnectingLinear}
+                          variant="outline"
+                          className="border-red-500 text-red-500 hover:bg-red-500/10"
+                          data-testid="disconnect-linear-btn"
+                        >
+                          {disconnectingLinear ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Disconnecting...
+                            </>
+                          ) : (
+                            <>
+                              <Unlink className="w-4 h-4 mr-2" />
+                              Disconnect
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    ) : integrations?.linear?.configured ? (
+                      <>
+                        {/* Not Connected State */}
+                        <p className="text-sm text-nordic-text-muted">
+                          Click Connect to authorize JarlPM to access your Linear workspace.
+                        </p>
+                        <Button
+                          onClick={handleConnectLinear}
+                          disabled={connectingLinear || !isActive}
+                          className="bg-[#5E6AD2] hover:bg-[#5E6AD2]/90 text-white"
+                          data-testid="connect-linear-btn"
+                        >
+                          {connectingLinear ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Connecting...
+                            </>
+                          ) : (
+                            <>
+                              <Link2 className="w-4 h-4 mr-2" />
+                              Connect to Linear
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        {/* Not Configured State */}
+                        <div className="flex items-center gap-2 text-sm text-amber-500">
+                          <AlertCircle className="w-4 h-4" />
+                          OAuth credentials not configured on server
+                        </div>
+                        <p className="text-xs text-nordic-text-muted">
+                          Contact your administrator to set up LINEAR_OAUTH_CLIENT_ID, LINEAR_OAUTH_CLIENT_SECRET, and LINEAR_OAUTH_REDIRECT_URI environment variables.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Jira Integration (Coming Soon) */}
+                <div className="border border-nordic-border rounded-lg overflow-hidden opacity-60">
+                  <div className="p-4 bg-nordic-bg-primary border-b border-nordic-border">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-[#0052CC] flex items-center justify-center">
+                          <svg viewBox="0 0 32 32" className="w-6 h-6 text-white" fill="currentColor">
+                            <path d="M15.967 0c-.278.017-4.935 4.785-4.935 4.785l4.394 4.392 5.118-5.118L15.967 0z"/>
+                            <path d="M11.567 4.785L6.449 9.903l4.395 4.394 5.118-5.12-4.395-4.392z"/>
+                            <path d="M6.449 9.903L.608 15.744 6.449 21.586l4.395-4.395 5.12-5.118-4.395-4.394-5.12 5.118z" opacity=".6"/>
+                            <path d="M6.449 21.586l4.395 4.392 5.118-5.118-4.395-4.395-5.118 5.12z"/>
+                            <path d="M15.967 26.17l4.577 4.577 5.118-5.12-4.395-4.392-5.3 4.935z"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-nordic-text-primary">Jira</h3>
+                          <p className="text-sm text-nordic-text-muted">Push issues to Jira projects</p>
+                        </div>
+                      </div>
+                      <Badge className="bg-nordic-bg-primary text-nordic-text-muted border border-nordic-border">
+                        Coming Soon
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Azure DevOps Integration (Coming Soon) */}
+                <div className="border border-nordic-border rounded-lg overflow-hidden opacity-60">
+                  <div className="p-4 bg-nordic-bg-primary border-b border-nordic-border">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-[#0078D7] flex items-center justify-center">
+                          <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="currentColor">
+                            <path d="M0 8.877L2.247 5.91l8.405-3.416V.022l7.37 5.393L2.966 8.338v8.225L0 15.707zm24-4.45v15.15l-7.37 5.393-9.96-5.015V15.33l9.96 4.89 7.37-5.015v-10.78z"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-nordic-text-primary">Azure DevOps</h3>
+                          <p className="text-sm text-nordic-text-muted">Push work items to Azure DevOps</p>
+                        </div>
+                      </div>
+                      <Badge className="bg-nordic-bg-primary text-nordic-text-muted border border-nordic-border">
+                        Coming Soon
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Info Box */}
+                <div className="bg-nordic-bg-primary border border-nordic-border rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-nordic-text-primary mb-2">How Integrations Work</h4>
+                  <ul className="text-xs text-nordic-text-muted space-y-1">
+                    <li>• Connect once, push anytime from any epic</li>
+                    <li>• Idempotent: re-pushing updates existing items, doesn&apos;t create duplicates</li>
+                    <li>• Choose scope: Epic only, Epic + Features, or Full hierarchy</li>
+                    <li>• Preview changes before pushing</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </main>
     </div>
