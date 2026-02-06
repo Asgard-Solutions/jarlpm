@@ -294,6 +294,105 @@ const Settings = () => {
     navigate('/');
   };
 
+  // Integration handlers
+  const handleConnectLinear = async () => {
+    setConnectingLinear(true);
+    try {
+      const callbackUrl = `${window.location.origin}/settings?tab=integrations`;
+      const res = await integrationsAPI.connectLinear(callbackUrl);
+      window.location.href = res.data.authorization_url;
+    } catch (error) {
+      console.error('Failed to initiate Linear connection:', error);
+      toast.error(error.response?.data?.detail || 'Failed to connect to Linear');
+      setConnectingLinear(false);
+    }
+  };
+
+  const handleDisconnectLinear = async () => {
+    if (!confirm('Are you sure you want to disconnect Linear? This will remove all your Linear integration settings.')) {
+      return;
+    }
+    
+    setDisconnectingLinear(true);
+    try {
+      await integrationsAPI.disconnectLinear();
+      await loadData();
+      setLinearTeams([]);
+      setSelectedTeam('');
+      toast.success('Linear disconnected successfully');
+    } catch (error) {
+      console.error('Failed to disconnect Linear:', error);
+      toast.error('Failed to disconnect Linear');
+    } finally {
+      setDisconnectingLinear(false);
+    }
+  };
+
+  const loadLinearTeams = async () => {
+    try {
+      const res = await integrationsAPI.getLinearTeams();
+      setLinearTeams(res.data.teams || []);
+    } catch (error) {
+      console.error('Failed to load Linear teams:', error);
+    }
+  };
+
+  const handleConfigureLinear = async () => {
+    if (!selectedTeam) {
+      toast.error('Please select a team');
+      return;
+    }
+    
+    const team = linearTeams.find(t => t.id === selectedTeam);
+    if (!team) return;
+    
+    setConfiguringLinear(true);
+    try {
+      await integrationsAPI.configureLinear({
+        team_id: team.id,
+        team_name: team.name,
+      });
+      await loadData();
+      toast.success('Linear configured successfully');
+    } catch (error) {
+      console.error('Failed to configure Linear:', error);
+      toast.error('Failed to configure Linear');
+    } finally {
+      setConfiguringLinear(false);
+    }
+  };
+
+  // Check for OAuth callback
+  useEffect(() => {
+    const success = searchParams.get('success');
+    const error = searchParams.get('error');
+    const provider = searchParams.get('provider');
+    
+    if (provider === 'linear') {
+      if (success === 'true') {
+        toast.success('Linear connected successfully!');
+        loadData();
+        loadLinearTeams();
+      } else if (error) {
+        toast.error(`Linear connection failed: ${error}`);
+      }
+      
+      // Clean up URL
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('success');
+      newUrl.searchParams.delete('error');
+      newUrl.searchParams.delete('provider');
+      window.history.replaceState({}, '', newUrl.toString());
+    }
+  }, [searchParams]);
+
+  // Load Linear teams when integration is connected
+  useEffect(() => {
+    if (integrations?.linear?.status === 'connected') {
+      loadLinearTeams();
+    }
+  }, [integrations?.linear?.status]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-nordic-bg-primary flex items-center justify-center" data-testid="settings-loading">
