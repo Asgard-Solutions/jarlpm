@@ -39,6 +39,10 @@ const CompletedEpic = () => {
   const [generating, setGenerating] = useState(false);
   const [generationStatus, setGenerationStatus] = useState('');
   const [generationError, setGenerationError] = useState(null);
+  
+  // PRD and Lean Canvas state
+  const [hasPRD, setHasPRD] = useState(false);
+  const [hasLeanCanvas, setHasLeanCanvas] = useState(false);
 
   const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
 
