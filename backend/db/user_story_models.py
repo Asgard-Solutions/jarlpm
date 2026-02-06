@@ -105,6 +105,11 @@ class UserStory(Base):
     # Standalone stories can be linked to epics/features/bugs optionally
     is_standalone: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     
+    # Sprint planning fields
+    sprint_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # Which sprint is this committed to
+    status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # draft, ready, in_progress, done, blocked
+    blocked_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Why is this blocked
+    
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
