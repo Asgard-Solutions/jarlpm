@@ -25,7 +25,7 @@ def get_base_url():
             for line in f:
                 if line.startswith('REACT_APP_BACKEND_URL='):
                     return line.split('=', 1)[1].strip().strip('"\'')
-    return os.environ.get('REACT_APP_BACKEND_URL', 'https://pmcanvas.preview.emergentagent.com').rstrip('/')
+    return os.environ.get('REACT_APP_BACKEND_URL', 'https://jarlpm-convtool.preview.emergentagent.com').rstrip('/')
 
 BASE_URL = get_base_url()
 
