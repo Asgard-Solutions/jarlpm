@@ -120,17 +120,28 @@ def calculate_sprint_info(ctx: dict) -> Optional[SprintInfo]:
     cycle_length = ctx["sprint_cycle_length"]
     today = datetime.now(timezone.utc)
     
-    # Calculate current sprint number
+    # Calculate days since start
     days_since_start = (today - start_date).days
-    current_sprint_num = (days_since_start // cycle_length) + 1
     
-    # Calculate current sprint dates
-    current_sprint_start = start_date + timedelta(days=(current_sprint_num - 1) * cycle_length)
-    current_sprint_end = current_sprint_start + timedelta(days=cycle_length - 1)
-    
-    # Days remaining
-    days_remaining = (current_sprint_end - today).days
-    progress = min(100, max(0, round(((cycle_length - days_remaining) / cycle_length) * 100)))
+    # If sprint hasn't started yet, return sprint 1 with future dates
+    if days_since_start < 0:
+        # Sprint hasn't started - show as Sprint 1 (upcoming)
+        current_sprint_num = 1
+        current_sprint_start = start_date
+        current_sprint_end = start_date + timedelta(days=cycle_length - 1)
+        days_remaining = cycle_length + abs(days_since_start)
+        progress = 0
+    else:
+        # Calculate current sprint number (1-based)
+        current_sprint_num = (days_since_start // cycle_length) + 1
+        
+        # Calculate current sprint dates
+        current_sprint_start = start_date + timedelta(days=(current_sprint_num - 1) * cycle_length)
+        current_sprint_end = current_sprint_start + timedelta(days=cycle_length - 1)
+        
+        # Days remaining
+        days_remaining = (current_sprint_end - today).days
+        progress = min(100, max(0, round(((cycle_length - days_remaining) / cycle_length) * 100)))
     
     return SprintInfo(
         sprint_number=current_sprint_num,
