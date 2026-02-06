@@ -1709,10 +1709,13 @@ async def generate_initiative(
                 'definition_of_done': dod
             }
             
-            # Save analytics (fire and forget - don't block response)
+            # Save analytics with a fresh session (fire and forget - don't block response)
             try:
-                log_id = await analytics.save_generation_log(metrics)
-                response_data['_analytics'] = {'log_id': log_id}
+                from db import AsyncSessionLocal
+                async with AsyncSessionLocal() as new_session:
+                    new_analytics = AnalyticsService(new_session)
+                    log_id = await new_analytics.save_generation_log(metrics)
+                    response_data['_analytics'] = {'log_id': log_id}
             except Exception as e:
                 logger.warning(f"Failed to save analytics: {e}")
             
@@ -1722,10 +1725,13 @@ async def generate_initiative(
             
         except Exception as e:
             logger.error(f"Initiative generation failed: {e}", exc_info=True)
-            # Save failed generation metrics
+            # Save failed generation metrics with a fresh session
             try:
                 metrics.error_message = str(e)
-                await analytics.save_generation_log(metrics)
+                from db import AsyncSessionLocal
+                async with AsyncSessionLocal() as new_session:
+                    new_analytics = AnalyticsService(new_session)
+                    await new_analytics.save_generation_log(metrics)
             except Exception:
                 pass
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
