@@ -447,6 +447,10 @@ const Settings = () => {
               <Palette className="w-4 h-4 mr-2" />
               Appearance
             </TabsTrigger>
+            <TabsTrigger value="integrations" className="data-[state=active]:bg-nordic-bg-primary" data-testid="tab-integrations">
+              <Link2 className="w-4 h-4 mr-2" />
+              Integrations
+            </TabsTrigger>
           </TabsList>
 
           {/* Product Delivery Context Tab */}
