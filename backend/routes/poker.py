@@ -786,8 +786,8 @@ async def get_epic_poker_sessions(
             
             stories_data.append({
                 "story_id": story.story_id,
-                "title": story.title,
-                "description": story.description,
+                "title": story.story_text[:100] if story.story_text else f"As a {story.persona}, I want to {story.action[:50]}...",
+                "description": story.story_text,
                 "story_points": story.story_points,
                 "stage": story.stage,
                 "session": {
