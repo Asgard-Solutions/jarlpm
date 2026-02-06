@@ -27,6 +27,51 @@ router = APIRouter(prefix="/poker", tags=["poker-planning"])
 
 
 # ============================================
+# Helper: Verify Story Ownership
+# ============================================
+
+async def verify_story_ownership(
+    session: AsyncSession,
+    story_id: str,
+    user_id: str
+) -> UserStory:
+    """
+    Verify that a story belongs to the user via the feature→epic→user chain.
+    Returns the story if owned, raises HTTPException if not found or not owned.
+    """
+    result = await session.execute(
+        select(UserStory).where(UserStory.story_id == story_id)
+    )
+    story = result.scalar_one_or_none()
+    
+    if not story:
+        raise HTTPException(status_code=404, detail="Story not found")
+    
+    # For standalone stories, check user_id directly
+    if story.is_standalone:
+        if story.user_id != user_id:
+            raise HTTPException(status_code=403, detail="Not authorized to access this story")
+        return story
+    
+    # For feature-based stories, verify via feature→epic→user chain
+    feature_result = await session.execute(
+        select(Feature).where(Feature.feature_id == story.feature_id)
+    )
+    feature = feature_result.scalar_one_or_none()
+    if not feature:
+        raise HTTPException(status_code=404, detail="Story's feature not found")
+    
+    epic_result = await session.execute(
+        select(Epic).where(Epic.epic_id == feature.epic_id, Epic.user_id == user_id)
+    )
+    epic = epic_result.scalar_one_or_none()
+    if not epic:
+        raise HTTPException(status_code=403, detail="Not authorized to access this story")
+    
+    return story
+
+
+# ============================================
 # AI Personas for Estimation
 # ============================================
 
