@@ -81,6 +81,19 @@ const CompletedEpic = () => {
       } catch (err) {
         console.error('Failed to load personas:', err);
       }
+      
+      // Check if PRD and Lean Canvas exist for this epic
+      try {
+        const [prdRes, canvasRes] = await Promise.all([
+          prdAPI.get(epicId),
+          leanCanvasAPI.get(epicId)
+        ]);
+        setHasPRD(prdRes.data?.exists || false);
+        setHasLeanCanvas(canvasRes.data?.exists || false);
+      } catch (e) {
+        setHasPRD(false);
+        setHasLeanCanvas(false);
+      }
 
     } catch (err) {
       if (err.response?.status === 404) {
