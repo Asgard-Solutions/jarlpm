@@ -1268,30 +1268,16 @@ async def generate_initiative(
                 tagline=tagline,
                 prd=PRDSchema(**prd_data),
                 epic=EpicSchema(**epic_data),
-                features=features,
-                sprint_plan=sprint_plan
+                features=features
+                # NOTE: sprint_plan removed - scoring happens via Scoring/Poker features
             )
             initiative.assign_ids()
-            initiative.calculate_totals()
-            
-            # Recalculate sprint totals based on actual story points
-            story_points_map = {}
-            for f in initiative.features:
-                for s in f.stories:
-                    story_points_map[s.id] = s.points
-            
-            initiative.sprint_plan.sprint_1.total_points = sum(
-                story_points_map.get(sid, 0) for sid in initiative.sprint_plan.sprint_1.story_ids
-            )
-            initiative.sprint_plan.sprint_2.total_points = sum(
-                story_points_map.get(sid, 0) for sid in initiative.sprint_plan.sprint_2.story_ids
-            )
             
             # Update metrics for successful generation
             metrics.success = True
             metrics.features_generated = len(initiative.features)
             metrics.stories_generated = sum(len(f.stories) for f in initiative.features)
-            metrics.total_points = initiative.total_points
+            # NOTE: total_points not tracked - scoring happens via Scoring/Poker features
             
             # Build final response with warnings and context
             response_data = initiative.model_dump()
