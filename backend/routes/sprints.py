@@ -1074,6 +1074,15 @@ Generate WIP optimization suggestions."""
         result_data["finish_first"] = validated_finish_first
         result_data["consider_pausing"] = validated_consider_pausing
         
+        # ===== SAVE INSIGHT TO DATABASE =====
+        await save_sprint_insight(
+            session=session,
+            user_id=user_id,
+            sprint_number=sprint_info.sprint_number,
+            insight_type="wip_suggestions",
+            content=result_data
+        )
+        
         return WipSuggestions(**result_data)
         
     except HTTPException:
