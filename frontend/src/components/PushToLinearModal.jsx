@@ -317,7 +317,7 @@ const PushToLinearModal = ({ isOpen, onClose, epicId, epicTitle }) => {
                       <SelectValue placeholder="No project" />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border-border shadow-lg">
-                      <SelectItem value="">No project</SelectItem>
+                      <SelectItem value="_none_">No project</SelectItem>
                       {projects.map((project) => (
                         <SelectItem key={project.id} value={project.id}>
                           {project.name}
