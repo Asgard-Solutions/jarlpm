@@ -672,6 +672,7 @@ async def resend_verification_email(
 # ============================================
 
 @router.post("/forgot-password")
+@limiter.limit(RATE_LIMITS["auth_password_reset"], key_func=get_ip_only)
 async def forgot_password(
     body: ForgotPasswordRequest,
     request: Request,
