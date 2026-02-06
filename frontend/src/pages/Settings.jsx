@@ -61,6 +61,15 @@ const Settings = () => {
   const [contextError, setContextError] = useState('');
   const [contextSuccess, setContextSuccess] = useState(false);
 
+  // Integrations state
+  const [integrations, setIntegrations] = useState({});
+  const [loadingIntegrations, setLoadingIntegrations] = useState(false);
+  const [connectingLinear, setConnectingLinear] = useState(false);
+  const [disconnectingLinear, setDisconnectingLinear] = useState(false);
+  const [linearTeams, setLinearTeams] = useState([]);
+  const [selectedTeam, setSelectedTeam] = useState('');
+  const [configuringLinear, setConfiguringLinear] = useState(false);
+
   // Tab state - controlled by query param
   const [activeTab, setActiveTab] = useState('delivery');
 
