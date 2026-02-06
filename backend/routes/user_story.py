@@ -66,6 +66,12 @@ class UserStoryResponse(BaseModel):
     story_points: Optional[int] = None
     priority: Optional[int] = None
     is_standalone: bool = False
+    # RICE scoring fields
+    rice_reach: Optional[int] = None
+    rice_impact: Optional[float] = None
+    rice_confidence: Optional[float] = None
+    rice_effort: Optional[float] = None
+    rice_total: Optional[float] = None
     created_at: datetime
     updated_at: datetime
     approved_at: Optional[datetime] = None
