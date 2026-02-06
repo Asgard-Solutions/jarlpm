@@ -1104,8 +1104,13 @@ async def generate_initiative(
     context_prompt = build_context_prompt(ctx)
     dod = build_dod_for_methodology(ctx['methodology'])
     
-    # Get quality mode from delivery context (defaults to standard)
-    quality_mode = delivery_context.quality_mode if delivery_context and delivery_context.quality_mode else "standard"
+    # Get quality mode - request body overrides delivery context
+    if body.quality_mode and body.quality_mode in ("standard", "quality"):
+        quality_mode = body.quality_mode
+    elif delivery_context and delivery_context.quality_mode:
+        quality_mode = delivery_context.quality_mode
+    else:
+        quality_mode = "standard"
     
     # Initialize analytics
     analytics = AnalyticsService(session)
