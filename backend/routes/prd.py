@@ -242,6 +242,7 @@ async def generate_prd_with_llm(
     from services.epic_service import EpicService
     from db.feature_models import Feature
     from db.user_story_models import UserStory
+    from db.models import EpicSnapshot
     
     user_id = await get_current_user_id(request, session)
     
@@ -251,13 +252,19 @@ async def generate_prd_with_llm(
     if not has_subscription:
         raise HTTPException(status_code=402, detail="Active subscription required for AI features")
     
-    # Get epic
+    # Get epic with snapshot
     epic_result = await session.execute(
         select(Epic).where(Epic.epic_id == epic_id, Epic.user_id == user_id)
     )
     epic = epic_result.scalar_one_or_none()
     if not epic:
         raise HTTPException(status_code=404, detail="Epic not found")
+    
+    # Get snapshot for detailed content
+    snapshot_result = await session.execute(
+        select(EpicSnapshot).where(EpicSnapshot.epic_id == epic_id)
+    )
+    snapshot = snapshot_result.scalar_one_or_none()
     
     # Get LLM config
     llm_service = LLMService(session)
@@ -295,15 +302,40 @@ async def generate_prd_with_llm(
             "priority": f.priority,
             "stories": [
                 {
-                    "title": s.title or s.story_text[:50],
-                    "story_text": s.story_text,
-                    "acceptance_criteria": s.acceptance_criteria,
+                    "title": s.title or s.story_text[:50] if s.story_text else "Untitled",
+                    "story_text": s.story_text or "",
+                    "acceptance_criteria": s.acceptance_criteria or [],
                     "points": s.story_points,
                     "priority": s.priority
                 }
                 for s in feature_stories
             ]
         })
+    
+    # Get problem statement and outcome from snapshot or epic proposal
+    problem_statement = ""
+    desired_outcome = ""
+    epic_summary = ""
+    
+    if snapshot:
+        problem_statement = snapshot.problem_statement or ""
+        desired_outcome = snapshot.desired_outcome or ""
+        epic_summary = snapshot.epic_summary or ""
+    
+    # Fallback to pending_proposal if snapshot doesn't have content
+    if epic.pending_proposal:
+        proposal = epic.pending_proposal
+        if not problem_statement:
+            problem_statement = proposal.get("problem_statement", "")
+        if not desired_outcome:
+            desired_outcome = proposal.get("desired_outcome", "")
+        # Try to get more context from proposal
+        if proposal.get("prd"):
+            prd = proposal.get("prd", {})
+            if not problem_statement:
+                problem_statement = prd.get("problem_statement", "")
+            if not desired_outcome:
+                desired_outcome = prd.get("desired_outcome", "")
     
     system_prompt = """You are a Senior Product Manager creating a comprehensive PRD document.
 
@@ -321,26 +353,23 @@ The PRD should include:
 
 Make it actionable, specific, and professional. Use the actual data provided, don't invent new features."""
 
+    import json as json_module
+    
     user_prompt = f"""Create a comprehensive PRD for:
 
 PRODUCT: {epic.title}
-TAGLINE: {epic.tagline or 'N/A'}
 
 PROBLEM STATEMENT:
-{epic.problem_statement or 'Not defined'}
-
-VISION:
-{epic.vision or 'Not defined'}
-
-TARGET USERS:
-{epic.target_users or 'Not defined'}
+{problem_statement or 'Not defined'}
 
 DESIRED OUTCOME:
-{epic.desired_outcome or 'Not defined'}
+{desired_outcome or 'Not defined'}
+
+EPIC SUMMARY:
+{epic_summary or 'Not defined'}
 
 FEATURES AND USER STORIES:
-{logger.info(f"Features context: {features_context}")}
-{str(features_context) if features_context else 'No features defined yet'}
+{json_module.dumps(features_context, indent=2) if features_context else 'No features defined yet'}
 
 Generate a professional, stakeholder-ready PRD document in Markdown format."""
 
