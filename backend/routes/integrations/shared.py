@@ -11,6 +11,7 @@ from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Subscription, SubscriptionStatus
+from services.subscription_helper import is_subscription_active, get_user_subscription
 from db.integration_models import (
     ExternalIntegration, IntegrationProvider, IntegrationStatus
 )
