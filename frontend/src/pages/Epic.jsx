@@ -98,6 +98,10 @@ const Epic = () => {
   
   // Story counts for approved features
   const [featureStoryCounts, setFeatureStoryCounts] = useState({});
+  
+  // PRD and Lean Canvas state
+  const [hasPRD, setHasPRD] = useState(false);
+  const [hasLeanCanvas, setHasLeanCanvas] = useState(false);
 
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
