@@ -50,11 +50,17 @@ class IntegrationStatusResponse(BaseModel):
 class ConnectLinearRequest(BaseModel):
     frontend_callback_url: str  # Where to redirect after OAuth completes
 
-class ConfigureIntegrationRequest(BaseModel):
+class ConfigureLinearRequest(BaseModel):
     team_id: str
     team_name: str
     project_id: Optional[str] = None
     project_name: Optional[str] = None
+    # Priority mapping: MoSCoW -> Linear priority (0-4)
+    priority_mapping: Optional[dict] = None  # e.g., {"must": 2, "should": 3, "could": 4, "wont": 0}
+    # Label policy: "create-missing" or "only-existing"
+    label_policy: Optional[str] = "create-missing"
+    # Epic mapping strategy: "project" (create Linear Project) or "issue" (create labeled Issue)
+    epic_mapping: Optional[str] = "issue"  # "project" or "issue"
     field_mappings: Optional[dict] = None
 
 class PushPreviewRequest(BaseModel):
@@ -62,13 +68,17 @@ class PushPreviewRequest(BaseModel):
     push_scope: Literal["epic_only", "epic_features", "epic_features_stories"] = "epic_features_stories"
     include_bugs: bool = False
 
-class PushRequest(BaseModel):
+class LinearPushRequest(BaseModel):
     epic_id: str
     team_id: str
     project_id: Optional[str] = None
     push_scope: Literal["epic_only", "epic_features", "epic_features_stories"] = "epic_features_stories"
     include_bugs: bool = False
     dry_run: bool = False
+    # Override config for this push
+    epic_mapping: Optional[str] = None  # "project" or "issue"
+    priority_mapping: Optional[dict] = None
+    label_policy: Optional[str] = None
 
 
 # Jira-specific models
