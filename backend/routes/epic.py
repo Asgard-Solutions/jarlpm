@@ -118,6 +118,7 @@ def epic_to_response(epic: EpicModel) -> EpicResponse:
         current_stage=epic.current_stage,
         snapshot=snapshot_to_response(epic.snapshot),
         pending_proposal=epic.pending_proposal,
+        moscow_score=epic.moscow_score,
         created_at=epic.created_at,
         updated_at=epic.updated_at
     )
