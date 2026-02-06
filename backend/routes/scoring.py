@@ -1304,3 +1304,400 @@ async def apply_all_bulk_scores(
         "applied": applied,
         "total": applied["features"] + applied["stories"] + applied["bugs"]
     }
+
+
+# ============================================
+# List-First Scoring Endpoints
+# ============================================
+
+class ScoredItemResponse(BaseModel):
+    """Response model for scored items"""
+    item_id: str
+    item_type: str  # 'epic', 'standalone_story', 'standalone_bug'
+    title: str
+    description: Optional[str] = None
+    moscow_score: Optional[str] = None
+    rice_reach: Optional[int] = None
+    rice_impact: Optional[float] = None
+    rice_confidence: Optional[float] = None
+    rice_effort: Optional[float] = None
+    rice_total: Optional[float] = None
+    scored_at: Optional[str] = None
+    has_children: bool = False
+    children_scored: int = 0
+    children_total: int = 0
+
+
+class ScoredEpicDetailResponse(BaseModel):
+    """Detailed response for a scored epic with all its items"""
+    epic_id: str
+    title: str
+    moscow_score: Optional[str] = None
+    features: List[dict] = []
+    stories: List[dict] = []
+    bugs: List[dict] = []
+
+
+@router.get("/scored-items")
+async def get_scored_items(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get all scored items: Epics, Standalone Stories, Standalone Bugs"""
+    from datetime import datetime, timezone
+    from db.models import Epic, Bug
+    from db.feature_models import Feature
+    from db.user_story_models import UserStory
+    from sqlalchemy import select, func
+    
+    user_id = await get_current_user_id(request, session)
+    
+    items = []
+    
+    # Get scored Epics (epics that have moscow_score OR have scored features/stories)
+    epics_result = await session.execute(
+        select(Epic).where(
+            Epic.user_id == user_id,
+            Epic.is_archived.is_(False),
+            Epic.current_stage == 'epic_locked'
+        )
+    )
+    epics = epics_result.scalars().all()
+    
+    for epic in epics:
+        # Check if epic or its children have scores
+        features_result = await session.execute(
+            select(Feature).where(Feature.epic_id == epic.epic_id)
+        )
+        features = features_result.scalars().all()
+        
+        has_epic_score = epic.moscow_score is not None
+        scored_features = [f for f in features if f.moscow_score or f.rice_total]
+        
+        # Get stories for features
+        stories = []
+        scored_stories = []
+        for feature in features:
+            stories_result = await session.execute(
+                select(UserStory).where(UserStory.feature_id == feature.feature_id)
+            )
+            feature_stories = stories_result.scalars().all()
+            stories.extend(feature_stories)
+            scored_stories.extend([s for s in feature_stories if s.rice_total])
+        
+        total_children = len(features) + len(stories)
+        scored_children = len(scored_features) + len(scored_stories)
+        
+        if has_epic_score or scored_children > 0:
+            items.append(ScoredItemResponse(
+                item_id=epic.epic_id,
+                item_type='epic',
+                title=epic.title,
+                description=epic.snapshot.epic_summary if epic.snapshot else None,
+                moscow_score=epic.moscow_score,
+                has_children=True,
+                children_scored=scored_children,
+                children_total=total_children,
+                scored_at=epic.updated_at.isoformat() if epic.updated_at else None
+            ))
+    
+    # Get scored standalone stories
+    standalone_stories_result = await session.execute(
+        select(UserStory).where(
+            UserStory.user_id == user_id,
+            UserStory.is_standalone == True,
+            UserStory.rice_total.isnot(None)
+        )
+    )
+    standalone_stories = standalone_stories_result.scalars().all()
+    
+    for story in standalone_stories:
+        items.append(ScoredItemResponse(
+            item_id=story.story_id,
+            item_type='standalone_story',
+            title=story.title or story.story_text[:100],
+            description=story.story_text,
+            rice_reach=story.rice_reach,
+            rice_impact=story.rice_impact,
+            rice_confidence=story.rice_confidence,
+            rice_effort=story.rice_effort,
+            rice_total=story.rice_total,
+            scored_at=story.updated_at.isoformat() if story.updated_at else None
+        ))
+    
+    # Get scored standalone bugs
+    bugs_result = await session.execute(
+        select(Bug).where(
+            Bug.user_id == user_id,
+            Bug.is_deleted.is_(False),
+            Bug.rice_total.isnot(None)
+        )
+    )
+    bugs = bugs_result.scalars().all()
+    
+    # Filter to only bugs that are not linked to any epic
+    from db.models import BugLink
+    for bug in bugs:
+        links_result = await session.execute(
+            select(BugLink).where(BugLink.bug_id == bug.bug_id)
+        )
+        links = links_result.scalars().all()
+        
+        # Consider it standalone if no links to epics
+        epic_links = [l for l in links if l.entity_type == 'epic']
+        if not epic_links:
+            items.append(ScoredItemResponse(
+                item_id=bug.bug_id,
+                item_type='standalone_bug',
+                title=bug.title,
+                description=bug.description,
+                rice_reach=bug.rice_reach,
+                rice_impact=bug.rice_impact,
+                rice_confidence=bug.rice_confidence,
+                rice_effort=bug.rice_effort,
+                rice_total=bug.rice_total,
+                scored_at=bug.updated_at.isoformat() if bug.updated_at else None
+            ))
+    
+    return {"items": items, "total": len(items)}
+
+
+@router.get("/items-for-scoring")
+async def get_items_for_scoring(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get items available for scoring: Locked Epics, Standalone Stories, Standalone Bugs"""
+    from db.models import Epic, Bug, BugLink
+    from db.user_story_models import UserStory
+    from sqlalchemy import select
+    
+    user_id = await get_current_user_id(request, session)
+    
+    result = {
+        "epics": [],
+        "standalone_stories": [],
+        "standalone_bugs": []
+    }
+    
+    # Get locked epics that haven't been fully scored
+    epics_result = await session.execute(
+        select(Epic).where(
+            Epic.user_id == user_id,
+            Epic.is_archived.is_(False),
+            Epic.current_stage == 'epic_locked'
+        )
+    )
+    epics = epics_result.scalars().all()
+    
+    for epic in epics:
+        result["epics"].append({
+            "epic_id": epic.epic_id,
+            "title": epic.title,
+            "moscow_score": epic.moscow_score,
+            "has_moscow": epic.moscow_score is not None
+        })
+    
+    # Get standalone stories without RICE scores
+    stories_result = await session.execute(
+        select(UserStory).where(
+            UserStory.user_id == user_id,
+            UserStory.is_standalone == True
+        )
+    )
+    standalone_stories = stories_result.scalars().all()
+    
+    for story in standalone_stories:
+        result["standalone_stories"].append({
+            "story_id": story.story_id,
+            "title": story.title or (story.story_text[:60] + "..." if len(story.story_text) > 60 else story.story_text),
+            "rice_total": story.rice_total,
+            "has_rice": story.rice_total is not None
+        })
+    
+    # Get standalone bugs (not linked to any epic)
+    bugs_result = await session.execute(
+        select(Bug).where(
+            Bug.user_id == user_id,
+            Bug.is_deleted.is_(False)
+        )
+    )
+    bugs = bugs_result.scalars().all()
+    
+    for bug in bugs:
+        # Check if bug is linked to an epic
+        links_result = await session.execute(
+            select(BugLink).where(
+                BugLink.bug_id == bug.bug_id,
+                BugLink.entity_type == 'epic'
+            )
+        )
+        epic_links = links_result.scalars().all()
+        
+        if not epic_links:  # Standalone bug
+            result["standalone_bugs"].append({
+                "bug_id": bug.bug_id,
+                "title": bug.title,
+                "severity": bug.severity,
+                "rice_total": bug.rice_total,
+                "has_rice": bug.rice_total is not None
+            })
+    
+    return result
+
+
+@router.get("/epic/{epic_id}/scores")
+async def get_epic_scores(
+    request: Request,
+    epic_id: str,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get all scores for an epic and its children (features, stories, bugs)"""
+    from db.models import Epic, Bug, BugLink
+    from db.feature_models import Feature
+    from db.user_story_models import UserStory
+    from sqlalchemy import select
+    
+    user_id = await get_current_user_id(request, session)
+    
+    # Get epic
+    epic_result = await session.execute(
+        select(Epic).where(Epic.epic_id == epic_id, Epic.user_id == user_id)
+    )
+    epic = epic_result.scalar_one_or_none()
+    if not epic:
+        raise HTTPException(status_code=404, detail="Epic not found")
+    
+    result = {
+        "epic_id": epic.epic_id,
+        "title": epic.title,
+        "moscow_score": epic.moscow_score,
+        "features": [],
+        "stories": [],
+        "bugs": []
+    }
+    
+    # Get features with scores
+    features_result = await session.execute(
+        select(Feature).where(Feature.epic_id == epic_id)
+    )
+    features = features_result.scalars().all()
+    
+    for feature in features:
+        result["features"].append({
+            "feature_id": feature.feature_id,
+            "title": feature.title,
+            "moscow_score": feature.moscow_score,
+            "rice_reach": feature.rice_reach,
+            "rice_impact": feature.rice_impact,
+            "rice_confidence": feature.rice_confidence,
+            "rice_effort": feature.rice_effort,
+            "rice_total": feature.rice_total
+        })
+        
+        # Get stories for this feature
+        stories_result = await session.execute(
+            select(UserStory).where(UserStory.feature_id == feature.feature_id)
+        )
+        stories = stories_result.scalars().all()
+        
+        for story in stories:
+            result["stories"].append({
+                "story_id": story.story_id,
+                "feature_id": feature.feature_id,
+                "title": story.title or story.story_text[:100],
+                "rice_reach": story.rice_reach,
+                "rice_impact": story.rice_impact,
+                "rice_confidence": story.rice_confidence,
+                "rice_effort": story.rice_effort,
+                "rice_total": story.rice_total,
+                "story_points": story.story_points
+            })
+    
+    # Get bugs linked to this epic
+    bug_links_result = await session.execute(
+        select(BugLink).where(
+            BugLink.entity_type == 'epic',
+            BugLink.entity_id == epic_id
+        )
+    )
+    bug_links = bug_links_result.scalars().all()
+    
+    for link in bug_links:
+        bug_result = await session.execute(
+            select(Bug).where(Bug.bug_id == link.bug_id, Bug.is_deleted.is_(False))
+        )
+        bug = bug_result.scalar_one_or_none()
+        if bug:
+            result["bugs"].append({
+                "bug_id": bug.bug_id,
+                "title": bug.title,
+                "severity": bug.severity,
+                "rice_reach": bug.rice_reach,
+                "rice_impact": bug.rice_impact,
+                "rice_confidence": bug.rice_confidence,
+                "rice_effort": bug.rice_effort,
+                "rice_total": bug.rice_total
+            })
+    
+    return result
+
+
+@router.post("/standalone-story/{story_id}/score")
+async def score_standalone_story(
+    request: Request,
+    story_id: str,
+    body: RICEScoreUpdate,
+    session: AsyncSession = Depends(get_db)
+):
+    """Score a standalone user story with RICE"""
+    user_id = await get_current_user_id(request, session)
+    scoring_service = ScoringService(session)
+    
+    try:
+        story = await scoring_service.update_story_rice(
+            story_id, body.reach, body.impact, body.confidence, body.effort
+        )
+        return {
+            "story_id": story.story_id,
+            "rice_reach": story.rice_reach,
+            "rice_impact": story.rice_impact,
+            "rice_confidence": story.rice_confidence,
+            "rice_effort": story.rice_effort,
+            "rice_total": story.rice_total
+        }
+    except ValueError as e:
+        error_msg = str(e)
+        if "not found" in error_msg.lower():
+            raise HTTPException(status_code=404, detail=error_msg)
+        raise HTTPException(status_code=400, detail=error_msg)
+
+
+@router.post("/standalone-bug/{bug_id}/score")
+async def score_standalone_bug(
+    request: Request,
+    bug_id: str,
+    body: RICEScoreUpdate,
+    session: AsyncSession = Depends(get_db)
+):
+    """Score a standalone bug with RICE"""
+    user_id = await get_current_user_id(request, session)
+    scoring_service = ScoringService(session)
+    
+    try:
+        bug = await scoring_service.update_bug_rice(
+            bug_id, user_id, body.reach, body.impact, body.confidence, body.effort
+        )
+        return {
+            "bug_id": bug.bug_id,
+            "rice_reach": bug.rice_reach,
+            "rice_impact": bug.rice_impact,
+            "rice_confidence": bug.rice_confidence,
+            "rice_effort": bug.rice_effort,
+            "rice_total": bug.rice_total
+        }
+    except ValueError as e:
+        error_msg = str(e)
+        if "not found" in error_msg.lower():
+            raise HTTPException(status_code=404, detail=error_msg)
+        raise HTTPException(status_code=400, detail=error_msg)
