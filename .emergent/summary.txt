@@ -1,139 +1,175 @@
 <analysis>**original_problem_statement:**
-The user wants to build **JarlPM**, an AI-agnostic, conversation-driven Product Management system.
+The user wants to build **JarlPM**, an AI-agnostic, conversation-driven Product Management system. The current goal is to implement integrations with external project management tools (Linear, Jira, Azure DevOps) to allow users to push generated product plans (Epics, Features, Stories) into their existing workflows.
 
-The primary goals for this session were to:
-1.  Fix a critical P0 bug causing database connection pool exhaustion by refactoring all long-running AI streaming endpoints to not hold a DB session open.
-2.  Address user feedback to completely separate scoring logic (MoSCoW, RICE, Story Points) from the creation of new items. Scores should only be added through dedicated features, not during initial creation by a user or AI.
-3.  Generate comprehensive user and technical manuals for the entire application based on the current state of the code.
+**PRODUCT REQUIREMENTS:**
+- **G0: Scope of Fully Complete**: An integration is complete when a user can connect, select a target project, preview the push, execute it idempotently (no duplicates on re-push), and see results.
+- **G1: Data Model**: Add , , and  tables to the database to manage connections, track pushed items, and audit operations.
+- **G2: Security**: All integration features must be scoped to the user, require an active Pro subscription, and store all tokens/secrets encrypted at rest.
+- **G3: Push Behavior**: Pushes must be idempotent. A dry-run preview is required.
+- **G4: UX Pages**:
+    - A  page to manage connections and default configurations.
+    - A Push to... feature on the Epic page to trigger the export.
+- **Provider Priority**:
+    1.  **Linear**: (Cleanest API, MVP for a full push experience)
+    2.  **Jira**: (Most common, more complex field mapping)
+    3.  **Azure DevOps**: (Enterprise-focused, use PAT auth for MVP)
+- **Production Readiness**: Implement Rate Limiting, Error UX, Backups, Monitoring, and a Smoke Test script.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application, JarlPM, is a feature-rich Product Management tool.
-- A critical stability issue has been resolved by refactoring all streaming LLM endpoints to use a session-less pattern, preventing database connection pool exhaustion under load.
-- The application's logic has been hardened to enforce a strict separation between item creation and item scoring. AI generation and manual creation of Epics, Features, and Stories no longer assign any points or scores.
-- The agent has generated initial drafts of a  and a  located in a new  directory.
+The application has a full-stack architecture with a React frontend and FastAPI backend. A robust, shared architecture for third-party integrations (Linear, Jira, Azure DevOps) has been established, including common database models, modular API routers, and provider-specific services. The core integration functionality is complete, including UI for connecting and a push mechanism on the Epic page. The codebase has been significantly refactored for maintainability, with large route files and UI components broken down into smaller, focused modules. Key backend systems like CORS, subscription checking, and rate limiting have been implemented or improved.
 
 **Last working item**:
-- Last item agent was working on: Generating comprehensive user and technical documentation for the JarlPM application, as requested by the user.
-- Status: FINISHED
-- Agent Testing Done: N/A
-- Which testing method agent to use? N/A
-- User Testing Done: N
+-   Last item agent was working: Implementing Rate Limiting for key API endpoints. The agent added the  library and was in the process of applying rate-limiting decorators to the API routes for auth, AI generation, and integration pushes for Linear, Jira, and Azure DevOps.
+-   Status: IN PROGRESS
+-   Agent Testing Done: N
+-   Which testing method agent to use? backend testing agent. Create a new test file  to verify that endpoints are correctly rate-limited and return a 429 status code when the limit is exceeded.
+-   User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1: Authenticated Screenshot Failures (Priority: P2)
+-   Issue 1: Authenticated Screenshot Failures (Priority: P2)
 
-  Issues Detail:
-  - Issue 1:
-     - Attempted fixes: None in this session. This is a known, recurring issue from previous sessions.
-     - Next debug checklist: Investigate cookie and session handling between the screenshot tool's  context and the application's preview URL domain. This may be related to Vite's proxy or dev server configuration.
-     - Why fix this issue and what will be achieved with the fix? Resolving this will enable automated visual verification of authenticated frontend pages, which is crucial for efficient regression testing.
-     - Status:  NOT STARTED
-     - Is recurring issue? Y
-     - Should Test frontend/backend/both after fix? frontend
-     - Blocked on other issue: None
+    Issues Detail:
+-   Issue 1:
+    -   Attempted fixes: The agent added the preview URL to , which resolved a Vite host error but did not fix the underlying authentication problem for the screenshot tool.
+    -   Next debug checklist:
+        1.  Investigate how cookies and session tokens are handled between the screenshot tool's context and the application's preview domain.
+        2.  Check the browser console logs from the screenshot output for authentication-related errors.
+        3.  Examine the network requests during the screenshot process to see if the auth token is being sent correctly.
+    -   Why fix this issue and what will be achieved with the fix? This is a recurring blocker for automated UI testing. Resolving it will enable visual verification of authenticated pages, which is crucial for regression testing and verifying frontend work efficiently.
+    -   Status: NOT STARTED
+    -   Is recurring issue? Y
+    -   Should Test frontend/backend/both after fix? frontend
+    -   Blocked on other issue: None
 
 **In progress Task List**:
-  - None
+-   Task 1: Complete Production-Readiness Implementation (Priority: P0)
+
+    Task Detail:
+-   Task 1:
+    -   Where to resume: The agent finished applying rate-limiting decorators to the Azure DevOps routes in . The next step is to restart the backend to apply all rate-limiting changes and then proceed to the next item on the production-readiness list.
+    -   Next Steps (Full Task):
+        1.  **Rate limiting / abuse controls**: Finish implementation and test. (IN PROGRESS)
+        2.  **Better error UX for integrations**: Implement retries and handle partial pushes.
+        3.  **Backups/retention policy**: Implement DB backups and audit log retention.
+        4.  **Monitoring/alerting**: Integrate Sentry, add structured logs, and set up alerts.
+        5.  **Smoke Test Script**: Create a script that runs migrations and hits key endpoints.
+    -   What will be achieved with this? The application will be more secure, robust, and prepared for a production environment.
+    -   Status: IN PROGRESS
+    -   Should Test frontend/backend/both after fix? backend
+    -   Blocked on something: None
 
 **Upcoming and Future Tasks**
-*   **P0: User Verification of Completed Work**:
-    *   **Scoring Separation:** User needs to confirm that creating new Epics, Features, and User Stories (both manually and via AI initiative generation) no longer assigns any scores (MoSCoW, RICE, story points) by default.
-    *   **Documentation Review:** User needs to review the newly generated  and  for accuracy and completeness.
-*   **P1: Decision & Assumption Tracking:** Persist assumptions and risks to the database and build a workflow to track their validation status.
-*   **P1: Collaboration Loop:** Implement a feature to share a read-only link to an initiative and add a basic commenting system.
-*   **P2: Jira/Linear Push Integration:** Build an integration to push a generated plan into a user's Jira or Linear project.
-*   **P2: Pricing/Packaging Signature Moments:** Polish existing features to create wow moments, like a one-click Stakeholder-ready PRD summary.
+-   **P0: Real-World Integration Validation**: Test the Linear, Jira, and Azure DevOps integrations with real user credentials once provided. This is pending user input.
+-   **P1: Decision & Assumption Tracking**: Persist assumptions and risks to the database and build a workflow to track their validation status.
+-   **P1: Collaboration Loop**: Implement a feature to share a read-only link to an initiative and add a basic commenting system.
+-   **P2: Pricing/Packaging Signature Moments**: Polish existing features to create wow moments, like a one-click Stakeholder-ready PRD summary.
 
 **Completed work in this session**
-- **DB Pool Exhaustion Fix (P0):** Fully refactored over 20 streaming LLM endpoints across the backend (, , , , , etc.) to adopt a session-less streaming pattern. This prevents database connections from being held open during long AI responses.
-- **Scoring Logic Separation:** In response to direct user feedback, removed the AI Planning Pass from initiative generation that assigned story points. Hardened all item creation endpoints (, ) to reject scoring-related fields, enforcing that scoring only occurs via dedicated features.
-- **Documentation Generation:** Analyzed the entire codebase to create initial versions of a comprehensive  and .
+-   **Azure DevOps Integration**: Completed the backend service, routes, and frontend  for PAT-based push functionality.
+-   **Backend Code Refactoring**:
+    -   Refactored the monolithic  into a modular structure under .
+    -   Centralized subscription status checking into a new  and applied it across all routes.
+-   **Frontend Code Refactoring**: Refactored the 1,700-line  into a main state component and five smaller, focused tab components in .
+-   **Backend Test Suite Expansion**: Added  and , bringing the total to 59 passing backend tests.
+-   **CORS & Cookie Configuration**: Fixed the backend CORS policy to allow credentialed requests from the preview domain and verified the end-to-end cookie-based authentication flow.
+-   **Documentation**: Created  and  to track deliverable status.
 
 **Earlier issues found/mentioned but not fixed**
-   - Issue 1: Authenticated Screenshot Failures (Tracked in All Pending/In progress Issue list).
+-   Issue 1: Authenticated Screenshot Failures (Tracked in All Pending/In progress Issue list).
 
 **Known issue recurrence from previous fork**
-  - Issue recurrence in previous fork: Authenticated Screenshot Failures
-  - Recurrence count: 5+
-  - Status: NOT STARTED
+-   Issue recurrence in previous fork: Authenticated Screenshot Failures
+-   Recurrence count: 7+
+-   Status: NOT STARTED
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Database Connection Management:** A new pattern () was implemented across the application to prevent long-running LLM streams from holding database connections. This involves fetching data, closing the DB session, and then initiating the stream with a pre-configured data object.
-- **Schema & Logic Separation:** A significant refactor was done to decouple item creation from item scoring. The AI initiative generation process was simplified (removing the Planning Pass), and Pydantic models for create endpoints were updated to reject scoring fields, ensuring data integrity and adherence to user requirements.
-- **Automated Documentation:** The agent demonstrated the ability to scan the entire codebase to generate structured user-facing and technical documentation.
+-   **Provider-Agnostic Integration Architecture**: A backend system with shared database models and a unified, modular API structure allowing new providers to be added with minimal redundant code.
+-   **Code Refactoring for Maintainability**: Decomposing large, monolithic files (, ) into smaller, single-responsibility modules and components.
+-   **API Rate Limiting**: Using  to protect key endpoints (auth, AI, integrations) from abuse and control costs.
+-   **Centralized Business Logic**: Creating helper services () to ensure consistent application of business rules like subscription checks.
+-   **CORS and Secure Cookies**: Configuring FastAPI and the frontend to correctly handle cross-origin credentialed requests using  and  cookies.
 
 **key DB schema**
-- No new database tables were added.
-- **Pydantic Schemas ()**:
-    -  no longer has a  field.
-    -  and  have been removed.
-    -  no longer contains  or .
+-   : Stores user connections to providers (Jira, Linear, ADO), including status, account info, and encrypted tokens.
+-   : Maps JarlPM entities (epic, feature, story) to the corresponding external entity ID/key, ensuring idempotency.
+-   : An audit log for each push operation, tracking status, and summary results.
+-   : Stores user subscription status, used by the  to gate features.
 
 **changes in tech stack**
-  - No changes in the core tech stack.
+-    was added to  for API rate limiting.
 
 **All files of reference**
-- : New user-facing documentation.
-- : New developer-facing documentation.
-- : The most heavily modified file, where the streaming refactor was applied and the scoring Planning Pass was removed.
-- All other route files in  that contain streaming endpoints were updated.
-- : Home of the  function enabling the session-less pattern.
+-   : New service for defining and applying rate limits.
+-   : New service for consistent subscription status checks.
+-   : Directory containing the refactored integration routes.
+-   : Directory containing the refactored settings page tabs.
+-   : The refactored main settings page component.
+-   : Contains the UI for triggering integration pushes.
+-   : Document tracking the completion of integration deliverables.
+
+**Areas that need refactoring**:
+- The refactoring of  and  has been completed. No major refactoring is immediately required.
 
 **key api endpoints**
-- **No new endpoints were added.**
-- The behavior of  was significantly changed to no longer include sprint plans or story points in its output.
-- The following endpoints were hardened to **reject** scoring data on creation/update:
-    - 
-    - 
+-   : Now rate-limited.
+-   : Main AI generation endpoint, now rate-limited.
+-   : Pushes an epic to the provider, now rate-limited.
+-   : Previews the push, now rate-limited.
 
 **Critical Info for New Agent**
-The critical P0 stability fix and the major scoring logic refactor are complete. Your immediate priority is user verification.
-
-1.  **Present for Review:** Your first action should be to ask the user to verify the completed work.
-    *   Direct them to the  directory to review  and .
-    *   Ask them to test the creation of new stories and initiatives to confirm that scores and points are no longer being assigned automatically.
-2.  **Await Next Steps:** After the user confirms the fixes and provides feedback on the documentation, await their direction for the next task from the Upcoming and Future Tasks list.
-3.  **Do Not Revert Fixes:** The session-less streaming pattern is the new standard for this application. Do not revert any  calls back to the old  method.
+-   Your immediate priority is to complete the 5-point production-readiness plan. You are in the middle of the first item: Rate Limiting. Restart the backend to apply the changes, then create tests for it.
+-   Proceed sequentially through the remaining production-readiness tasks: Error UX, Backups, Monitoring, and Smoke Tests.
+-   The Linear and Jira integrations are scaffolded and cannot be fully tested without OAuth credentials, which are pending from the user. Do not attempt to fix their connection.
+-   The user has been asked for credentials for real-world testing. Await their response before attempting to perform live pushes.
 
 **documents and test reports created in this job**
-- 
-- 
-- 
+-   
+-   
+-   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Requested the creation of detailed user and technical manuals. (Status: Completed)
-2.  **User**: Specified that no scoring (MoSCoW, RICE, Poker points) should be part of item creation. (Status: Completed)
-3.  **User**: Confirmed that the AI's Planning Pass should be removed entirely and create/update endpoints should reject scoring fields. (Status: Implemented)
-4.  **Agent**: Asked for clarification on the scope of the scoring separation. (Status: Answered)
-5.  **User**: Correctly identified that the agent's first pass at the streaming fix was incomplete and missed several endpoints. (Status: Addressed, all endpoints now fixed)
-6.  **Agent**: Attempted to finish after the initial refactor, but was corrected by the user. (Status: Superseded)
-7.  **User**: Approved the agent's plan to begin refactoring all streaming endpoints. (Status: Actioned)
-8.  **Agent**: Proposed the plan to fix the P0 database pool exhaustion issue. (Status: Approved)
+1.  **User**: Start with 1 [Rate Limiting] and work your way through 5 [Smoke Tests] until you are done. (Status: In Progress)
+2.  **Agent**: Proposed a plan to tackle the 5 production-readiness items.
+3.  **User**: Provided a list of 5 P1 should do soon production-readiness tasks. (Status: In Progress)
+4.  **Agent**: Requested credentials for real-world integration validation. (Status: Pending User Response)
+5.  **User**: Pointed out that integrations need real-world validation. (Status: Acknowledged)
+6.  **Agent**: Confirmed subscription checks were refactored.
+7.  **User**: Noted inconsistencies in subscription checks. (Status: Completed)
+8.  **Agent**: Confirmed CORS and cookie configuration is fixed.
+9.  **User**: Noted that cookie settings require HTTPS and proper production setup. (Status: Completed)
+10. **Agent**: Confirmed  refactoring is complete.
 
 **Project Health Check:**
-- **Broken**: None. The critical stability issue that risked DB pool exhaustion is resolved.
-- **Mocked**: No features are mocked.
+-   **Broken**:
+    -   Jira and Linear OAuth flows are non-functional by design as they lack  and  environment variables. This is expected.
+    -   Authenticated screenshots are broken, preventing UI verification of pages behind login.
+-   **Mocked**: No features are mocked.
 
 **3rd Party Integrations**
-- OpenAI GPT/DALL-E: Used for all generative AI features.
+-   OpenAI GPT/DALL-E: Used for all generative AI features.
+-   **Linear**: (OAuth scaffolding implemented) - For pushing project management items.
+-   **Jira**: (OAuth scaffolding implemented) - For pushing project management items.
+-   **Azure DevOps**: (PAT-based implementation complete) - For pushing project management items.
 
 **Testing status**
-  - Testing agent used after significant changes: YES. The testing agent successfully verified the initial batch of streaming refactors. The remaining refactors were verified by the agent manually via  and backend service health checks.
-  - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: None
-  - Known regressions: Authenticated Screenshot Failures persist.
+-   Testing agent used after significant changes: YES, the agent used the testing agent to verify the Azure DevOps integration, which passed all tests.
+-   Troubleshoot agent used after agent stuck in loop: NO
+-   Test files created:
+    -   
+    -   
+-   Known regressions: Authenticated Screenshot Failures persist.
 
 **Credentials to test flow:**
 | Field | Value |
 |---|---|
 | **Email** |  |
 | **Password** |  |
-| **Note:** | For AI features to work, log in and add an OpenAI key in **Settings → LLM Providers**. |
+| **Note:** | For Azure DevOps, the user must provide their own Organization URL and Personal Access Token (PAT) in the frontend UI to test the connection and push. |
 
 **What agent forgot to execute**
-The agent initially declared the P0 streaming fix complete before auditing all possible files, but the user's feedback prompted a more thorough second pass which successfully fixed all remaining instances. All user requests from this session were ultimately addressed.</analysis>
+The agent accidentally created an empty file  at the root level, but later identified and removed it upon user feedback. All other tasks have been addressed systematically.</analysis>

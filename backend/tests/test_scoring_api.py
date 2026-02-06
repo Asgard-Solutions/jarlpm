@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('VITE_BACKEND_URL', 'https://pm-sync-hub.preview.emergentagent.com')
+BASE_URL = os.environ.get('VITE_BACKEND_URL', 'https://product-push.preview.emergentagent.com')
 
 # Test credentials
 TEST_EMAIL = "test@jarlpm.com"
