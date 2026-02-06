@@ -1419,3 +1419,73 @@ When an Epic is locked, users enter Feature Planning Mode:
   - `/api/scoring/*` endpoints
   - `/api/poker/*` endpoints
 
+
+
+### 2026-02-06: External Integrations - Linear (Phase 1 Complete)
+**Goal:** Allow paid users to push Epics, Features, and Stories to external project management tools.
+
+**Implementation (Linear - First Provider):**
+
+1. **Database Models** (`/app/backend/db/integration_models.py`):
+   - `ExternalIntegration` - User's connection to a provider (OAuth tokens, PAT, defaults)
+   - `ExternalPushMapping` - Maps JarlPM entity → external issue (for idempotent updates)
+   - `ExternalPushRun` - Audit trail of all push operations
+
+2. **Linear Service** (`/app/backend/services/linear_service.py`):
+   - `LinearOAuthService` - OAuth 2.0 flow (auth URL, token exchange, refresh, revoke)
+   - `LinearGraphQLService` - Teams, projects, labels, issue create/update
+   - `LinearPushService` - Formats JarlPM items for Linear, handles idempotent push
+
+3. **Backend Routes** (`/app/backend/routes/integrations.py`):
+   - `GET /api/integrations/status` - All providers status
+   - `POST /api/integrations/linear/connect` - Initiate OAuth
+   - `GET /api/integrations/linear/callback` - OAuth callback
+   - `POST /api/integrations/linear/disconnect` - Revoke and disconnect
+   - `PUT /api/integrations/linear/configure` - Set default team/project
+   - `GET /api/integrations/linear/teams` - List teams
+   - `GET /api/integrations/linear/teams/{team_id}/projects` - List projects
+   - `POST /api/integrations/linear/preview` - Preview push (dry run)
+   - `POST /api/integrations/linear/push` - Execute push
+   - `GET /api/integrations/push-history` - Audit trail
+   - `GET /api/integrations/mappings/{entity_id}` - Entity mappings
+
+4. **Frontend - Settings Integrations Tab** (`/app/frontend/src/pages/Settings.jsx`):
+   - Provider cards (Linear, Jira, Azure DevOps)
+   - Connect/Disconnect buttons
+   - Team selection dropdown
+   - OAuth status display
+
+5. **Frontend - Push to Linear Modal** (`/app/frontend/src/components/PushToLinearModal.jsx`):
+   - Team/Project selection
+   - Push scope (Epic only, +Features, +Stories)
+   - Include bugs checkbox
+   - Preview with create/update counts
+   - Push execution with results display
+
+6. **Epic Page Integration** (`/app/frontend/src/pages/Epic.jsx`):
+   - "Push to Linear" button (visible when Linear connected)
+   - Opens PushToLinearModal
+
+**Security:**
+- Pro subscription required (402 without subscription)
+- User-scoped endpoints (ownership enforced)
+- Tokens encrypted using existing `get_encryption_service()`
+
+**Push Behavior:**
+- Idempotent: First push creates, subsequent pushes update
+- Hash-based duplicate prevention
+- Preview mode (dry run) before actual push
+- Epic/Feature/Story hierarchy preserved via parent_id
+
+**Environment Variables Required:**
+```
+LINEAR_OAUTH_CLIENT_ID=
+LINEAR_OAUTH_CLIENT_SECRET=
+LINEAR_OAUTH_REDIRECT_URI=
+```
+
+**Coming Soon:**
+- Jira Cloud integration
+- Azure DevOps integration (PAT-based first, OAuth later)
+
+**Migration:** `alembic upgrade head` adds 3 new tables
