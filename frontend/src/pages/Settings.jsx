@@ -1345,8 +1345,8 @@ const Settings = () => {
                   </div>
                 </div>
 
-                {/* Jira Integration (Coming Soon) */}
-                <div className="border border-nordic-border rounded-lg overflow-hidden opacity-60">
+                {/* Jira Integration */}
+                <div className="border border-nordic-border rounded-lg overflow-hidden">
                   <div className="p-4 bg-nordic-bg-primary border-b border-nordic-border">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -1364,10 +1364,130 @@ const Settings = () => {
                           <p className="text-sm text-nordic-text-muted">Push issues to Jira projects</p>
                         </div>
                       </div>
-                      <Badge className="bg-nordic-bg-primary text-nordic-text-muted border border-nordic-border">
-                        Coming Soon
+                      <Badge
+                        className={
+                          integrations?.jira?.status === 'connected'
+                            ? 'bg-nordic-green text-white'
+                            : integrations?.jira?.configured
+                            ? 'bg-nordic-bg-primary text-nordic-text-muted border border-nordic-border'
+                            : 'bg-amber-500/20 text-amber-500 border border-amber-500/30'
+                        }
+                      >
+                        {integrations?.jira?.status === 'connected'
+                          ? 'Connected'
+                          : integrations?.jira?.configured
+                          ? 'Not Connected'
+                          : 'Not Configured'}
                       </Badge>
                     </div>
+                  </div>
+                  
+                  <div className="p-4 space-y-4">
+                    {integrations?.jira?.status === 'connected' ? (
+                      <>
+                        {/* Connected State */}
+                        <div className="flex items-center gap-2 text-sm text-nordic-text-secondary">
+                          <CheckCircle className="w-4 h-4 text-nordic-green" />
+                          Connected to: <span className="font-medium text-nordic-text-primary">{integrations.jira.account_name || 'Jira Site'}</span>
+                        </div>
+                        
+                        {integrations.jira.default_project && (
+                          <div className="text-sm text-nordic-text-secondary">
+                            Default project: <span className="font-medium text-nordic-text-primary">{integrations.jira.default_project.name}</span>
+                          </div>
+                        )}
+                        
+                        {/* Project Selection */}
+                        {!integrations.jira.default_project && jiraProjects.length > 0 && (
+                          <div className="space-y-3 p-3 bg-nordic-bg-primary rounded-lg border border-nordic-border">
+                            <Label className="text-nordic-text-secondary">Select Default Project</Label>
+                            <Select value={selectedJiraProject} onValueChange={setSelectedJiraProject}>
+                              <SelectTrigger className="bg-background border-border text-foreground">
+                                <SelectValue placeholder="Choose a project" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-popover border-border shadow-lg">
+                                {jiraProjects.map((project) => (
+                                  <SelectItem key={project.key} value={project.key}>
+                                    {project.key} - {project.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              onClick={handleConfigureJira}
+                              disabled={!selectedJiraProject || configuringJira}
+                              size="sm"
+                              className="bg-nordic-accent hover:bg-nordic-accent/90 text-white"
+                            >
+                              {configuringJira ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Saving...
+                                </>
+                              ) : (
+                                'Save Configuration'
+                              )}
+                            </Button>
+                          </div>
+                        )}
+                        
+                        <Button
+                          onClick={handleDisconnectJira}
+                          disabled={disconnectingJira}
+                          variant="outline"
+                          className="border-red-500 text-red-500 hover:bg-red-500/10"
+                          data-testid="disconnect-jira-btn"
+                        >
+                          {disconnectingJira ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Disconnecting...
+                            </>
+                          ) : (
+                            <>
+                              <Unlink className="w-4 h-4 mr-2" />
+                              Disconnect
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    ) : integrations?.jira?.configured ? (
+                      <>
+                        {/* Not Connected State */}
+                        <p className="text-sm text-nordic-text-muted">
+                          Click Connect to authorize JarlPM to access your Jira Cloud site.
+                        </p>
+                        <Button
+                          onClick={handleConnectJira}
+                          disabled={connectingJira || !isActive}
+                          className="bg-[#0052CC] hover:bg-[#0052CC]/90 text-white"
+                          data-testid="connect-jira-btn"
+                        >
+                          {connectingJira ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Connecting...
+                            </>
+                          ) : (
+                            <>
+                              <Link2 className="w-4 h-4 mr-2" />
+                              Connect to Jira
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        {/* Not Configured State */}
+                        <div className="flex items-center gap-2 text-sm text-amber-500">
+                          <AlertCircle className="w-4 h-4" />
+                          OAuth credentials not configured on server
+                        </div>
+                        <p className="text-xs text-nordic-text-muted">
+                          Contact your administrator to set up JIRA_OAUTH_CLIENT_ID, JIRA_OAUTH_CLIENT_SECRET, and JIRA_OAUTH_REDIRECT_URI environment variables.
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
 
