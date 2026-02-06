@@ -25,7 +25,7 @@ import requests
 import os
 
 # Get base URL from environment
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://product-ai-4.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://jarlpm-fix.preview.emergentagent.com').rstrip('/')
 
 # Test user credentials (created by Test Login button)
 TEST_SESSION_TOKEN = "test_session_jarlpm_full_access_2025"
