@@ -1268,3 +1268,28 @@ When an Epic is locked, users enter Feature Planning Mode:
 - Delivery Reality → Sprints connection via `GET /sprints/from-delivery-reality/{epic_id}`
 
 
+### 2026-02-06: AI Endpoint Robustness Refactor (COMPLETE)
+**Issue:** New AI-powered endpoints in `delivery_reality.py` and `sprints.py` were fragile and didn't follow established architectural patterns.
+
+**Refactoring Applied:**
+1. **StrictOutputService Integration** - All 6 AI endpoints now use `validate_and_repair()` for robust JSON parsing with auto-repair (max 2 attempts)
+2. **Subscription Gating** - Added `EpicService.check_subscription_active()` check to all AI endpoints (returns 402 if no active subscription)
+3. **LLM Config Check** - Returns 400 with clear error message if no LLM provider configured
+4. **ID Hallucination Prevention** - Alternative-cuts and sprint AI endpoints validate story IDs against actual IDs
+5. **Model Health Tracking** - Added `strict_service.track_call()` to track success/failure rates for weak model detection
+
+**AI Endpoints Refactored:**
+- `POST /api/delivery-reality/initiative/{id}/ai/cut-rationale`
+- `POST /api/delivery-reality/initiative/{id}/ai/alternative-cuts`
+- `POST /api/delivery-reality/initiative/{id}/ai/risk-review`
+- `POST /api/sprints/ai/kickoff-plan`
+- `POST /api/sprints/ai/standup-summary`
+- `POST /api/sprints/ai/wip-suggestions`
+
+**Files Modified:**
+- `/app/backend/routes/delivery_reality.py` - Lines 893-1220
+- `/app/backend/routes/sprints.py` - Lines 369-715
+
+**Testing:** 24/24 backend tests passed (subscription gating, LLM config check, error handling, StrictOutputService validation)
+
+
