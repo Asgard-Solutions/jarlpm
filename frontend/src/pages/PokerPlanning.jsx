@@ -262,10 +262,17 @@ const PokerPlanning = () => {
           
           <Dialog open={showStartDialog} onOpenChange={setShowStartDialog}>
             <DialogTrigger asChild>
-              <Button disabled={availableEpics.length === 0} data-testid="start-new-poker">
-                <Plus className="h-4 w-4 mr-2" />
-                Start New Session
-              </Button>
+              <div className="relative">
+                <Button disabled={availableEpics.length === 0} data-testid="start-new-poker">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Start New Session
+                </Button>
+                {availableEpics.length === 0 && (
+                  <p className="text-xs text-muted-foreground mt-1 absolute whitespace-nowrap">
+                    All stories have been estimated
+                  </p>
+                )}
+              </div>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
