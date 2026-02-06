@@ -240,6 +240,16 @@ const Scoring = () => {
               )}
             </div>
           </CardHeader>
+          {selectedEpicDetail.moscow_reasoning && (
+            <CardContent className="pt-0">
+              <div className="mt-2 pt-2 border-t border-border">
+                <div className="text-xs">
+                  <span className="font-medium text-violet-400">AI Reasoning: </span>
+                  <span className="text-muted-foreground">{selectedEpicDetail.moscow_reasoning}</span>
+                </div>
+              </div>
+            </CardContent>
+          )}
         </Card>
 
         {/* AI Suggestions Preview */}
