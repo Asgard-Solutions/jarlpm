@@ -1405,7 +1405,7 @@ async def get_scored_items(
     standalone_stories_result = await session.execute(
         select(UserStory).where(
             UserStory.user_id == user_id,
-            UserStory.is_standalone == True,
+            UserStory.is_standalone.is_(True),
             UserStory.rice_total.isnot(None)
         )
     )
