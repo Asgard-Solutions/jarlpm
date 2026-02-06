@@ -527,6 +527,7 @@ export const integrationsAPI = {
   getLinearTeams: () => api.get('/integrations/linear/teams'),
   getLinearProjects: (teamId) => api.get(`/integrations/linear/teams/${teamId}/projects`),
   getLinearLabels: (teamId) => api.get(`/integrations/linear/teams/${teamId}/labels`),
+  getLinearOrganizationLabels: () => api.get('/integrations/linear/labels'),
   
   // Jira
   connectJira: (callbackUrl) => api.post('/integrations/jira/connect', { frontend_callback_url: callbackUrl }),
