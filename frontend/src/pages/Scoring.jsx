@@ -328,7 +328,7 @@ const Scoring = () => {
               {selectedEpicDetail.features.map((feature) => (
                 <Card key={feature.feature_id} className="bg-card border-border hover:border-primary/30 transition-colors">
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-2">
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-foreground truncate">{feature.title}</h4>
                       </div>
@@ -345,6 +345,23 @@ const Scoring = () => {
                         )}
                       </div>
                     </div>
+                    {/* AI Reasoning */}
+                    {(feature.moscow_reasoning || feature.rice_reasoning) && (
+                      <div className="mt-3 pt-3 border-t border-border space-y-2">
+                        {feature.moscow_reasoning && (
+                          <div className="text-xs">
+                            <span className="font-medium text-violet-400">MoSCoW Reasoning: </span>
+                            <span className="text-muted-foreground">{feature.moscow_reasoning}</span>
+                          </div>
+                        )}
+                        {feature.rice_reasoning && (
+                          <div className="text-xs">
+                            <span className="font-medium text-blue-400">RICE Reasoning: </span>
+                            <span className="text-muted-foreground">{feature.rice_reasoning}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
