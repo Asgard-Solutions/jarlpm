@@ -24,7 +24,8 @@ import {
   ArrowLeft, Send, Loader2, Lock, CheckCircle2, 
   XCircle, FileText, History, AlertCircle, Layers,
   User, Bot, Settings, Plus, Puzzle, BookOpen, Bug, Trash2,
-  ChevronRight, Sparkles, RefreshCw, Edit3, MessageSquare, Target, Flag, TrendingUp
+  ChevronRight, Sparkles, RefreshCw, Edit3, MessageSquare, Target, Flag, TrendingUp,
+  LayoutGrid
 } from 'lucide-react';
 
 const STAGES = [
