@@ -1046,9 +1046,19 @@ async def generate_alternative_cuts(
     - Cut low adoption risk (features with uncertain usage)
     """
     from services.llm_service import LLMService
+    from services.strict_output_service import StrictOutputService
+    from services.epic_service import EpicService
+    from pydantic import BaseModel as PydanticBaseModel
+    from typing import List as TypingList
     import json as json_lib
     
     user_id = await get_current_user_id(request, session)
+    
+    # ===== SUBSCRIPTION CHECK =====
+    epic_service = EpicService(session)
+    has_subscription = await epic_service.check_subscription_active(user_id)
+    if not has_subscription:
+        raise HTTPException(status_code=402, detail="Active subscription required for AI features")
     
     # Verify epic ownership
     epic_q = select(Epic).where(Epic.epic_id == epic_id, Epic.user_id == user_id)
@@ -1057,6 +1067,12 @@ async def generate_alternative_cuts(
     
     if not epic:
         raise HTTPException(status_code=404, detail="Initiative not found")
+    
+    # Get LLM config
+    llm_service = LLMService(session)
+    llm_config = await llm_service.get_user_llm_config(user_id)
+    if not llm_config:
+        raise HTTPException(status_code=400, detail="No LLM provider configured. Please add your API key in Settings.")
     
     # Get context
     ctx = await get_delivery_context(user_id, session)
@@ -1068,14 +1084,29 @@ async def generate_alternative_cuts(
     if points_to_cut == 0:
         return AlternativeCutSetsResponse(alternatives=[])
     
-    # Build story list for AI
-    stories_for_ai = [{
-        "id": s["story_id"],
-        "title": s.get("title") or s["story_text"][:50],
-        "points": s.get("points", 0),
-        "priority": s.get("priority", "should-have"),
-        "feature": s.get("feature_title", "")
-    } for s in points_data["stories"]]
+    # Build story list for AI - this will be used to validate returned IDs
+    valid_story_ids = set()
+    stories_for_ai = []
+    for s in points_data["stories"]:
+        valid_story_ids.add(s["story_id"])
+        stories_for_ai.append({
+            "id": s["story_id"],
+            "title": s.get("title") or s["story_text"][:50],
+            "points": s.get("points", 0),
+            "priority": s.get("priority", "should-have"),
+            "feature": s.get("feature_title", "")
+        })
+    
+    # Create internal schema for LLM response parsing
+    class AlternativeCutLLM(PydanticBaseModel):
+        name: str
+        description: str
+        strategy: str
+        story_ids: TypingList[str]
+        total_points: int
+    
+    class AlternativesLLMResponse(PydanticBaseModel):
+        alternatives: TypingList[AlternativeCutLLM]
     
     system_prompt = """You are a Senior Product Manager helping with scope decisions.
 
@@ -1087,6 +1118,8 @@ STRATEGIES:
 3. "Cut Low Adoption" - Defer features with uncertain user adoption
 
 For each strategy, select stories to defer that total AT LEAST the required points to cut.
+
+IMPORTANT: Only use story IDs from the provided list. Do not invent IDs.
 
 Return ONLY valid JSON (no markdown fences):
 {
@@ -1105,43 +1138,81 @@ Return ONLY valid JSON (no markdown fences):
     user_prompt = f"""Initiative: {epic.title}
 Points to cut: {points_to_cut} (to fit {ctx['two_sprint_capacity']} pt capacity)
 
-STORIES:
+STORIES (use ONLY these IDs):
 {json_lib.dumps(stories_for_ai, indent=2)}
 
 Generate 3 alternative cut strategies, each cutting at least {points_to_cut} points."""
 
-    llm_service = LLMService(session)
+    # ===== USE STRICT OUTPUT SERVICE FOR ROBUST PARSING =====
+    strict_service = StrictOutputService(session)
     
     try:
+        # Generate response
         full_response = ""
         async for chunk in llm_service.generate_stream(user_id, system_prompt, user_prompt):
             full_response += chunk
         
-        # Parse JSON response
-        full_response = full_response.strip()
-        if full_response.startswith("```"):
-            full_response = full_response.split("```")[1]
-            if full_response.startswith("json"):
-                full_response = full_response[4:]
+        # Repair callback for StrictOutputService
+        async def repair_callback(repair_prompt: str) -> str:
+            repair_response = ""
+            async for chunk in llm_service.generate_stream(user_id, system_prompt, repair_prompt):
+                repair_response += chunk
+            return repair_response
         
-        result = json_lib.loads(full_response)
+        # Validate and repair with StrictOutputService
+        validation_result = await strict_service.validate_and_repair(
+            raw_response=full_response,
+            schema=AlternativesLLMResponse,
+            repair_callback=repair_callback,
+            max_repairs=2,
+            original_prompt=user_prompt
+        )
         
+        # Track model health
+        await strict_service.track_call(
+            user_id=user_id,
+            provider=llm_config.provider,
+            model_name=llm_config.model_name,
+            success=validation_result.valid,
+            repaired=validation_result.repair_attempts > 0
+        )
+        
+        if not validation_result.valid:
+            logger.error(f"Failed to parse AI alternative-cuts response after repairs: {validation_result.errors}")
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Failed to generate alternative cuts: {', '.join(validation_result.errors)}"
+            )
+        
+        # ===== VALIDATE STORY IDS TO PREVENT HALLUCINATION =====
         alternatives = []
-        for alt in result.get("alternatives", []):
+        for alt in validation_result.data.get("alternatives", []):
+            # Filter to only valid story IDs
+            validated_story_ids = [sid for sid in alt.get("story_ids", []) if sid in valid_story_ids]
+            
+            # Recalculate total points based on validated IDs
+            validated_points = sum(
+                s.get("points", 0) for s in points_data["stories"] 
+                if s["story_id"] in validated_story_ids
+            )
+            
             alternatives.append(AlternativeCutSet(
                 name=alt.get("name", ""),
                 description=alt.get("description", ""),
                 strategy=alt.get("strategy", ""),
-                stories_to_defer=alt.get("story_ids", []),
-                total_deferred_points=alt.get("total_points", 0)
+                stories_to_defer=validated_story_ids,  # Only valid IDs
+                total_deferred_points=validated_points  # Recalculated
             ))
         
         return AlternativeCutSetsResponse(alternatives=alternatives)
+        
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except json_lib.JSONDecodeError:
-        logger.error(f"Failed to parse AI response: {full_response}")
-        raise HTTPException(status_code=500, detail="Failed to parse AI response")
+    except Exception as e:
+        logger.error(f"Alternative cuts generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate alternative cuts: {str(e)}")
 
 
 @router.post("/initiative/{epic_id}/ai/risk-review", response_model=RiskReview)
