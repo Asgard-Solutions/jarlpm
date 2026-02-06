@@ -238,6 +238,15 @@ const Epic = () => {
           setHasJiraIntegration(false);
         }
         
+        // Check if Azure DevOps integration is connected
+        try {
+          const adoRes = await integrationsAPI.getProviderStatus('azure_devops');
+          setHasAzureDevOpsIntegration(adoRes.data?.connected || false);
+        } catch (e) {
+          // Ignore - may not have subscription or integration
+          setHasAzureDevOpsIntegration(false);
+        }
+        
         // If fully complete (all features approved, all have approved stories), redirect to review
         if (featuresData.length > 0 && allFeaturesComplete && hasAnyStories) {
           navigate(`/epic/${epicId}/review`);
