@@ -220,13 +220,21 @@ async def generate_lean_canvas(
 Return a complete Lean Canvas in JSON format with all 9 sections filled out based on this context.
 Be specific and actionable - don't use generic placeholders."""
 
-    # Call LLM using the standard service
+    # Get LLM config and prepare for streaming
     llm_service = LLMService(session)
+    config = await llm_service.get_user_llm_config(user_id)
+    if not config:
+        raise HTTPException(status_code=400, detail="No LLM provider configured")
+    
+    # Prepare for streaming - extract all needed data BEFORE releasing session
+    config_data = llm_service.prepare_for_streaming(config)
     
     try:
         response_text = ""
-        async for chunk in llm_service.generate_stream(
-            user_id=user_id,
+        # Use stream_with_config which doesn't need a session
+        llm = LLMService()  # No session needed for streaming
+        async for chunk in llm.stream_with_config(
+            config_data=config_data,
             system_prompt=LEAN_CANVAS_SYSTEM_PROMPT,
             user_prompt=user_prompt
         ):
