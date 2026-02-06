@@ -584,8 +584,8 @@ TONE: Professional, calm, direct, insightful."""
                     logger.warning(f"Failed to parse feature update: {e}")
             
             # Save assistant response - need a new session for this
-            from db import async_session_maker
-            async with async_session_maker() as new_session:
+            from db import AsyncSessionLocal
+            async with AsyncSessionLocal() as new_session:
                 new_feature_service = FeatureService(new_session)
                 await new_feature_service.add_conversation_event(
                     feature_id=feature_id,
