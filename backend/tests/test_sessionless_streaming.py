@@ -73,13 +73,16 @@ class TestInitiativeGeneration:
     
     def test_initiative_generate_accessible(self, auth_session):
         """Initiative generation endpoint should be accessible"""
+        # Use stream=True to handle streaming responses
         response = auth_session.post(
             f"{BASE_URL}/api/initiative/generate",
-            json={"idea": "Test idea for pharmacy app"}
+            json={"idea": "Test idea for pharmacy app"},
+            stream=True,
+            timeout=30
         )
         # Expected: 402 (subscription required) or 200 (streaming)
         # NOT expected: 500 (server error indicating import/code issues)
-        assert response.status_code != 500, f"Server error: {response.text}"
+        assert response.status_code != 500, f"Server error: {response.status_code}"
         print(f"✓ Initiative generate endpoint accessible: {response.status_code}")
         
         if response.status_code == 402:
@@ -88,6 +91,8 @@ class TestInitiativeGeneration:
             print(f"  → Returns 400 (no LLM configured) - expected behavior")
         elif response.status_code == 200:
             print(f"  → Returns 200 (streaming response)")
+            # Close the stream without reading all content
+            response.close()
     
     def test_initiative_generate_requires_auth(self):
         """Initiative generation should require authentication"""
