@@ -261,3 +261,111 @@ async def get_azure_devops_service(session: AsyncSession, user_id: str) -> Azure
     encryption = get_encryption_service()
     pat = encryption.decrypt(integration.pat_encrypted)
     return AzureDevOpsRESTService(integration.org_url, pat)
+
+
+# ============================================
+# Error Handling Utilities
+# ============================================
+
+from services.retry_service import (
+    format_user_friendly_error,
+    generate_error_summary,
+    categorize_push_errors,
+    PushResult,
+    RetryContext,
+    retry_async,
+    is_retryable_error
+)
+
+
+class IntegrationErrorResponse(BaseModel):
+    """Standardized error response for integration operations."""
+    status: str = "error"
+    error_code: str
+    message: str
+    details: Optional[dict] = None
+    recommendations: Optional[list] = None
+
+
+def create_push_error_response(
+    errors: list,
+    provider: str,
+    total_items: int,
+    run_id: Optional[int] = None
+) -> dict:
+    """Create a standardized error response for push operations."""
+    error_summary = generate_error_summary(errors, provider, total_items)
+    
+    return {
+        "status": "partial" if total_items - len(errors) > 0 else "failed",
+        "run_id": run_id,
+        "error_summary": error_summary,
+        "errors": errors[:10],  # Limit to first 10 errors for response size
+        "total_errors": len(errors),
+        "recommendations": error_summary.get("recommendations", [])
+    }
+
+
+def handle_integration_exception(e: Exception, provider: str) -> HTTPException:
+    """Convert integration exceptions to appropriate HTTP responses."""
+    error_str = str(e).lower()
+    
+    # Rate limiting
+    if "rate limit" in error_str or "429" in error_str:
+        return HTTPException(
+            status_code=429,
+            detail={
+                "error_code": "RATE_LIMITED",
+                "message": f"{provider} rate limit reached. Please wait and try again.",
+                "retry_after": 60
+            }
+        )
+    
+    # Authentication
+    if "unauthorized" in error_str or "401" in error_str or "authentication" in error_str:
+        return HTTPException(
+            status_code=401,
+            detail={
+                "error_code": "AUTH_EXPIRED",
+                "message": f"Your {provider} connection has expired. Please reconnect."
+            }
+        )
+    
+    # Permission
+    if "forbidden" in error_str or "403" in error_str:
+        return HTTPException(
+            status_code=403,
+            detail={
+                "error_code": "PERMISSION_DENIED",
+                "message": f"You don't have permission to perform this action in {provider}."
+            }
+        )
+    
+    # Not found
+    if "not found" in error_str or "404" in error_str:
+        return HTTPException(
+            status_code=404,
+            detail={
+                "error_code": "RESOURCE_NOT_FOUND",
+                "message": f"The {provider} resource was not found. Check your settings."
+            }
+        )
+    
+    # Server errors
+    if any(x in error_str for x in ["500", "502", "503", "504"]):
+        return HTTPException(
+            status_code=503,
+            detail={
+                "error_code": "PROVIDER_UNAVAILABLE",
+                "message": f"{provider} is temporarily unavailable. Please try again later."
+            }
+        )
+    
+    # Default
+    return HTTPException(
+        status_code=500,
+        detail={
+            "error_code": "INTEGRATION_ERROR",
+            "message": format_user_friendly_error(e, provider)
+        }
+    )
