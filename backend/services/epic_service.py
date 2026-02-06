@@ -10,6 +10,7 @@ from db.models import (
     Epic, EpicStage, EpicSnapshot, EpicTranscriptEvent,
     EpicDecision, Subscription, SubscriptionStatus, STAGE_ORDER
 )
+from services.subscription_helper import is_subscription_active, get_user_subscription
 
 
 class EpicService:
