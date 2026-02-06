@@ -803,6 +803,79 @@ and small agencies (2-5 people)."`}
                                       )}
                                     </div>
                                   )}
+                                  
+                                  {/* PM-Level Details (new rich fields) */}
+                                  {(story.description || story.success_criteria || story.notes_for_engineering || story.instrumentation?.length > 0) && (
+                                    <div className="mt-2 pt-2 border-t border-nordic-border/50 space-y-2">
+                                      {/* Description */}
+                                      {story.description && (
+                                        <div className="text-[10px]">
+                                          <span className="text-nordic-accent font-medium">Context:</span>
+                                          <p className="mt-0.5 text-nordic-text-muted">{story.description}</p>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Success Criteria */}
+                                      {story.success_criteria && (
+                                        <div className="text-[10px]">
+                                          <span className="text-green-400 font-medium">Success:</span>
+                                          <p className="mt-0.5 text-nordic-text-muted">{story.success_criteria}</p>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Non-Goals & Edge Cases */}
+                                      <div className="grid grid-cols-2 gap-2">
+                                        {story.non_goals?.length > 0 && (
+                                          <div className="text-[10px]">
+                                            <span className="text-red-400 font-medium">Non-Goals:</span>
+                                            <ul className="mt-0.5 text-nordic-text-muted/70">
+                                              {story.non_goals.slice(0, 2).map((ng, i) => (
+                                                <li key={i} className="truncate">✗ {ng}</li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                        {story.edge_cases?.length > 0 && (
+                                          <div className="text-[10px]">
+                                            <span className="text-amber-400 font-medium">Edge Cases:</span>
+                                            <ul className="mt-0.5 text-nordic-text-muted/70">
+                                              {story.edge_cases.slice(0, 2).map((ec, i) => (
+                                                <li key={i} className="truncate">◇ {ec}</li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                      </div>
+                                      
+                                      {/* UX Notes */}
+                                      {story.ux_notes && (
+                                        <div className="text-[10px]">
+                                          <span className="text-purple-400 font-medium">UX:</span>
+                                          <p className="mt-0.5 text-nordic-text-muted">{story.ux_notes}</p>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Instrumentation */}
+                                      {story.instrumentation?.length > 0 && (
+                                        <div className="text-[10px]">
+                                          <span className="text-cyan-400 font-medium">Analytics:</span>
+                                          <ul className="mt-0.5 text-nordic-text-muted/70">
+                                            {story.instrumentation.map((inst, i) => (
+                                              <li key={i} className="truncate font-mono">📊 {inst}</li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Engineering Notes */}
+                                      {story.notes_for_engineering && (
+                                        <div className="text-[10px] bg-nordic-bg-secondary p-2 rounded">
+                                          <span className="text-blue-400 font-medium">Eng Notes:</span>
+                                          <p className="mt-0.5 text-nordic-text-muted">{story.notes_for_engineering}</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>
