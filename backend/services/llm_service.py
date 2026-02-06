@@ -197,7 +197,8 @@ class LLMService:
         request_body = {
             "model": model or "default",
             "messages": messages,
-            "stream": True
+            "stream": True,
+            "max_tokens": 4096  # Ensure complete responses from local models
         }
         if temperature is not None:
             request_body["temperature"] = temperature
