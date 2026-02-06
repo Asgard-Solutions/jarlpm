@@ -207,20 +207,32 @@ async def estimate_story(
     if not llm_config:
         raise HTTPException(status_code=400, detail="No LLM provider configured")
     
+    # Prepare for streaming - extract config BEFORE releasing session
+    config_data = llm_service.prepare_for_streaming(llm_config)
+    
     # Get delivery context
     delivery_context = await prompt_service.get_delivery_context(user_id)
     delivery_context_text = prompt_service.format_delivery_context(delivery_context)
     
+    # Capture story data for generator
+    story_id = body.story_id
+    story_title = story.title or 'Untitled'
+    story_persona = story.persona
+    story_action = story.action
+    story_benefit = story.benefit
+    story_text = story.story_text
+    story_acceptance_criteria = story.acceptance_criteria or ['No criteria specified']
+    
     # Build story context
     story_context = f"""
 USER STORY TO ESTIMATE:
-- Title: {story.title or 'Untitled'}
-- As a: {story.persona}
-- I want to: {story.action}
-- So that: {story.benefit}
-- Full story: "{story.story_text}"
+- Title: {story_title}
+- As a: {story_persona}
+- I want to: {story_action}
+- So that: {story_benefit}
+- Full story: "{story_text}"
 - Acceptance Criteria:
-{chr(10).join(f'  - {c}' for c in (story.acceptance_criteria or ['No criteria specified']))}
+{chr(10).join(f'  - {c}' for c in story_acceptance_criteria)}
 """
     
     async def generate():
