@@ -18,6 +18,7 @@ from services.scoring_service import ScoringService
 from services.llm_service import LLMService
 from services.prompt_service import PromptService
 from services.epic_service import EpicService
+from services.subscription_helper import is_subscription_active, get_user_subscription
 from routes.auth import get_current_user_id
 
 logger = logging.getLogger(__name__)
