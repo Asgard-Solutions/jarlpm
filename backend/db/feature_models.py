@@ -61,6 +61,7 @@ class Feature(Base):
     
     # MoSCoW Scoring (must_have, should_have, could_have, wont_have)
     moscow_score: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    moscow_reasoning: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
     # RICE Scoring (Reach * Impact * Confidence / Effort)
     rice_reach: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # 1-10 scale
@@ -68,6 +69,7 @@ class Feature(Base):
     rice_confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # 0.5, 0.8, 1.0
     rice_effort: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # 0.5-10 person-months
     rice_total: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # Calculated score
+    rice_reasoning: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
