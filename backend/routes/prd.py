@@ -224,3 +224,168 @@ async def delete_prd(
     await session.commit()
     
     return {"success": True, "message": "PRD deleted"}
+
+
+@router.post("/generate/{epic_id}")
+async def generate_prd_with_llm(
+    epic_id: str,
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Generate a comprehensive PRD using LLM from epic data.
+    Uses the epic's problem statement, features, and stories to create
+    a senior PM-quality PRD document.
+    """
+    from services.llm_service import LLMService
+    from services.strict_output_service import StrictOutputService
+    from services.epic_service import EpicService
+    from db.feature_models import Feature
+    from db.user_story_models import UserStory
+    
+    user_id = await get_current_user_id(request, session)
+    
+    # Check subscription
+    epic_service = EpicService(session)
+    has_subscription = await epic_service.check_subscription_active(user_id)
+    if not has_subscription:
+        raise HTTPException(status_code=402, detail="Active subscription required for AI features")
+    
+    # Get epic
+    epic_result = await session.execute(
+        select(Epic).where(Epic.epic_id == epic_id, Epic.user_id == user_id)
+    )
+    epic = epic_result.scalar_one_or_none()
+    if not epic:
+        raise HTTPException(status_code=404, detail="Epic not found")
+    
+    # Get LLM config
+    llm_service = LLMService(session)
+    llm_config = await llm_service.get_user_llm_config(user_id)
+    if not llm_config:
+        raise HTTPException(status_code=400, detail="No LLM provider configured. Please add your API key in Settings.")
+    
+    # Get features
+    features_result = await session.execute(
+        select(Feature).where(Feature.epic_id == epic_id)
+    )
+    features = features_result.scalars().all()
+    
+    # Get stories for each feature
+    feature_ids = [f.feature_id for f in features]
+    stories_result = await session.execute(
+        select(UserStory).where(UserStory.feature_id.in_(feature_ids))
+    ) if feature_ids else None
+    stories = stories_result.scalars().all() if stories_result else []
+    
+    # Group stories by feature
+    stories_by_feature = {}
+    for story in stories:
+        if story.feature_id not in stories_by_feature:
+            stories_by_feature[story.feature_id] = []
+        stories_by_feature[story.feature_id].append(story)
+    
+    # Build context for LLM
+    features_context = []
+    for f in features:
+        feature_stories = stories_by_feature.get(f.feature_id, [])
+        features_context.append({
+            "name": f.title,
+            "description": f.description,
+            "priority": f.priority,
+            "stories": [
+                {
+                    "title": s.title or s.story_text[:50],
+                    "story_text": s.story_text,
+                    "acceptance_criteria": s.acceptance_criteria,
+                    "points": s.story_points,
+                    "priority": s.priority
+                }
+                for s in feature_stories
+            ]
+        })
+    
+    system_prompt = """You are a Senior Product Manager creating a comprehensive PRD document.
+
+Given the epic data and features, generate a professional PRD in Markdown format that would be ready to share with stakeholders.
+
+The PRD should include:
+1. Executive Summary - Problem, Vision, Target Users
+2. Goals & Objectives - Desired outcomes, success metrics, key results
+3. User Personas - Detailed personas based on target users
+4. Feature Requirements - Each feature with user stories and acceptance criteria
+5. Technical Considerations - Architecture notes, integrations, constraints
+6. Risks & Mitigations - Key risks and how to address them
+7. Success Criteria - How we'll measure success
+8. Timeline & Milestones - Suggested phasing
+
+Make it actionable, specific, and professional. Use the actual data provided, don't invent new features."""
+
+    user_prompt = f"""Create a comprehensive PRD for:
+
+PRODUCT: {epic.title}
+TAGLINE: {epic.tagline or 'N/A'}
+
+PROBLEM STATEMENT:
+{epic.problem_statement or 'Not defined'}
+
+VISION:
+{epic.vision or 'Not defined'}
+
+TARGET USERS:
+{epic.target_users or 'Not defined'}
+
+DESIRED OUTCOME:
+{epic.desired_outcome or 'Not defined'}
+
+FEATURES AND USER STORIES:
+{logger.info(f"Features context: {features_context}")}
+{str(features_context) if features_context else 'No features defined yet'}
+
+Generate a professional, stakeholder-ready PRD document in Markdown format."""
+
+    try:
+        full_response = ""
+        async for chunk in llm_service.generate_stream(user_id, system_prompt, user_prompt):
+            full_response += chunk
+        
+        if not full_response.strip():
+            raise HTTPException(status_code=500, detail="LLM returned empty response")
+        
+        # Save the generated PRD
+        existing_result = await session.execute(
+            select(PRDDocument).where(PRDDocument.epic_id == epic_id)
+        )
+        existing_prd = existing_result.scalar_one_or_none()
+        
+        if existing_prd:
+            existing_prd.sections = {"content": full_response}
+            existing_prd.source = "ai_generated"
+            existing_prd.updated_at = datetime.now(timezone.utc)
+        else:
+            new_prd = PRDDocument(
+                epic_id=epic_id,
+                user_id=user_id,
+                sections={"content": full_response},
+                title=epic.title,
+                version="1.0",
+                status="draft",
+                source="ai_generated"
+            )
+            session.add(new_prd)
+        
+        await session.commit()
+        
+        return {
+            "success": True,
+            "epic_id": epic_id,
+            "content": full_response,
+            "source": "ai_generated",
+            "message": "PRD generated successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"PRD generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate PRD: {str(e)}")
