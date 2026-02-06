@@ -42,6 +42,7 @@ from services.strict_output_service import (
     StrictOutputService, get_strict_output_service,
     TaskType, QualityMode, TASK_TEMPERATURE
 )
+from services.subscription_helper import is_subscription_active, get_user_subscription
 from routes.auth import get_current_user_id
 
 logger = logging.getLogger(__name__)
