@@ -430,6 +430,29 @@ export const deliveryRealityAPI = {
   generateRiskReview: (epicId) => api.post(`/delivery-reality/initiative/${epicId}/ai/risk-review`),
 };
 
+// Sprint API
+export const sprintAPI = {
+  // Get current sprint summary
+  getCurrentSprint: () => api.get('/sprints/current'),
+  
+  // Update story sprint assignment
+  updateStorySprint: (storyId, sprintNumber) => api.put(`/sprints/story/${storyId}/sprint`, { sprint_number: sprintNumber }),
+  
+  // Update story status
+  updateStoryStatus: (storyId, status, blockedReason) => api.put(`/sprints/story/${storyId}/status`, { status, blocked_reason: blockedReason }),
+  
+  // Commit story to current sprint
+  commitStory: (storyId) => api.post(`/sprints/story/${storyId}/commit`),
+  
+  // Get stories from Delivery Reality scope plan
+  getFromDeliveryReality: (epicId) => api.get(`/sprints/from-delivery-reality/${epicId}`),
+  
+  // AI Features
+  generateKickoffPlan: () => api.post('/sprints/ai/kickoff-plan'),
+  generateStandupSummary: () => api.post('/sprints/ai/standup-summary'),
+  generateWipSuggestions: () => api.post('/sprints/ai/wip-suggestions'),
+};
+
 // Dashboard API
 export const dashboardAPI = {
   // Get complete dashboard data
