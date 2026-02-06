@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { subscriptionAPI, llmProviderAPI, authAPI, deliveryContextAPI } from '@/api';
+import { subscriptionAPI, llmProviderAPI, authAPI, deliveryContextAPI, integrationsAPI } from '@/api';
 import { useAuthStore, useSubscriptionStore, useLLMProviderStore, useThemeStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 import { 
   ArrowLeft, CreditCard, Key, Loader2, 
   CheckCircle, AlertCircle, Trash2, ExternalLink, Palette, Sun, Moon, Monitor,
-  Briefcase, Users, Calendar, Sparkles
+  Briefcase, Users, Calendar, Sparkles, Link2, Unlink
 } from 'lucide-react';
 
 const Settings = () => {
