@@ -312,7 +312,7 @@ const PushToLinearModal = ({ isOpen, onClose, epicId, epicTitle }) => {
               {projects.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-nordic-text-secondary">Project (Optional)</Label>
-                  <Select value={selectedProject} onValueChange={setSelectedProject}>
+                  <Select value={selectedProject || '_none_'} onValueChange={(v) => setSelectedProject(v === '_none_' ? '' : v)}>
                     <SelectTrigger className="bg-background border-border text-foreground">
                       <SelectValue placeholder="No project" />
                     </SelectTrigger>
