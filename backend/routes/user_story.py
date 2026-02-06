@@ -571,6 +571,9 @@ async def chat_with_standalone_story(
     if not llm_config:
         raise HTTPException(status_code=400, detail="No LLM provider configured")
     
+    # Prepare for streaming - extract config BEFORE releasing session
+    config_data = llm_service.prepare_for_streaming(llm_config)
+    
     # Move to refining stage if in draft
     if story.current_stage == UserStoryStage.DRAFT.value:
         await story_service.start_refinement(story_id)
@@ -586,20 +589,32 @@ async def chat_with_standalone_story(
     delivery_context = await prompt_service.get_delivery_context(user_id)
     delivery_context_text = prompt_service.format_delivery_context(delivery_context)
     
+    # Get conversation history before entering generator
+    history = await story_service.get_conversation_history(story_id, limit=10)
+    
+    # Capture story data for use in generator
+    story_title = story.title or 'Untitled'
+    story_persona = story.persona
+    story_action = story.action
+    story_benefit = story.benefit
+    story_text = story.story_text
+    story_acceptance_criteria = story.acceptance_criteria or []
+    story_points = story.story_points or 'Not estimated'
+    
     # Build refinement prompt for standalone story
     system_prompt = f"""{delivery_context_text}
 
 You are a Senior Product Manager helping refine a standalone User Story.
 
 CURRENT USER STORY:
-- Title: {story.title or 'Untitled'}
-- Persona: {story.persona}
-- Action: {story.action}
-- Benefit: {story.benefit}
-- Full Text: "{story.story_text}"
+- Title: {story_title}
+- Persona: {story_persona}
+- Action: {story_action}
+- Benefit: {story_benefit}
+- Full Text: "{story_text}"
 - Acceptance Criteria:
-{chr(10).join(f'  - {c}' for c in (story.acceptance_criteria or []))}
-- Story Points: {story.story_points or 'Not estimated'}
+{chr(10).join(f'  - {c}' for c in story_acceptance_criteria)}
+- Story Points: {story_points}
 
 YOUR ROLE:
 - Help the user refine this story based on their feedback
@@ -628,14 +643,13 @@ TONE: Professional, calm, direct, insightful."""
 
     user_prompt = body.content
     
-    # Get conversation history
-    history = await story_service.get_conversation_history(story_id, limit=10)
-    
     async def generate():
         full_response = ""
         try:
-            async for chunk in llm_service.generate_stream(
-                user_id=user_id,
+            # Use sessionless streaming
+            llm = LLMService()  # No session needed
+            async for chunk in llm.stream_with_config(
+                config_data=config_data,
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
                 conversation_history=history[:-1] if history else None
@@ -651,25 +665,31 @@ TONE: Professional, calm, direct, insightful."""
                     update_json = re.search(r'\{[\s\S]*\}', update_match.group(1))
                     if update_json:
                         update_data = json.loads(update_json.group(0))
-                        # Apply the update
-                        await story_service.update_user_story(
-                            story_id=story_id,
-                            persona=update_data.get("persona"),
-                            action=update_data.get("action"),
-                            benefit=update_data.get("benefit"),
-                            acceptance_criteria=update_data.get("acceptance_criteria"),
-                            story_points=update_data.get("story_points")
-                        )
+                        # Apply the update with a fresh session
+                        from db import AsyncSessionLocal
+                        async with AsyncSessionLocal() as new_session:
+                            new_story_service = UserStoryService(new_session)
+                            await new_story_service.update_user_story(
+                                story_id=story_id,
+                                persona=update_data.get("persona"),
+                                action=update_data.get("action"),
+                                benefit=update_data.get("benefit"),
+                                acceptance_criteria=update_data.get("acceptance_criteria"),
+                                story_points=update_data.get("story_points")
+                            )
                         yield f"data: {json.dumps({'type': 'story_updated', 'update': update_data})}\n\n"
                 except (json.JSONDecodeError, ValueError) as e:
                     logger.warning(f"Failed to parse story update: {e}")
             
-            # Save assistant response
-            await story_service.add_conversation_event(
-                story_id=story_id,
-                role="assistant",
-                content=full_response
-            )
+            # Save assistant response with a fresh session
+            from db import AsyncSessionLocal
+            async with AsyncSessionLocal() as new_session:
+                new_story_service = UserStoryService(new_session)
+                await new_story_service.add_conversation_event(
+                    story_id=story_id,
+                    role="assistant",
+                    content=full_response
+                )
             
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
             
