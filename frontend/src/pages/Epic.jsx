@@ -656,8 +656,20 @@ const Epic = () => {
               </div>
               <div className="flex items-center gap-4">
                 {/* PRD and Lean Canvas Quick Links */}
-                {(hasPRD || hasLeanCanvas) && (
+                {(hasPRD || hasLeanCanvas || hasLinearIntegration) && (
                   <div className="flex items-center gap-2 mr-4">
+                    {hasLinearIntegration && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowPushToLinear(true)}
+                        className="bg-[#5E6AD2]/10 border-[#5E6AD2]/30 hover:bg-[#5E6AD2]/20"
+                        data-testid="push-to-linear-btn"
+                      >
+                        <Upload className="w-4 h-4 mr-2 text-[#5E6AD2]" />
+                        Push to Linear
+                      </Button>
+                    )}
                     {hasLeanCanvas && (
                       <Button
                         variant="outline"
