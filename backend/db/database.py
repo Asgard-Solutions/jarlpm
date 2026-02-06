@@ -5,6 +5,10 @@ PostgreSQL via Neon - SQLAlchemy 2.0 Async
 Environment Variables:
 - DATABASE_URL: PostgreSQL connection string (required)
 - DB_RESET_ON_STARTUP: If "true", drops all tables on startup (DANGEROUS - dev only)
+- DB_POOL_SIZE: Connection pool size (default: 5)
+- DB_MAX_OVERFLOW: Max overflow connections above pool_size (default: 10)
+- DB_POOL_TIMEOUT: Seconds to wait for connection from pool (default: 30)
+- DB_POOL_RECYCLE: Seconds before connection is recycled (default: 1800 = 30min)
 """
 import os
 import ssl
@@ -21,6 +25,12 @@ DATABASE_URL = os.environ.get('DATABASE_URL', '')
 
 # DANGER: Only set to "true" in development to reset DB on each restart
 DB_RESET_ON_STARTUP = os.environ.get('DB_RESET_ON_STARTUP', 'false').lower() == 'true'
+
+# Pool configuration (tunable for production traffic)
+DB_POOL_SIZE = int(os.environ.get('DB_POOL_SIZE', '5'))
+DB_MAX_OVERFLOW = int(os.environ.get('DB_MAX_OVERFLOW', '10'))
+DB_POOL_TIMEOUT = int(os.environ.get('DB_POOL_TIMEOUT', '30'))
+DB_POOL_RECYCLE = int(os.environ.get('DB_POOL_RECYCLE', '1800'))  # 30 minutes
 
 def convert_url_for_asyncpg(url: str) -> str:
     """Convert standard PostgreSQL URL to asyncpg-compatible format"""
@@ -62,15 +72,21 @@ ssl_context = ssl.create_default_context()
 ssl_context.check_hostname = False
 ssl_context.verify_mode = ssl.CERT_NONE
 
-# Create async engine with SSL
+# Create async engine with SSL and configurable pool
 engine = create_async_engine(
     DATABASE_URL,
     echo=False,
     pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
+    pool_size=DB_POOL_SIZE,
+    max_overflow=DB_MAX_OVERFLOW,
+    pool_timeout=DB_POOL_TIMEOUT,
+    pool_recycle=DB_POOL_RECYCLE,
     connect_args={"ssl": ssl_context}
 ) if DATABASE_URL else None
+
+# Log pool configuration on startup
+if engine:
+    logger.info(f"Database pool configured: size={DB_POOL_SIZE}, max_overflow={DB_MAX_OVERFLOW}, timeout={DB_POOL_TIMEOUT}s, recycle={DB_POOL_RECYCLE}s")
 
 # Create async session factory
 AsyncSessionLocal = async_sessionmaker(
