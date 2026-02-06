@@ -513,4 +513,32 @@ export const prdAPI = {
   generate: (epicId) => api.post(`/prd/generate/${epicId}`),
 };
 
+// Integrations API
+export const integrationsAPI = {
+  // Status
+  getStatus: () => api.get('/integrations/status'),
+  getProviderStatus: (provider) => api.get(`/integrations/status/${provider}`),
+  
+  // Linear
+  connectLinear: (callbackUrl) => api.post('/integrations/linear/connect', { frontend_callback_url: callbackUrl }),
+  disconnectLinear: () => api.post('/integrations/linear/disconnect'),
+  configureLinear: (data) => api.put('/integrations/linear/configure', data),
+  testLinear: () => api.get('/integrations/linear/test'),
+  getLinearTeams: () => api.get('/integrations/linear/teams'),
+  getLinearProjects: (teamId) => api.get(`/integrations/linear/teams/${teamId}/projects`),
+  getLinearLabels: (teamId) => api.get(`/integrations/linear/teams/${teamId}/labels`),
+  
+  // Push operations
+  previewPush: (provider, data) => api.post(`/integrations/${provider}/preview`, data),
+  push: (provider, data) => api.post(`/integrations/${provider}/push`, data),
+  getPushHistory: (provider = null, limit = 20) => {
+    const params = new URLSearchParams({ limit: limit.toString() });
+    if (provider) params.append('provider', provider);
+    return api.get(`/integrations/push-history?${params.toString()}`);
+  },
+  
+  // Mappings
+  getEntityMappings: (entityId) => api.get(`/integrations/mappings/${entityId}`),
+};
+
 export default api;
