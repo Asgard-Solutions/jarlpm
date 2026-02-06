@@ -11,3 +11,7 @@ from .user_story_models import (
     UserStory, UserStoryStage, UserStoryConversationEvent, 
     UserStoryVersion, USER_STORY_STAGE_ORDER
 )
+from .integration_models import (
+    ExternalIntegration, ExternalPushMapping, ExternalPushRun,
+    IntegrationProvider, IntegrationStatus, PushStatus, EntityType
+)
