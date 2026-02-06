@@ -1444,7 +1444,7 @@ async def get_scored_items(
         links = links_result.scalars().all()
         
         # Consider it standalone if no links to epics
-        epic_links = [l for l in links if l.entity_type == 'epic']
+        epic_links = [link for link in links if link.entity_type == 'epic']
         if not epic_links:
             items.append(ScoredItemResponse(
                 item_id=bug.bug_id,
