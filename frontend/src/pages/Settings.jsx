@@ -503,6 +503,94 @@ const Settings = () => {
     }
   }, [integrations?.jira?.status]);
 
+  // Azure DevOps handlers
+  const handleConnectADO = async () => {
+    if (!adoOrgUrl || !adoPat) {
+      toast.error('Please enter organization URL and PAT');
+      return;
+    }
+    
+    setConnectingADO(true);
+    try {
+      await integrationsAPI.connectAzureDevOps({
+        organization_url: adoOrgUrl,
+        pat: adoPat
+      });
+      await loadData();
+      setAdoPat(''); // Clear PAT from state
+      toast.success('Azure DevOps connected successfully!');
+      loadAdoProjects();
+    } catch (error) {
+      console.error('Failed to connect Azure DevOps:', error);
+      toast.error(error.response?.data?.detail || 'Failed to connect to Azure DevOps');
+    } finally {
+      setConnectingADO(false);
+    }
+  };
+
+  const handleDisconnectADO = async () => {
+    if (!confirm('Are you sure you want to disconnect Azure DevOps? This will remove your PAT.')) {
+      return;
+    }
+    
+    setDisconnectingADO(true);
+    try {
+      await integrationsAPI.disconnectAzureDevOps();
+      await loadData();
+      setAdoProjects([]);
+      setSelectedAdoProject('');
+      toast.success('Azure DevOps disconnected successfully');
+    } catch (error) {
+      console.error('Failed to disconnect Azure DevOps:', error);
+      toast.error('Failed to disconnect Azure DevOps');
+    } finally {
+      setDisconnectingADO(false);
+    }
+  };
+
+  const loadAdoProjects = async () => {
+    try {
+      const res = await integrationsAPI.getAzureDevOpsProjects();
+      setAdoProjects(res.data.projects || []);
+    } catch (error) {
+      console.error('Failed to load Azure DevOps projects:', error);
+    }
+  };
+
+  const handleConfigureADO = async () => {
+    if (!selectedAdoProject) {
+      toast.error('Please select a project');
+      return;
+    }
+    
+    const project = adoProjects.find(p => p.name === selectedAdoProject);
+    if (!project) return;
+    
+    setConfiguringADO(true);
+    try {
+      await integrationsAPI.configureAzureDevOps({
+        organization_url: integrations.azure_devops?.account_name ? 
+          `https://dev.azure.com/${integrations.azure_devops.account_name}` : adoOrgUrl,
+        project_name: project.name,
+        project_id: project.id,
+      });
+      await loadData();
+      toast.success('Azure DevOps configured successfully');
+    } catch (error) {
+      console.error('Failed to configure Azure DevOps:', error);
+      toast.error('Failed to configure Azure DevOps');
+    } finally {
+      setConfiguringADO(false);
+    }
+  };
+
+  // Load Azure DevOps projects when integration is connected
+  useEffect(() => {
+    if (integrations?.azure_devops?.status === 'connected') {
+      loadAdoProjects();
+    }
+  }, [integrations?.azure_devops?.status]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-nordic-bg-primary flex items-center justify-center" data-testid="settings-loading">
