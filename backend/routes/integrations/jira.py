@@ -22,6 +22,7 @@ from db.integration_models import (
 )
 from routes.auth import get_current_user_id
 from services.encryption import get_encryption_service
+from services.rate_limit import limiter, RATE_LIMITS
 from services.jira_service import (
     JiraOAuthService, JiraRESTService, JiraPushService,
     JiraAPIError, AuthenticationError as JiraAuthError
