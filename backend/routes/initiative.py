@@ -1043,7 +1043,7 @@ async def run_llm_pass(
     Kept for reference only.
     """
     # Log deprecation warning
-    logger.warning(f"DEPRECATED: run_llm_pass called. Use sessionless version instead.")
+    logger.warning("DEPRECATED: run_llm_pass called. Use sessionless version instead.")
     return None
 
 
