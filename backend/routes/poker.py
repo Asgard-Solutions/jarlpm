@@ -834,8 +834,6 @@ async def get_epics_without_estimation(
     if not epics:
         return {"epics": []}
     
-    from db.user_story_models import Feature
-    
     result = []
     for epic in epics:
         # Get features for this epic
