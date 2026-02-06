@@ -1037,46 +1037,13 @@ async def run_llm_pass(
     pass_metrics: Optional[PassMetrics] = None,
     temperature: float = None
 ) -> Optional[dict]:
-    """Run a single LLM pass with retry, tracking metrics (legacy fallback)"""
-    start_time = time.time()
-    retries = 0
-    
-    for attempt in range(max_retries + 1):
-        full_response = ""
-        async for chunk in llm_service.generate_stream(
-            user_id=user_id,
-            system_prompt=system,
-            user_prompt=user,
-            conversation_history=None,
-            temperature=temperature
-        ):
-            full_response += chunk
-        
-        result = extract_json(full_response)
-        if result:
-            # Update metrics if provided
-            if pass_metrics:
-                pass_metrics.tokens_in = len(system + user) // 4  # Rough estimate
-                pass_metrics.tokens_out = len(full_response) // 4
-                pass_metrics.retries = retries
-                pass_metrics.duration_ms = int((time.time() - start_time) * 1000)
-                pass_metrics.success = True
-            return result
-        
-        retries += 1
-        if attempt < max_retries:
-            # Retry with a nudge
-            user = user + "\n\nIMPORTANT: Return ONLY valid JSON, no other text."
-    
-    # Failed all attempts
-    if pass_metrics:
-        pass_metrics.tokens_in = len(system + user) // 4
-        pass_metrics.tokens_out = len(full_response) // 4 if full_response else 0
-        pass_metrics.retries = retries
-        pass_metrics.duration_ms = int((time.time() - start_time) * 1000)
-        pass_metrics.success = False
-        pass_metrics.error = "JSON parse failed"
-    
+    """
+    DEPRECATED: Use run_llm_pass_with_validation_sessionless instead.
+    This function holds DB sessions open during LLM streaming and should not be used.
+    Kept for reference only.
+    """
+    # Log deprecation warning
+    logger.warning(f"DEPRECATED: run_llm_pass called. Use sessionless version instead.")
     return None
 
 
