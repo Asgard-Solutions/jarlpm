@@ -1141,6 +1141,15 @@ async def bulk_score_all_items(
     if not llm_config:
         raise HTTPException(status_code=400, detail="Please configure an LLM provider in Settings first")
     
+    # Prepare for streaming - extract config BEFORE releasing session
+    config_data = llm_service.prepare_for_streaming(llm_config)
+    
+    # Capture item data for closure
+    features_data = [(f.feature_id, f.title, f.description) for f in features]
+    stories_data = [(s.story_id, s.title, s.story_text) for s in stories]
+    bugs_data = [(b.bug_id, b.title, b.description, b.severity) for b in bugs]
+    epic_title = epic.title
+    
     # Build context for all items
     items_context = []
     
@@ -1163,7 +1172,7 @@ async def bulk_score_all_items(
     
     system_prompt = f"""You are a Senior Product Manager helping prioritize work using MoSCoW and RICE frameworks.
 
-EPIC: {epic.title}
+EPIC: {epic_title}
 
 ITEMS TO SCORE:
 {items_list}
