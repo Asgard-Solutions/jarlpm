@@ -1312,6 +1312,32 @@ When an Epic is locked, users enter Feature Planning Mode:
 - `/app/frontend/src/pages/Sprints.jsx` - Load and display saved insights
 
 
+### 2026-02-06: Senior PM-Quality PRD Schema (COMPLETE)
+**Issue:** PRD schema was too shallow with hard character limits, producing "thin" output that wasn't useful for teams without a PM.
+
+**Enhanced PRD Schema:**
+- `target_users`: Now array of detailed personas with `persona`, `context`, `pain_points`, `current_workaround`, `jtbd`
+- `mvp_scope`: Array with items and rationale for inclusion
+- `not_now`: Deferred items with rationale explaining WHY deferred
+- `assumptions`: Structured with `assumption`, `risk_if_wrong`, `validation_approach`
+- `constraints`: With `constraint`, `rationale`, `impact` (high/medium/low)
+- `positioning`: Full positioning statement framework (for/who/unlike/benefit)
+- `riskiest_unknown`: Single biggest uncertainty
+- `validation_plan`: Concrete de-risking steps
+- `problem_evidence`: Data/quotes supporting the problem
+- `alternatives`: Competitor/workaround list
+- `gtm_notes`: Go-to-market considerations
+
+**Prompt Changes:**
+- Removed character limits (400 char max)
+- Added quality requirements (specificity, depth)
+- Focus on "Senior PM-quality" output for teams without a PM
+
+**Files Modified:**
+- `/app/backend/routes/initiative.py` - New PRDSchema with nested models, updated PRD_SYSTEM prompt
+- `/app/frontend/src/pages/NewInitiative.jsx` - Enhanced PRD display with all new fields
+
+
 ### 2026-02-06: Security Fix - Story Ownership Checks (COMPLETE)
 **Issue:** `update_story_sprint`, `update_story_status`, and `commit_story_to_sprint` endpoints allowed any authenticated user to modify another user's stories if they guessed the ID.
 
