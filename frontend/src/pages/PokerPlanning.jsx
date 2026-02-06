@@ -317,6 +317,32 @@ const PokerPlanning = () => {
           <div className="flex justify-center py-20">
             <Loader2 className="h-8 w-8 text-primary animate-spin" />
           </div>
+        ) : completedEpics.length === 0 && availableEpics.length === 0 ? (
+          <Card className="bg-card border-border">
+            <CardContent className="p-12 text-center">
+              <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-medium text-foreground mb-2">
+                No Poker Sessions Available
+              </h3>
+              <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                Poker planning requires epics with unestimated stories.
+              </p>
+              <div className="text-sm text-muted-foreground mb-6 space-y-1">
+                <p>To start poker planning:</p>
+                <p>1. Create an initiative and decompose it into features &amp; stories</p>
+                <p>2. Stories without point estimates will appear here</p>
+              </div>
+              <div className="flex gap-2 justify-center">
+                <Button variant="outline" onClick={() => navigate('/initiatives')}>
+                  View Initiatives
+                </Button>
+                <Button onClick={() => navigate('/new-initiative')}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Initiative
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         ) : completedEpics.length === 0 ? (
           <Card className="bg-card border-border">
             <CardContent className="p-12 text-center">
