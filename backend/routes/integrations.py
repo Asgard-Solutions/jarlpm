@@ -33,6 +33,10 @@ from services.jira_service import (
     JiraOAuthService, JiraRESTService, JiraPushService,
     JiraAPIError, AuthenticationError as JiraAuthError
 )
+from services.azure_devops_service import (
+    AzureDevOpsRESTService, AzureDevOpsPushService,
+    AzureDevOpsAPIError, AuthenticationError as ADOAuthError
+)
 
 logger = logging.getLogger(__name__)
 
