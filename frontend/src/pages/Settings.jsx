@@ -400,6 +400,83 @@ const Settings = () => {
     }
   }, [integrations?.linear?.status]);
 
+  // Jira integration handlers
+  const handleConnectJira = async () => {
+    setConnectingJira(true);
+    try {
+      const callbackUrl = `${window.location.origin}/settings?tab=integrations`;
+      const res = await integrationsAPI.connectJira(callbackUrl);
+      window.location.href = res.data.authorization_url;
+    } catch (error) {
+      console.error('Failed to initiate Jira connection:', error);
+      toast.error(error.response?.data?.detail || 'Failed to connect to Jira');
+      setConnectingJira(false);
+    }
+  };
+
+  const handleDisconnectJira = async () => {
+    if (!confirm('Are you sure you want to disconnect Jira? This will remove all your Jira integration settings.')) {
+      return;
+    }
+    
+    setDisconnectingJira(true);
+    try {
+      await integrationsAPI.disconnectJira();
+      await loadData();
+      setJiraProjects([]);
+      setSelectedJiraProject('');
+      toast.success('Jira disconnected successfully');
+    } catch (error) {
+      console.error('Failed to disconnect Jira:', error);
+      toast.error('Failed to disconnect Jira');
+    } finally {
+      setDisconnectingJira(false);
+    }
+  };
+
+  const loadJiraProjects = async () => {
+    try {
+      const res = await integrationsAPI.getJiraProjects();
+      setJiraProjects(res.data.projects || []);
+    } catch (error) {
+      console.error('Failed to load Jira projects:', error);
+    }
+  };
+
+  const handleConfigureJira = async () => {
+    if (!selectedJiraProject) {
+      toast.error('Please select a project');
+      return;
+    }
+    
+    const project = jiraProjects.find(p => p.key === selectedJiraProject);
+    if (!project) return;
+    
+    setConfiguringJira(true);
+    try {
+      await integrationsAPI.configureJira({
+        cloud_id: integrations.jira?.account_name ? integrations.jira.account_name : '',
+        site_name: integrations.jira?.account_name || '',
+        project_key: project.key,
+        project_name: project.name,
+      });
+      await loadData();
+      toast.success('Jira configured successfully');
+    } catch (error) {
+      console.error('Failed to configure Jira:', error);
+      toast.error('Failed to configure Jira');
+    } finally {
+      setConfiguringJira(false);
+    }
+  };
+
+  // Load Jira projects when integration is connected
+  useEffect(() => {
+    if (integrations?.jira?.status === 'connected') {
+      loadJiraProjects();
+    }
+  }, [integrations?.jira?.status]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-nordic-bg-primary flex items-center justify-center" data-testid="settings-loading">
