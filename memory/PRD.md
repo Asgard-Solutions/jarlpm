@@ -1543,3 +1543,39 @@ JIRA_OAUTH_REDIRECT_URI=
 ```
 
 **Status:** Complete but requires OAuth credentials to test end-to-end
+
+
+### 2026-02-06: Linear Integration Enhanced (Phase 2)
+**Goal:** Enhance Linear integration with priority mapping, label management, and configuration options.
+
+**New Capabilities:**
+
+1. **Priority Mapping** (MoSCoW → Linear priorities):
+   - `must` → High (2)
+   - `should` → Medium (3)
+   - `could` → Low (4)
+   - `wont` → No priority (0)
+   - Configurable per integration
+
+2. **Label Management**:
+   - `create-missing` policy: Auto-create labels that don't exist
+   - `only-existing` policy: Only use existing labels
+   - Auto-adds `epic`, `feature`, `story`, `jarlpm` labels to pushed items
+
+3. **Configuration Options** (`PUT /api/integrations/linear/configure`):
+   - `priority_mapping`: Custom MoSCoW → Linear priority mapping
+   - `label_policy`: "create-missing" or "only-existing"
+   - `epic_mapping`: "project" (create Linear Project) or "issue" (create labeled Issue)
+
+4. **New Endpoints**:
+   - `GET /api/integrations/linear/labels` - Get all organization labels
+   
+5. **Enhanced Push Request** (`LinearPushRequest`):
+   - Supports override of priority_mapping, label_policy, epic_mapping per push
+
+**GraphQL Operations Added**:
+- `create_label` - Create missing labels
+- `create_project` - Create Linear Project for Epic mapping
+- `get_organization_labels` - Fetch all org labels
+
+**Status:** Complete - Ready for OAuth credential testing
