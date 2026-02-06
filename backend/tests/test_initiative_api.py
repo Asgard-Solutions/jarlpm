@@ -13,7 +13,7 @@ sys.path.insert(0, '/app/backend')
 BASE_URL = os.environ.get('VITE_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
     # Fallback for testing
-    BASE_URL = "https://pmcanvas.preview.emergentagent.com"
+    BASE_URL = "https://product-ai-4.preview.emergentagent.com"
 
 TEST_CREDENTIALS = {
     "email": "test@jarlpm.com",
