@@ -1217,8 +1217,10 @@ Return format:
     
     try:
         response_text = ""
-        async for chunk in llm_service.generate_stream(
-            user_id=user_id,
+        # Use sessionless streaming
+        llm = LLMService()  # No session needed
+        async for chunk in llm.stream_with_config(
+            config_data=config_data,
             system_prompt=system_prompt,
             user_prompt=user_prompt
         ):
@@ -1233,18 +1235,18 @@ Return format:
         import json as json_lib
         result = json_lib.loads(clean_response)
         
-        # Map suggestions back to items
+        # Map suggestions back to items using captured data
         feature_suggestions = []
         for suggestion in result.get("features", []):
             matching = next(
-                (f for f in features if f.title.lower() == suggestion.get("title", "").lower()),
+                ((fid, ftitle) for fid, ftitle, _ in features_data if ftitle.lower() == suggestion.get("title", "").lower()),
                 None
             )
             if matching:
                 feature_suggestions.append(ItemScoreSuggestion(
-                    item_id=matching.feature_id,
+                    item_id=matching[0],
                     item_type="feature",
-                    title=matching.title,
+                    title=matching[1],
                     moscow=suggestion.get("moscow"),
                     rice=suggestion.get("rice", {})
                 ))
@@ -1252,21 +1254,21 @@ Return format:
         story_suggestions = []
         for suggestion in result.get("stories", []):
             matching = next(
-                (s for s in stories if s.title.lower() == suggestion.get("title", "").lower()),
+                ((sid, stitle) for sid, stitle, _ in stories_data if stitle.lower() == suggestion.get("title", "").lower()),
                 None
             )
             if matching:
                 story_suggestions.append(ItemScoreSuggestion(
-                    item_id=matching.story_id,
+                    item_id=matching[0],
                     item_type="story",
-                    title=matching.title,
+                    title=matching[1],
                     rice=suggestion.get("rice", {})
                 ))
         
         bug_suggestions = []
         for suggestion in result.get("bugs", []):
             matching = next(
-                (b for b in bugs if b.title.lower() == suggestion.get("title", "").lower()),
+                ((bid, btitle) for bid, btitle, _, _ in bugs_data if btitle.lower() == suggestion.get("title", "").lower()),
                 None
             )
             if matching:
