@@ -137,11 +137,8 @@ class AzureDevOpsPushRequest(BaseModel):
 
 async def check_subscription_required(session: AsyncSession, user_id: str):
     """Check if user has an active subscription. Raise 402 if not."""
-    result = await session.execute(
-        select(Subscription).where(Subscription.user_id == user_id)
-    )
-    sub = result.scalar_one_or_none()
-    if not sub or sub.status != SubscriptionStatus.ACTIVE.value:
+    subscription = await get_user_subscription(session, user_id)
+    if not is_subscription_active(subscription):
         raise HTTPException(status_code=402, detail="Active subscription required for integrations")
 
 
