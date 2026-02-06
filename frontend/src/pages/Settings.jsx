@@ -69,6 +69,13 @@ const Settings = () => {
   const [linearTeams, setLinearTeams] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState('');
   const [configuringLinear, setConfiguringLinear] = useState(false);
+  
+  // Jira integration state
+  const [connectingJira, setConnectingJira] = useState(false);
+  const [disconnectingJira, setDisconnectingJira] = useState(false);
+  const [jiraProjects, setJiraProjects] = useState([]);
+  const [selectedJiraProject, setSelectedJiraProject] = useState('');
+  const [configuringJira, setConfiguringJira] = useState(false);
 
   // Tab state - controlled by query param
   const [activeTab, setActiveTab] = useState('delivery');
