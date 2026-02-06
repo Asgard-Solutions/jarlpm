@@ -67,7 +67,7 @@ const Settings = () => {
   // Handle tab from URL query params
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['delivery', 'subscription', 'llm', 'appearance'].includes(tabParam)) {
+    if (tabParam && ['delivery', 'subscription', 'llm', 'appearance', 'integrations'].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
