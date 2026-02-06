@@ -545,7 +545,7 @@ and small agencies (2-5 people)."`}
                                   </div>
                                 )}
                                 {user.jtbd && (
-                                  <div className="text-sm text-nordic-accent italic">"{user.jtbd}"</div>
+                                  <div className="text-sm text-nordic-accent italic">&ldquo;{user.jtbd}&rdquo;</div>
                                 )}
                               </div>
                             ))}
