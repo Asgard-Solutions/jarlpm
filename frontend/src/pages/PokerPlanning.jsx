@@ -8,73 +8,119 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { 
   Loader2, Users, Play, Check, RotateCcw, Sparkles, 
-  ChevronRight, ChevronLeft, AlertCircle, Trophy, Target
+  ChevronRight, ChevronLeft, AlertCircle, Trophy, Target,
+  ArrowLeft, Plus, Calendar, ChevronDown, ChevronUp,
+  MessageSquare, Clock
 } from 'lucide-react';
 import { epicAPI, featureAPI, userStoryAPI, pokerAPI } from '@/api';
-import PokerSessionHistory from '@/components/PokerSessionHistory';
 import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 const FIBONACCI = [1, 2, 3, 5, 8, 13];
+
+const PERSONA_AVATARS = {
+  'Sarah': '👩‍💻',
+  'Alex': '👨‍💻',
+  'Maya': '🧪',
+  'Jordan': '🔧',
+  'Riley': '🎨',
+};
 
 const PokerPlanning = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [estimating, setEstimating] = useState(false);
-  const [epics, setEpics] = useState([]);
-  const [selectedEpic, setSelectedEpic] = useState('');
+  
+  // View state: list | review | planning
+  const [view, setView] = useState('list');
+  
+  // List view state
+  const [completedEpics, setCompletedEpics] = useState([]);
+  const [availableEpics, setAvailableEpics] = useState([]);
+  
+  // Review view state (viewing completed poker)
+  const [selectedEpicForReview, setSelectedEpicForReview] = useState(null);
+  const [epicSessions, setEpicSessions] = useState([]);
+  const [expandedStories, setExpandedStories] = useState({});
+  const [loadingReview, setLoadingReview] = useState(false);
+  
+  // Planning view state (new poker planning)
+  const [selectedEpicForPlanning, setSelectedEpicForPlanning] = useState('');
   const [stories, setStories] = useState([]);
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
-  
-  // AI estimation state
+  const [estimating, setEstimating] = useState(false);
   const [aiEstimates, setAiEstimates] = useState([]);
   const [estimateSummary, setEstimateSummary] = useState(null);
   const [currentPersona, setCurrentPersona] = useState(null);
-  const [estimatedStories, setEstimatedStories] = useState({});
-
-  // UI state
-  const [storyListOpen, setStoryListOpen] = useState(false);
+  
+  // Dialog state
+  const [showStartDialog, setShowStartDialog] = useState(false);
+  const [newPlanningEpic, setNewPlanningEpic] = useState('');
 
   useEffect(() => {
-    loadEpics();
-    loadSavedEstimates();
+    loadData();
   }, []);
 
-  useEffect(() => {
-    if (selectedEpic) {
-      loadStories();
-    }
-  }, [selectedEpic]);
-
-  const loadEpics = async () => {
+  const loadData = async () => {
+    setLoading(true);
     try {
-      const response = await epicAPI.list();
-      setEpics(response.data?.epics || []);
+      const [completedRes, availableRes] = await Promise.all([
+        pokerAPI.getCompletedEpics(),
+        pokerAPI.getEpicsWithoutEstimation()
+      ]);
+      setCompletedEpics(completedRes.data?.epics || []);
+      setAvailableEpics(availableRes.data?.epics || []);
     } catch (error) {
-      console.error('Failed to load epics:', error);
+      console.error('Failed to load data:', error);
+      toast.error('Failed to load poker planning data');
     } finally {
       setLoading(false);
     }
   };
 
-  const loadStories = async () => {
-    if (!selectedEpic) return;
+  const openReview = async (epicId, epicTitle) => {
+    setSelectedEpicForReview({ epic_id: epicId, title: epicTitle });
+    setLoadingReview(true);
+    setView('review');
     
+    try {
+      const response = await pokerAPI.getEpicSessions(epicId);
+      setEpicSessions(response.data?.stories || []);
+    } catch (error) {
+      console.error('Failed to load sessions:', error);
+      toast.error('Failed to load poker sessions');
+    } finally {
+      setLoadingReview(false);
+    }
+  };
+
+  const startNewPlanning = async () => {
+    if (!newPlanningEpic) {
+      toast.error('Please select an epic');
+      return;
+    }
+    
+    const epic = availableEpics.find(e => e.epic_id === newPlanningEpic);
+    setShowStartDialog(false);
+    setSelectedEpicForPlanning(newPlanningEpic);
+    setView('planning');
+    
+    // Load stories for this epic
     setLoading(true);
     try {
-      const featuresRes = await featureAPI.listForEpic(selectedEpic);
+      const featuresRes = await featureAPI.listForEpic(newPlanningEpic);
       const features = featuresRes.data || [];
       
-      // Collect all stories from all features
       const allStories = [];
       for (const feature of features) {
         try {
           const storiesRes = await userStoryAPI.listForFeature(feature.feature_id);
-          allStories.push(...(storiesRes.data || []));
+          const featureStories = (storiesRes.data || []).filter(s => !s.story_points || s.story_points === 0);
+          allStories.push(...featureStories);
         } catch (e) {
           console.error(`Failed to load stories for feature ${feature.feature_id}`);
         }
@@ -82,192 +128,32 @@ const PokerPlanning = () => {
       
       setStories(allStories);
       setCurrentStoryIndex(0);
-      resetEstimation();
     } catch (error) {
       console.error('Failed to load stories:', error);
+      toast.error('Failed to load stories');
     } finally {
       setLoading(false);
     }
   };
 
-  const loadSavedEstimates = () => {
-    try {
-      const saved = localStorage.getItem('jarlpm_ai_poker_estimates');
-      if (saved) {
-        setEstimatedStories(JSON.parse(saved));
-      }
-    } catch (error) {
-      console.error('Failed to load saved estimates:', error);
-    }
-  };
-
-  const saveEstimates = (estimates) => {
-    localStorage.setItem('jarlpm_ai_poker_estimates', JSON.stringify(estimates));
-  };
-
-  const resetEstimation = () => {
+  const backToList = () => {
+    setView('list');
+    setSelectedEpicForReview(null);
+    setSelectedEpicForPlanning('');
+    setEpicSessions([]);
+    setStories([]);
     setAiEstimates([]);
     setEstimateSummary(null);
-    setCurrentPersona(null);
+    setNewPlanningEpic('');
+    loadData();
   };
 
-  const runAIEstimation = async () => {
-    const currentStory = stories[currentStoryIndex];
-    if (!currentStory) return;
-    
-    setEstimating(true);
-    resetEstimation();
-    
-    try {
-      const response = await pokerAPI.estimateStory(currentStory.story_id);
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = ''; // SSE buffer for handling split chunks
-      
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        
-        // Keep the last incomplete line in the buffer
-        buffer = lines.pop() || '';
-        
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              
-              switch (data.type) {
-                case 'start':
-                  // Estimation started
-                  break;
-                case 'persona_start':
-                  setCurrentPersona(data.persona);
-                  break;
-                case 'persona_estimate':
-                  setAiEstimates(prev => [...prev, data.estimate]);
-                  setCurrentPersona(null);
-                  break;
-                case 'persona_error':
-                  console.error(`Error from ${data.persona_id}:`, data.error);
-                  setCurrentPersona(null);
-                  break;
-                case 'summary':
-                  setEstimateSummary(data.summary);
-                  break;
-                case 'done':
-                  setEstimating(false);
-                  break;
-              }
-            } catch (e) {
-              // Ignore parse errors
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('AI estimation failed:', error);
-      setEstimating(false);
-    }
+  const toggleStory = (storyId) => {
+    setExpandedStories(prev => ({
+      ...prev,
+      [storyId]: !prev[storyId]
+    }));
   };
-
-  const acceptEstimate = async (points) => {
-    const currentStory = stories[currentStoryIndex];
-    if (!currentStory) return;
-    
-    // Get session_id from the summary if available
-    const sessionId = estimateSummary?.session_id || null;
-    
-    // Save to database
-    try {
-      await pokerAPI.saveEstimate(currentStory.story_id, points, sessionId);
-      toast.success(`✅ Saved ${points} story points for "${currentStory.title.substring(0, 30)}..."`, {
-        duration: 4000,
-      });
-    } catch (error) {
-      console.error('Failed to save estimate to database:', error);
-      toast.error('Failed to save estimate to database', {
-        duration: 5000,
-      });
-      return; // Don't move to next story if save failed
-    }
-    
-    const newEstimates = {
-      ...estimatedStories,
-      [currentStory.story_id]: {
-        points,
-        aiEstimates,
-        summary: estimateSummary,
-        sessionId,
-        estimatedAt: new Date().toISOString()
-      }
-    };
-    setEstimatedStories(newEstimates);
-    saveEstimates(newEstimates);
-    
-    // Move to next story
-    if (currentStoryIndex < stories.length - 1) {
-      setCurrentStoryIndex(prev => prev + 1);
-      resetEstimation();
-    }
-  };
-
-  const handleNextStory = () => {
-    if (currentStoryIndex < stories.length - 1) {
-      setCurrentStoryIndex(prev => prev + 1);
-      resetEstimation();
-    }
-  };
-
-  const handlePrevStory = () => {
-    if (currentStoryIndex > 0) {
-      setCurrentStoryIndex(prev => prev - 1);
-      resetEstimation();
-    }
-  };
-
-  // Keyboard shortcuts: 1/2/3/5/8/13 accept points, arrows prev/next
-  useEffect(() => {
-    if (!selectedEpic || !stories.length) return;
-
-    const onKeyDown = (e) => {
-      // ignore typing contexts
-      const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
-      if (['input', 'textarea', 'select'].includes(tag) || e.isComposing) return;
-
-      if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        handleNextStory();
-        return;
-      }
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        handlePrevStory();
-        return;
-      }
-
-      const current = stories[currentStoryIndex];
-      if (!current) return;
-
-      // Only accept if we have a current story and we are not in active estimating stream.
-      if (estimating) return;
-
-      const key = e.key;
-      if (key === '1') return void acceptEstimate(1);
-      if (key === '2') return void acceptEstimate(2);
-      if (key === '3') return void acceptEstimate(3);
-      if (key === '5') return void acceptEstimate(5);
-      if (key === '8') return void acceptEstimate(8);
-      if (key === '0') return void acceptEstimate(13);
-
-      // Tip: 13 is mapped to 0 to keep single-key shortcuts.
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selectedEpic, stories, currentStoryIndex, estimating]);
 
   const getConfidenceColor = (confidence) => {
     switch (confidence) {
@@ -278,479 +164,524 @@ const PokerPlanning = () => {
     }
   };
 
-  const getConsensusColor = (consensus) => {
-    switch (consensus) {
-      case 'high': return 'bg-green-500/10 text-green-500 border-green-500/30';
-      case 'medium': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30';
-      case 'low': return 'bg-red-500/10 text-red-500 border-red-500/30';
-      default: return 'bg-muted';
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric'
+    });
+  };
+
+  // Estimation functions for planning view
+  const runAIEstimation = async () => {
+    const currentStory = stories[currentStoryIndex];
+    if (!currentStory) return;
+    
+    setEstimating(true);
+    setAiEstimates([]);
+    setEstimateSummary(null);
+    
+    try {
+      const response = await pokerAPI.estimateStory(currentStory.story_id);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.type === 'persona_start') {
+                setCurrentPersona(data.persona);
+              } else if (data.type === 'persona_estimate') {
+                setAiEstimates(prev => [...prev, data.estimate]);
+                setCurrentPersona(null);
+              } else if (data.type === 'summary') {
+                setEstimateSummary(data.summary);
+              }
+            } catch (e) {
+              // Skip invalid JSON
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Estimation failed:', error);
+      toast.error('Failed to get AI estimates');
+    } finally {
+      setEstimating(false);
+      setCurrentPersona(null);
     }
   };
 
-  const currentStory = stories[currentStoryIndex];
-  const estimatedCount = Object.keys(estimatedStories).filter(id => 
-    stories.some(s => s.story_id === id)
-  ).length;
-  const totalStories = stories.length;
+  const acceptEstimate = async (points) => {
+    const currentStory = stories[currentStoryIndex];
+    if (!currentStory) return;
+    
+    const sessionId = estimateSummary?.session_id || null;
+    
+    try {
+      await pokerAPI.saveEstimate(currentStory.story_id, points, sessionId);
+      toast.success(`Saved ${points} story points`);
+      
+      // Move to next story
+      if (currentStoryIndex < stories.length - 1) {
+        setCurrentStoryIndex(prev => prev + 1);
+        setAiEstimates([]);
+        setEstimateSummary(null);
+      } else {
+        toast.success('All stories estimated!');
+        backToList();
+      }
+    } catch (error) {
+      console.error('Failed to save:', error);
+      toast.error('Failed to save estimate');
+    }
+  };
 
-  if (loading && !selectedEpic) {
+  const resetEstimation = () => {
+    setAiEstimates([]);
+    setEstimateSummary(null);
+    setCurrentPersona(null);
+  };
+
+  // ==================== LIST VIEW ====================
+  if (view === 'list') {
     return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Poker Planning</h1>
+            <p className="text-muted-foreground mt-1">AI-powered story point estimation</p>
+          </div>
+          
+          <Dialog open={showStartDialog} onOpenChange={setShowStartDialog}>
+            <DialogTrigger asChild>
+              <Button disabled={availableEpics.length === 0} data-testid="start-new-poker">
+                <Plus className="h-4 w-4 mr-2" />
+                Start New Session
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Start Poker Planning</DialogTitle>
+                <DialogDescription>
+                  Select an epic with unestimated stories.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                <Select value={newPlanningEpic} onValueChange={setNewPlanningEpic}>
+                  <SelectTrigger data-testid="select-epic-for-poker">
+                    <SelectValue placeholder="Select an epic..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableEpics.map((epic) => (
+                      <SelectItem key={epic.epic_id} value={epic.epic_id}>
+                        <div className="flex items-center justify-between w-full gap-4">
+                          <span>{epic.title}</span>
+                          <Badge variant="secondary" className="text-xs">
+                            {epic.unestimated_stories} stories
+                          </Badge>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {availableEpics.length === 0 && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    All stories have been estimated.
+                  </p>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowStartDialog(false)}>Cancel</Button>
+                <Button onClick={startNewPlanning} disabled={!newPlanningEpic}>Start</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+          </div>
+        ) : completedEpics.length === 0 ? (
+          <Card className="bg-card border-border">
+            <CardContent className="p-12 text-center">
+              <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-medium text-foreground mb-2">
+                No Poker Sessions Yet
+              </h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                Start a poker planning session to get AI-powered story point estimates.
+              </p>
+              {availableEpics.length > 0 ? (
+                <Button onClick={() => setShowStartDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Start Your First Session
+                </Button>
+              ) : (
+                <Button onClick={() => navigate('/stories')}>
+                  Create Stories First
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {completedEpics.map((epic) => (
+              <Card 
+                key={epic.epic_id} 
+                className="bg-card border-border hover:border-primary/50 cursor-pointer transition-colors"
+                onClick={() => openReview(epic.epic_id, epic.title)}
+                data-testid={`poker-card-${epic.epic_id}`}
+              >
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="text-lg">{epic.title}</CardTitle>
+                    <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/30">
+                      <Check className="h-3 w-3 mr-1" />
+                      Completed
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Users className="h-4 w-4" />
+                      {epic.estimated_stories} stories
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      {epic.updated_at ? formatDate(epic.updated_at) : 'N/A'}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <PageHeader
-        title="Poker"
-        description="Estimate stories fast with AI personas."
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="bg-muted">Keys: 1 2 3 5 8 0(=13)</Badge>
-            <Badge variant="outline" className="bg-muted">Nav: ← →</Badge>
+  // ==================== REVIEW VIEW ====================
+  if (view === 'review') {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={backToList}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">{selectedEpicForReview?.title}</h1>
+            <p className="text-muted-foreground">Poker Planning Results</p>
           </div>
-        }
-      />
+        </div>
 
-      {/* Epic Selector */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="flex-1">
-              <Select value={selectedEpic} onValueChange={setSelectedEpic}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select an epic to estimate stories" />
-                </SelectTrigger>
-                <SelectContent>
-                  {epics.map((epic) => (
-                    <SelectItem key={epic.epic_id} value={epic.epic_id}>
-                      {epic.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {selectedEpic && stories.length > 0 && (
-              <div className="flex items-center gap-2">
-                <div className="text-sm text-muted-foreground">
-                  Story {currentStoryIndex + 1} of {stories.length}
-                </div>
-                <Sheet open={storyListOpen} onOpenChange={setStoryListOpen}>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <ChevronRight className="h-4 w-4" />
-                      Story list
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="right" className="w-full sm:max-w-md">
-                    <SheetHeader>
-                      <SheetTitle>Stories</SheetTitle>
-                    </SheetHeader>
-                    <div className="mt-4 space-y-2">
-                      {stories.map((s, idx) => {
-                        const estimated = estimatedStories?.[s.story_id]?.points;
-                        const isActive = idx === currentStoryIndex;
-                        return (
-                          <button
-                            key={s.story_id}
-                            className={`w-full text-left rounded-lg border px-3 py-2 transition-colors ${isActive ? 'bg-primary/10 border-primary/30' : 'bg-card hover:bg-muted border-border'}`}
-                            onClick={() => {
-                              setCurrentStoryIndex(idx);
-                              resetEstimation();
-                              setStoryListOpen(false);
-                            }}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <div className="font-medium truncate">{idx + 1}. {s.title || 'Untitled'}</div>
-                                <div className="text-xs text-muted-foreground truncate">{s.persona} • {s.action}</div>
-                              </div>
-                              {estimated ? (
-                                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">{estimated} pts</Badge>
-                              ) : (
-                                <Badge variant="outline" className="bg-muted">Unestimated</Badge>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
-            )}
+        {loadingReview ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
           </div>
-        </CardContent>
-      </Card>
-
-      {selectedEpic && stories.length === 0 && !loading && (
-        <EmptyState
-          icon={Target}
-          title="No stories found"
-          description="This Epic has no stories yet. Lock the Epic, then generate features and stories first."
-          actionLabel="Go to Epic"
-          onAction={() => navigate(`/epic/${selectedEpic}`)}
-          secondaryLabel="Stories"
-          onSecondary={() => navigate('/stories')}
-        />
-      )}
-
-      {selectedEpic && stories.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content Area */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Progress */}
-            {stories.length > 0 && (
-              <Card className="bg-card border-border">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">Estimation Progress</span>
-                    <span className="text-sm font-medium text-foreground">
-                      {estimatedCount} / {totalStories} stories
-                    </span>
-                  </div>
-                  <Progress value={(estimatedCount / Math.max(totalStories, 1)) * 100} className="h-2" />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Current Story */}
-            {loading ? (
-              <div className="flex justify-center py-20">
-                <Loader2 className="h-8 w-8 text-primary animate-spin" />
-              </div>
-            ) : currentStory ? (
-              <Card className="bg-card border-border">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">Story {currentStoryIndex + 1}</Badge>
-                      <PokerSessionHistory 
-                        storyId={currentStory.story_id} 
-                        storyTitle={currentStory.title}
-                      />
-                    </div>
-                    {estimatedStories[currentStory.story_id] && (
-                      <Badge className="bg-green-500/10 text-green-500 border-green-500/30">
-                        <Check className="h-3 w-3 mr-1" />
-                        {estimatedStories[currentStory.story_id].points} pts
-                      </Badge>
-                    )}
-                  </div>
-                  <CardTitle className="text-xl">{currentStory.title || 'Untitled Story'}</CardTitle>
-                  <CardDescription className="text-base">
-                    As a <span className="font-medium text-foreground">{currentStory.persona}</span>, 
-                    I want to <span className="font-medium text-foreground">{currentStory.action}</span>, 
-                    so that <span className="font-medium text-foreground">{currentStory.benefit}</span>.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Acceptance Criteria */}
-                  {currentStory.acceptance_criteria?.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium text-foreground mb-2">Acceptance Criteria</h4>
-                      <ul className="space-y-1">
-                        {currentStory.acceptance_criteria.map((c, i) => (
-                          <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
-                            <span className="text-primary mt-1">•</span>
-                            <span>{c}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  <Separator />
-
-                  {/* AI Estimation Controls */}
-                  {!estimating && aiEstimates.length === 0 && (
-                    <div className="text-center py-6">
-                      <Sparkles className="h-12 w-12 text-primary mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-foreground mb-2">
-                        Ready to Estimate
-                      </h3>
-                      <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                        Click the button below to get estimates from 5 AI team personas: 
-                        Sr. Developer, Jr. Developer, QA Engineer, DevOps, and UX Designer.
-                      </p>
-                      <Button onClick={runAIEstimation} size="lg" data-testid="start-ai-estimation">
-                        <Play className="h-5 w-5 mr-2" />
-                        Get AI Estimates
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* Estimating Progress */}
-                  {estimating && (
-                    <div className="py-6">
-                      <div className="flex items-center justify-center gap-3 mb-4">
-                        <Loader2 className="h-6 w-6 text-primary animate-spin" />
-                        <span className="text-lg font-medium text-foreground">
-                          {currentPersona ? (
-                            <>
-                              <span className="text-2xl mr-2">{currentPersona.avatar}</span>
-                              {currentPersona.name} is thinking...
-                            </>
-                          ) : (
-                            'Starting estimation...'
+        ) : epicSessions.length === 0 ? (
+          <Card className="bg-card border-border">
+            <CardContent className="p-12 text-center">
+              <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium">No Estimation Data</h3>
+              <p className="text-muted-foreground mt-2">
+                No poker planning sessions found for this epic.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {epicSessions.map((story) => (
+              <Collapsible 
+                key={story.story_id}
+                open={expandedStories[story.story_id]}
+                onOpenChange={() => toggleStory(story.story_id)}
+              >
+                <Card className="border-border">
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-base truncate">{story.title}</CardTitle>
+                          <p className="text-sm text-muted-foreground mt-1 truncate">
+                            {story.description?.substring(0, 100)}...
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3 ml-4">
+                          {story.session?.accepted_estimate && (
+                            <Badge className="bg-green-500/10 text-green-500 border-green-500/30 text-lg font-bold">
+                              {story.session.accepted_estimate} pts
+                            </Badge>
                           )}
+                          {!story.session?.accepted_estimate && story.session?.suggested_estimate && (
+                            <Badge variant="outline" className="text-lg font-bold">
+                              {story.session.suggested_estimate} pts
+                            </Badge>
+                          )}
+                          {expandedStories[story.story_id] ? (
+                            <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                          ) : (
+                            <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm mt-2">
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Trophy className="h-4 w-4 text-yellow-500" />
+                          Suggested: {story.session?.suggested_estimate}
+                        </div>
+                        <Separator orientation="vertical" className="h-4" />
+                        <span className="text-muted-foreground">
+                          Range: {story.session?.min_estimate} - {story.session?.max_estimate}
+                        </span>
+                        <Separator orientation="vertical" className="h-4" />
+                        <span className="text-muted-foreground">
+                          Avg: {story.session?.average_estimate?.toFixed(1)}
                         </span>
                       </div>
-                      <Progress value={(aiEstimates.length / 5) * 100} className="h-2" />
-                      <p className="text-center text-sm text-muted-foreground mt-2">
-                        {aiEstimates.length} of 5 personas have voted
-                      </p>
-                    </div>
-                  )}
-
-                  {/* AI Estimates Display */}
-                  {aiEstimates.length > 0 && (
-                    <div className="space-y-4">
-                      <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        Team Estimates
-                      </h4>
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {aiEstimates.map((estimate) => (
-                          <div 
-                            key={estimate.persona_id}
-                            className="p-3 rounded-lg border border-border bg-muted/30"
-                          >
-                            <div className="flex items-center gap-3 mb-2">
-                              <Avatar className="h-10 w-10">
-                                <AvatarFallback className="text-lg bg-primary/10">
-                                  {estimate.avatar}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-foreground truncate">
-                                  {estimate.name}
-                                </p>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {estimate.role}
-                                </p>
-                              </div>
-                              <div className="text-2xl font-bold text-primary">
-                                {estimate.estimate}
-                              </div>
-                            </div>
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {estimate.reasoning}
-                            </p>
-                            <div className="mt-2 flex items-center gap-1 text-xs">
-                              <span className="text-muted-foreground">Confidence:</span>
-                              <span className={getConfidenceColor(estimate.confidence)}>
-                                {estimate.confidence}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Summary & Accept */}
-                  {estimateSummary && (
-                    <div className="space-y-4 pt-4 border-t border-border">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
-                          <Trophy className="h-4 w-4 text-yellow-500" />
-                          Estimation Summary
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent>
+                    <CardContent className="pt-0">
+                      <Separator className="mb-4" />
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-medium flex items-center gap-2">
+                          <MessageSquare className="h-4 w-4" />
+                          AI Persona Reasoning
                         </h4>
-                        <Badge className={getConsensusColor(estimateSummary.consensus)}>
-                          {estimateSummary.consensus} consensus
-                        </Badge>
-                      </div>
-                      
-                      <div className="grid grid-cols-4 gap-4 text-center">
-                        <div className="p-3 rounded-lg bg-muted/50">
-                          <p className="text-xs text-muted-foreground">Suggested</p>
-                          <p className="text-2xl font-bold text-primary">{estimateSummary.suggested}</p>
-                        </div>
-                        <div className="p-3 rounded-lg bg-muted/50">
-                          <p className="text-xs text-muted-foreground">Average</p>
-                          <p className="text-2xl font-bold text-foreground">{estimateSummary.average}</p>
-                        </div>
-                        <div className="p-3 rounded-lg bg-muted/50">
-                          <p className="text-xs text-muted-foreground">Min</p>
-                          <p className="text-2xl font-bold text-foreground">{estimateSummary.min}</p>
-                        </div>
-                        <div className="p-3 rounded-lg bg-muted/50">
-                          <p className="text-xs text-muted-foreground">Max</p>
-                          <p className="text-2xl font-bold text-foreground">{estimateSummary.max}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row items-center gap-3 pt-4">
-                        <Button 
-                          variant="outline" 
-                          onClick={() => {
-                            resetEstimation();
-                            runAIEstimation();
-                          }}
-                          disabled={estimating}
-                        >
-                          <RotateCcw className="h-4 w-4 mr-2" />
-                          Re-estimate
-                        </Button>
-                        <div className="flex-1 flex flex-wrap justify-center gap-2">
-                          {FIBONACCI.map((value) => (
-                            <Button
-                              key={value}
-                              variant={value === estimateSummary.suggested ? 'default' : 'outline'}
-                              className="h-12 w-12 text-lg font-bold"
-                              onClick={() => acceptEstimate(value)}
-                              data-testid={`accept-estimate-${value}`}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {story.session?.estimates?.map((estimate, idx) => (
+                            <div 
+                              key={idx}
+                              className="p-3 rounded-lg border border-border bg-muted/20"
                             >
-                              {value}
-                            </Button>
+                              <div className="flex items-center gap-3 mb-2">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarFallback className="text-base bg-primary/10">
+                                    {PERSONA_AVATARS[estimate.persona_name] || '🤖'}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-sm">{estimate.persona_name}</p>
+                                  <p className="text-xs text-muted-foreground">{estimate.persona_role}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-xs ${getConfidenceColor(estimate.confidence)}`}>
+                                    {estimate.confidence}
+                                  </span>
+                                  <Badge variant="outline" className="text-lg font-bold">
+                                    {estimate.estimate_points}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {estimate.reasoning}
+                              </p>
+                            </div>
                           ))}
                         </div>
                       </div>
-                      
-                      <p className="text-center text-sm text-muted-foreground">
-                        Click a number to accept that estimate for this story
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="bg-card border-border">
-                <CardContent className="p-12 text-center">
-                  <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-xl font-medium text-foreground mb-2">
-                    No Stories to Estimate
-                  </h3>
-                  <p className="text-muted-foreground mb-6">
-                    This epic doesn&apos;t have any user stories yet. Create stories first, then come back to estimate them.
-                  </p>
-                  <Button onClick={() => navigate('/dashboard')}>
-                    Go to Dashboard
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Navigation */}
-            {stories.length > 0 && (
-              <div className="flex justify-between">
-                <Button 
-                  variant="outline" 
-                  onClick={handlePrevStory}
-                  disabled={currentStoryIndex === 0}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-2" />
-                  Previous Story
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleNextStory}
-                  disabled={currentStoryIndex >= stories.length - 1}
-                >
-                  Next Story
-                  <ChevronRight className="h-4 w-4 ml-2" />
-                </Button>
-              </div>
-            )}
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            ))}
           </div>
+        )}
+      </div>
+    );
+  }
 
-          {/* Sidebar */}
-          <div className="space-y-4">
-            {/* AI Team */}
-            <Card className="bg-card border-border">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  AI Team Personas
-                </CardTitle>
-                <CardDescription>
-                  Each persona evaluates from their unique perspective
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {[
-                  { avatar: '👩‍💻', name: 'Sarah', role: 'Sr. Developer', focus: 'Technical complexity' },
-                  { avatar: '👨‍💻', name: 'Alex', role: 'Jr. Developer', focus: 'Learning curve' },
-                  { avatar: '🧪', name: 'Maya', role: 'QA Engineer', focus: 'Test coverage' },
-                  { avatar: '🔧', name: 'Jordan', role: 'DevOps', focus: 'Deployment & infra' },
-                  { avatar: '🎨', name: 'Riley', role: 'UX Designer', focus: 'User experience' },
-                ].map((persona) => (
-                  <div 
-                    key={persona.name}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50"
-                  >
-                    <span className="text-2xl">{persona.avatar}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm text-foreground">{persona.name}</p>
-                      <p className="text-xs text-muted-foreground">{persona.role}</p>
-                    </div>
-                    <Badge variant="outline" className="text-xs">
-                      {persona.focus}
-                    </Badge>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Fibonacci Scale */}
-            <Card className="bg-card border-border">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Target className="h-4 w-4" />
-                  Fibonacci Scale
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <Badge variant="outline">1</Badge>
-                  <span className="text-muted-foreground">Trivial - few hours</span>
-                </div>
-                <div className="flex justify-between">
-                  <Badge variant="outline">2</Badge>
-                  <span className="text-muted-foreground">Small - about a day</span>
-                </div>
-                <div className="flex justify-between">
-                  <Badge variant="outline">3</Badge>
-                  <span className="text-muted-foreground">Medium - 2-3 days</span>
-                </div>
-                <div className="flex justify-between">
-                  <Badge variant="outline">5</Badge>
-                  <span className="text-muted-foreground">Large - about a week</span>
-                </div>
-                <div className="flex justify-between">
-                  <Badge variant="outline">8</Badge>
-                  <span className="text-muted-foreground">Very large - 1-2 weeks</span>
-                </div>
-                <div className="flex justify-between">
-                  <Badge variant="outline">13</Badge>
-                  <span className="text-muted-foreground">Huge - consider splitting</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Tips */}
-            <Card className="bg-card border-border">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-yellow-500" />
-                  Tips
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-muted-foreground space-y-2">
-                <p>• AI personas consider different aspects of the work</p>
-                <p>• Low consensus means the story may need more clarity</p>
-                <p>• Consider splitting stories estimated at 13 points</p>
-                <p>• The suggested estimate is based on team consensus</p>
-              </CardContent>
-            </Card>
+  // ==================== PLANNING VIEW ====================
+  const currentStory = stories[currentStoryIndex];
+  
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={backToList}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Poker Planning</h1>
+            <p className="text-muted-foreground">
+              Story {currentStoryIndex + 1} of {stories.length}
+            </p>
           </div>
         </div>
-      )}
+        <Progress value={(currentStoryIndex / stories.length) * 100} className="w-48" />
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <Loader2 className="h-8 w-8 text-primary animate-spin" />
+        </div>
+      ) : stories.length === 0 ? (
+        <Card className="bg-card border-border">
+          <CardContent className="p-12 text-center">
+            <Check className="h-12 w-12 text-green-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium">All Stories Estimated!</h3>
+            <p className="text-muted-foreground mt-2">
+              All stories in this epic have been estimated.
+            </p>
+            <Button className="mt-4" onClick={backToList}>
+              Back to List
+            </Button>
+          </CardContent>
+        </Card>
+      ) : currentStory ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Story Card */}
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <Badge variant="outline">Story {currentStoryIndex + 1}</Badge>
+              </div>
+              <CardTitle className="text-xl mt-2">{currentStory.title}</CardTitle>
+              <CardDescription>{currentStory.description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {currentStory.acceptance_criteria && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Acceptance Criteria</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    {(Array.isArray(currentStory.acceptance_criteria) 
+                      ? currentStory.acceptance_criteria 
+                      : [currentStory.acceptance_criteria]
+                    ).map((criterion, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span>{criterion}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              <div className="mt-6">
+                <Button 
+                  className="w-full" 
+                  onClick={runAIEstimation}
+                  disabled={estimating}
+                >
+                  {estimating ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-2" />
+                  )}
+                  {estimating ? 'AI Team Estimating...' : 'Run AI Estimation'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Estimates Card */}
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                AI Team Estimates
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {aiEstimates.length === 0 && !estimating && !currentPersona ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Click "Run AI Estimation" to get team estimates</p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-3">
+                    {currentPersona && (
+                      <div className="p-3 rounded-lg border border-primary/50 bg-primary/5 animate-pulse">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback>{PERSONA_AVATARS[currentPersona.name] || '🤖'}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{currentPersona.name}</p>
+                            <p className="text-sm text-muted-foreground">{currentPersona.role}</p>
+                          </div>
+                          <Loader2 className="h-4 w-4 animate-spin ml-auto" />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {aiEstimates.map((estimate, idx) => (
+                      <div key={idx} className="p-3 rounded-lg border border-border bg-muted/20">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback>{PERSONA_AVATARS[estimate.name] || '🤖'}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <p className="font-medium">{estimate.name}</p>
+                            <p className="text-sm text-muted-foreground">{estimate.role}</p>
+                          </div>
+                          <Badge variant="outline" className="text-lg font-bold">
+                            {estimate.estimate}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-2 ml-13">
+                          {estimate.reasoning}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+              
+              {estimateSummary && (
+                <div className="mt-4 pt-4 border-t border-border">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Suggested Estimate</p>
+                      <p className="text-3xl font-bold">{estimateSummary.suggested}</p>
+                    </div>
+                    <div className="text-right text-sm text-muted-foreground">
+                      <p>Range: {estimateSummary.min} - {estimateSummary.max}</p>
+                      <p>Average: {estimateSummary.average}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    {FIBONACCI.map(points => (
+                      <Button
+                        key={points}
+                        variant={points === estimateSummary.suggested ? "default" : "outline"}
+                        className="flex-1"
+                        onClick={() => acceptEstimate(points)}
+                      >
+                        {points}
+                      </Button>
+                    ))}
+                  </div>
+                  
+                  <Button 
+                    variant="ghost" 
+                    className="w-full mt-2"
+                    onClick={resetEstimation}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Re-estimate
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
     </div>
   );
 };
