@@ -495,7 +495,7 @@ async def generate_sprint_kickoff(
         raise HTTPException(status_code=400, detail="No stories committed to current sprint")
     
     # Calculate capacity
-    sprint_capacity = (ctx["num_developers"] or 0) * (ctx["points_per_dev_per_sprint"] or 10)
+    sprint_capacity = (ctx["num_developers"] or 0) * (ctx["points_per_dev_per_sprint"] or 8)
     
     # Build story data for AI - collect valid IDs for validation
     valid_story_ids = set()
@@ -992,7 +992,7 @@ async def get_sprint_stories_from_scope_plan(
         else:
             included.append(story_data)
     
-    sprint_capacity = (ctx["num_developers"] or 0) * (ctx["points_per_dev_per_sprint"] or 10) if ctx else 0
+    sprint_capacity = (ctx["num_developers"] or 0) * (ctx["points_per_dev_per_sprint"] or 8) if ctx else 0
     total_included_points = sum(s["story_points"] or 0 for s in included)
     
     return {
