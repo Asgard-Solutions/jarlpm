@@ -1200,6 +1200,14 @@ const Epic = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Push to Linear Modal */}
+        <PushToLinearModal
+          isOpen={showPushToLinear}
+          onClose={() => setShowPushToLinear(false)}
+          epicId={epicId}
+          epicTitle={epic?.title || ''}
+        />
+
         {/* Error Toast */}
         {error && (
           <div className="fixed bottom-4 right-4 bg-destructive text-destructive-foreground px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50" data-testid="error-toast">
