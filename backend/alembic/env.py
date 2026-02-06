@@ -22,6 +22,7 @@ from db.feature_models import Feature, FeatureConversationEvent
 from db.user_story_models import UserStory, UserStoryConversationEvent
 from db.persona_models import Persona, PersonaGenerationSettings
 from db.analytics_models import InitiativeGenerationLog, InitiativeEditLog, PromptVersionRegistry, ModelHealthMetrics
+from db.integration_models import ExternalIntegration, ExternalPushMapping, ExternalPushRun
 
 # this is the Alembic Config object
 config = context.config
