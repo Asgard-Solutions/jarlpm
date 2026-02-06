@@ -672,7 +672,6 @@ async def get_completed_poker_epics(
     story_map = {s.story_id: s for s in stories}
     
     # Get features to find epic_ids
-    from db.user_story_models import Feature
     feature_ids = list(set(s.feature_id for s in stories if s.feature_id))
     
     epic_story_count = {}  # epic_id -> {total_stories, estimated_stories}
