@@ -897,6 +897,15 @@ Generate the standup summary."""
                 detail=f"Failed to generate standup summary: {', '.join(validation_result.errors)}"
             )
         
+        # ===== SAVE INSIGHT TO DATABASE =====
+        await save_sprint_insight(
+            session=session,
+            user_id=user_id,
+            sprint_number=sprint_info.sprint_number,
+            insight_type="standup_summary",
+            content=validation_result.data
+        )
+        
         return StandupSummary(**validation_result.data)
         
     except HTTPException:
