@@ -437,7 +437,7 @@ const Scoring = () => {
               {selectedEpicDetail.bugs.map((bug) => (
                 <Card key={bug.bug_id} className="bg-card border-border hover:border-orange-500/30 transition-colors">
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <Bug className="w-4 h-4 text-orange-400" />
@@ -460,6 +460,15 @@ const Scoring = () => {
                         )}
                       </div>
                     </div>
+                    {/* AI Reasoning */}
+                    {bug.rice_reasoning && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <div className="text-xs">
+                          <span className="font-medium text-orange-400">RICE Reasoning: </span>
+                          <span className="text-muted-foreground">{bug.rice_reasoning}</span>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
