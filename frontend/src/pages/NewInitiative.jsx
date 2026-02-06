@@ -508,20 +508,54 @@ and small agencies (2-5 people)."`}
                     </h3>
                     
                     <div className="space-y-4">
+                      {/* Problem Statement */}
                       <div>
                         <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-1">
                           <Target className="w-4 h-4" /> Problem
                         </div>
                         <p className="text-nordic-text-primary">{initiative.prd?.problem_statement}</p>
+                        {initiative.prd?.problem_evidence && (
+                          <p className="text-sm text-nordic-text-muted mt-2 italic bg-nordic-bg-primary p-2 rounded">
+                            Evidence: {initiative.prd.problem_evidence}
+                          </p>
+                        )}
                       </div>
                       
+                      {/* Target Users - Enhanced */}
                       <div>
-                        <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-1">
+                        <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-2">
                           <Users className="w-4 h-4" /> Target Users
                         </div>
-                        <p className="text-nordic-text-primary">{initiative.prd?.target_users}</p>
+                        {Array.isArray(initiative.prd?.target_users) ? (
+                          <div className="space-y-3">
+                            {initiative.prd.target_users.map((user, i) => (
+                              <div key={i} className="bg-nordic-bg-primary p-3 rounded-lg border border-nordic-border">
+                                <div className="font-medium text-nordic-text-primary mb-1">{user.persona}</div>
+                                {user.context && <p className="text-sm text-nordic-text-muted mb-2">{user.context}</p>}
+                                {user.pain_points?.length > 0 && (
+                                  <div className="mb-2">
+                                    <span className="text-xs font-medium text-red-400">Pain Points: </span>
+                                    <span className="text-sm text-nordic-text-muted">{user.pain_points.join(', ')}</span>
+                                  </div>
+                                )}
+                                {user.current_workaround && (
+                                  <div className="mb-2">
+                                    <span className="text-xs font-medium text-amber-400">Current Workaround: </span>
+                                    <span className="text-sm text-nordic-text-muted">{user.current_workaround}</span>
+                                  </div>
+                                )}
+                                {user.jtbd && (
+                                  <div className="text-sm text-nordic-accent italic">"{user.jtbd}"</div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-nordic-text-primary">{initiative.prd?.target_users}</p>
+                        )}
                       </div>
                       
+                      {/* Desired Outcome */}
                       <div>
                         <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-1">
                           <Check className="w-4 h-4" /> Desired Outcome
@@ -529,6 +563,23 @@ and small agencies (2-5 people)."`}
                         <p className="text-nordic-text-primary">{initiative.prd?.desired_outcome}</p>
                       </div>
                       
+                      {/* Positioning */}
+                      {initiative.prd?.positioning?.for_who && (
+                        <div className="bg-gradient-to-r from-nordic-accent/10 to-transparent p-3 rounded-lg border border-nordic-accent/20">
+                          <div className="flex items-center gap-2 text-sm font-medium text-nordic-accent mb-2">
+                            <TrendingUp className="w-4 h-4" /> Positioning
+                          </div>
+                          <p className="text-sm text-nordic-text-primary">
+                            For <span className="font-medium">{initiative.prd.positioning.for_who}</span>, 
+                            who struggle with <span className="font-medium">{initiative.prd.positioning.who_struggle_with}</span>, 
+                            our <span className="font-medium">{initiative.prd.positioning.our_solution}</span> is unlike 
+                            <span className="font-medium"> {initiative.prd.positioning.unlike}</span> because 
+                            <span className="font-medium text-nordic-accent"> {initiative.prd.positioning.key_benefit}</span>.
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Key Metrics & Risks */}
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-2">
@@ -544,17 +595,91 @@ and small agencies (2-5 people)."`}
                         </div>
                         <div>
                           <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-2">
-                            <AlertTriangle className="w-4 h-4" /> Risks
+                            <AlertTriangle className="w-4 h-4" /> Riskiest Unknown
                           </div>
-                          <div className="space-y-1">
-                            {initiative.prd?.risks?.map((r, i) => (
-                              <Badge key={i} variant="outline" className="mr-1 mb-1 text-amber-500 border-amber-500/30">
-                                {r}
-                              </Badge>
+                          {initiative.prd?.riskiest_unknown ? (
+                            <p className="text-sm text-amber-400">{initiative.prd.riskiest_unknown}</p>
+                          ) : (
+                            <div className="space-y-1">
+                              {initiative.prd?.risks?.map((r, i) => (
+                                <Badge key={i} variant="outline" className="mr-1 mb-1 text-amber-500 border-amber-500/30">
+                                  {r}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* MVP Scope */}
+                      {initiative.prd?.mvp_scope?.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 text-sm font-medium text-green-400 mb-2">
+                            <CheckCircle2 className="w-4 h-4" /> MVP Scope (In)
+                          </div>
+                          <div className="space-y-2">
+                            {initiative.prd.mvp_scope.map((item, i) => (
+                              <div key={i} className="bg-green-500/5 border border-green-500/20 p-2 rounded">
+                                <span className="font-medium text-nordic-text-primary">{item.item || item}</span>
+                                {item.rationale && (
+                                  <p className="text-xs text-nordic-text-muted mt-1">{item.rationale}</p>
+                                )}
+                              </div>
                             ))}
                           </div>
                         </div>
-                      </div>
+                      )}
+                      
+                      {/* Not Now (Deferred) */}
+                      {initiative.prd?.not_now?.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-2">
+                            <Shield className="w-4 h-4" /> Deferred (Not Now)
+                          </div>
+                          <div className="space-y-2">
+                            {initiative.prd.not_now.map((item, i) => (
+                              <div key={i} className="bg-nordic-bg-primary p-2 rounded border border-nordic-border">
+                                <span className="text-nordic-text-muted">{item.item || item}</span>
+                                {item.rationale && (
+                                  <p className="text-xs text-nordic-text-muted/70 mt-1">Why: {item.rationale}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Assumptions */}
+                      {initiative.prd?.assumptions?.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-2">
+                            <Lightbulb className="w-4 h-4" /> Assumptions to Validate
+                          </div>
+                          <div className="space-y-2">
+                            {initiative.prd.assumptions.map((a, i) => (
+                              <div key={i} className="bg-amber-500/5 border border-amber-500/20 p-2 rounded">
+                                <span className="font-medium text-nordic-text-primary">{a.assumption || a}</span>
+                                {a.risk_if_wrong && (
+                                  <p className="text-xs text-red-400 mt-1">Risk if wrong: {a.risk_if_wrong}</p>
+                                )}
+                                {a.validation_approach && (
+                                  <p className="text-xs text-green-400 mt-1">Validation: {a.validation_approach}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Validation Plan */}
+                      {initiative.prd?.validation_plan && (
+                        <div className="bg-green-500/5 border border-green-500/20 p-3 rounded-lg">
+                          <div className="flex items-center gap-2 text-sm font-medium text-green-400 mb-1">
+                            <CheckCircle2 className="w-4 h-4" /> Validation Plan
+                          </div>
+                          <p className="text-sm text-nordic-text-primary">{initiative.prd.validation_plan}</p>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
