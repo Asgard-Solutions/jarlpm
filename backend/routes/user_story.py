@@ -1079,44 +1079,6 @@ async def chat_with_story(
     delivery_context = await prompt_service.get_delivery_context(user_id)
     delivery_context_text = prompt_service.format_delivery_context(delivery_context)
     
-    # Build refinement prompt
-    system_prompt = f"""{delivery_context_text}
-
-You are a Senior Product Manager helping refine a User Story.
-
-CURRENT USER STORY:
-- Persona: {story.persona}
-- Action: {story.action}
-- Benefit: {story.benefit}
-- Full Text: "{story.story_text}"
-- Acceptance Criteria:
-{chr(10).join(f'  - {c}' for c in (story.acceptance_criteria or []))}
-- Story Points: {story.story_points or 'Not estimated'}
-
-YOUR ROLE:
-- Help the user refine this story based on their feedback
-- Keep the standard format: "As a [persona], I want to [action] so that [benefit]"
-- Ensure acceptance criteria use Given/When/Then format
-- Keep the story focused on user value, not implementation
-- Ensure it's completable in one sprint
-
-RESPONSE FORMAT:
-When providing an updated story, include it in this JSON format:
-
-[STORY_UPDATE]
-{{
-  "persona": "the user role",
-  "action": "what they want to do",
-  "benefit": "why they want to do it",
-  "acceptance_criteria": ["Given..., When..., Then...", "..."],
-  "story_points": 3
-}}
-[/STORY_UPDATE]
-
-If you're just discussing and not proposing changes yet, respond conversationally without the JSON block.
-
-TONE: Professional, calm, direct, insightful."""
-
     user_prompt = body.content
     
     # Get conversation history before entering generator
