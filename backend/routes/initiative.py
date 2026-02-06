@@ -112,8 +112,7 @@ class StorySchema(BaseModel):
     benefit: str
     acceptance_criteria: List[str] = Field(default_factory=list)  # Gherkin format: Given/When/Then
     labels: List[str] = Field(default_factory=list)  # e.g., ["backend", "api", "auth", "mvp"]
-    priority: str = "should-have"  # must-have, should-have, nice-to-have
-    points: int = Field(default=3, ge=1, le=13)
+    priority: str = "should-have"  # must-have, should-have, nice-to-have (feature priority, NOT scoring)
     dependencies: List[str] = Field(default_factory=list)  # Story IDs or descriptions
     risks: List[str] = Field(default_factory=list)  # Risk descriptions
     
@@ -125,15 +124,8 @@ class StorySchema(BaseModel):
     instrumentation: List[str] = Field(default_factory=list)  # Analytics events/metrics to track
     notes_for_engineering: str = ""  # Technical tradeoffs, data storage, perf/security considerations
     
-    @validator('points', pre=True, always=True)
-    def validate_fibonacci(cls, v):
-        if v is None:
-            return 3
-        valid = [1, 2, 3, 5, 8, 13]
-        v = int(v) if isinstance(v, (int, float, str)) else 3
-        if v not in valid:
-            return min(valid, key=lambda x: abs(x - v))
-        return v
+    # NOTE: story_points, RICE scores, and MoSCoW are NOT included here.
+    # Those are only assigned via Scoring or Poker Planning features, not during creation.
     
     @validator('priority', pre=True, always=True)
     def validate_priority(cls, v):
