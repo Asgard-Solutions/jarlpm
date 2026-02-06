@@ -21,7 +21,7 @@ from datetime import datetime, timedelta, timezone
 sys.path.insert(0, '/app/backend')
 
 # Get base URL from environment
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://convo-pm-system.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://pm-sync-hub.preview.emergentagent.com').rstrip('/')
 
 
 def create_test_session():
