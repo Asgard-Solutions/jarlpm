@@ -989,7 +989,7 @@ Generate the rationale for these cuts."""
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except json_lib.JSONDecodeError as e:
+    except json_lib.JSONDecodeError:
         logger.error(f"Failed to parse AI response: {full_response}")
         raise HTTPException(status_code=500, detail="Failed to parse AI response")
 
@@ -1102,7 +1102,7 @@ Generate 3 alternative cut strategies, each cutting at least {points_to_cut} poi
         return AlternativeCutSetsResponse(alternatives=alternatives)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except json_lib.JSONDecodeError as e:
+    except json_lib.JSONDecodeError:
         logger.error(f"Failed to parse AI response: {full_response}")
         raise HTTPException(status_code=500, detail="Failed to parse AI response")
 
@@ -1218,7 +1218,7 @@ Generate the risk review."""
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except json_lib.JSONDecodeError as e:
+    except json_lib.JSONDecodeError:
         logger.error(f"Failed to parse AI response: {full_response}")
         raise HTTPException(status_code=500, detail="Failed to parse AI response")
 
