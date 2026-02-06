@@ -45,6 +45,7 @@ class EpicResponse(BaseModel):
     current_stage: str  # Changed from EpicStage to str
     snapshot: EpicSnapshotResponse
     pending_proposal: Optional[dict] = None
+    moscow_score: Optional[str] = None  # MoSCoW priority score
     created_at: datetime
     updated_at: datetime
 
