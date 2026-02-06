@@ -391,6 +391,23 @@ const Settings = () => {
       newUrl.searchParams.delete('provider');
       window.history.replaceState({}, '', newUrl.toString());
     }
+    
+    if (provider === 'jira') {
+      if (success === 'true') {
+        toast.success('Jira connected successfully!');
+        loadData();
+        loadJiraProjects();
+      } else if (error) {
+        toast.error(`Jira connection failed: ${error}`);
+      }
+      
+      // Clean up URL
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('success');
+      newUrl.searchParams.delete('error');
+      newUrl.searchParams.delete('provider');
+      window.history.replaceState({}, '', newUrl.toString());
+    }
   }, [searchParams]);
 
   // Load Linear teams when integration is connected
