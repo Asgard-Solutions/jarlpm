@@ -177,24 +177,21 @@ class TestDeliveryRealityAIEndpoints:
     """Test delivery reality AI endpoints (sessionless streaming)"""
     
     @pytest.fixture(scope="class")
-    def auth_token(self):
-        """Get authentication token"""
-        response = requests.post(
+    def auth_session(self):
+        """Get authenticated session with cookies"""
+        session = requests.Session()
+        response = session.post(
             f"{BASE_URL}/api/auth/login",
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
         )
         if response.status_code == 200:
-            data = response.json()
-            return data.get("session_token") or data.get("token")
+            return session
         pytest.skip("Authentication failed")
     
     @pytest.fixture(scope="class")
-    def test_epic_id(self, auth_token):
+    def test_epic_id(self, auth_session):
         """Get a test epic ID"""
-        response = requests.get(
-            f"{BASE_URL}/api/epics",
-            headers={"Authorization": f"Bearer {auth_token}"}
-        )
+        response = auth_session.get(f"{BASE_URL}/api/epics")
         if response.status_code == 200:
             data = response.json()
             epics = data.get("epics", [])
@@ -202,11 +199,10 @@ class TestDeliveryRealityAIEndpoints:
                 return epics[0].get("epic_id")
         return "epic_test_nonexistent"
     
-    def test_cut_rationale_accessible(self, auth_token, test_epic_id):
+    def test_cut_rationale_accessible(self, auth_session, test_epic_id):
         """Delivery reality cut rationale endpoint should be accessible"""
-        response = requests.post(
-            f"{BASE_URL}/api/delivery-reality/initiative/{test_epic_id}/ai/cut-rationale",
-            headers={"Authorization": f"Bearer {auth_token}"}
+        response = auth_session.post(
+            f"{BASE_URL}/api/delivery-reality/initiative/{test_epic_id}/ai/cut-rationale"
         )
         # Expected: 402, 400, 404, or 200 - NOT 500
         assert response.status_code != 500, f"Server error: {response.text}"
@@ -220,11 +216,10 @@ class TestDeliveryRealityAIEndpoints:
         elif response.status_code == 404:
             print(f"  → Returns 404 (epic not found)")
     
-    def test_alternative_cuts_accessible(self, auth_token, test_epic_id):
+    def test_alternative_cuts_accessible(self, auth_session, test_epic_id):
         """Delivery reality alternative cuts endpoint should be accessible"""
-        response = requests.post(
-            f"{BASE_URL}/api/delivery-reality/initiative/{test_epic_id}/ai/alternative-cuts",
-            headers={"Authorization": f"Bearer {auth_token}"}
+        response = auth_session.post(
+            f"{BASE_URL}/api/delivery-reality/initiative/{test_epic_id}/ai/alternative-cuts"
         )
         assert response.status_code != 500, f"Server error: {response.text}"
         print(f"✓ Alternative cuts endpoint accessible: {response.status_code}")
@@ -235,11 +230,10 @@ class TestDeliveryRealityAIEndpoints:
             data = response.json()
             print(f"  → Returns 400: {data.get('detail', 'Unknown')}")
     
-    def test_risk_review_accessible(self, auth_token, test_epic_id):
+    def test_risk_review_accessible(self, auth_session, test_epic_id):
         """Delivery reality risk review endpoint should be accessible"""
-        response = requests.post(
-            f"{BASE_URL}/api/delivery-reality/initiative/{test_epic_id}/ai/risk-review",
-            headers={"Authorization": f"Bearer {auth_token}"}
+        response = auth_session.post(
+            f"{BASE_URL}/api/delivery-reality/initiative/{test_epic_id}/ai/risk-review"
         )
         assert response.status_code != 500, f"Server error: {response.text}"
         print(f"✓ Risk review endpoint accessible: {response.status_code}")
