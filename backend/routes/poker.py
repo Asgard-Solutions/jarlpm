@@ -632,11 +632,14 @@ async def get_poker_session(
     session: AsyncSession = Depends(get_db)
 ):
     """Get a specific poker session with full reasoning details"""
-    await get_current_user_id(request, session)
+    user_id = await get_current_user_id(request, session)
     
-    # Get the session
+    # Get the session and verify ownership
     result = await session.execute(
-        select(PokerEstimateSession).where(PokerEstimateSession.session_id == session_id)
+        select(PokerEstimateSession).where(
+            PokerEstimateSession.session_id == session_id,
+            PokerEstimateSession.user_id == user_id
+        )
     )
     poker_session = result.scalar_one_or_none()
     
