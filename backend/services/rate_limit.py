@@ -5,7 +5,12 @@ Protects against abuse and controls costs for:
 - Authentication endpoints (prevent brute force)
 - AI generation endpoints (protect LLM API costs)
 - Integration push endpoints (prevent API abuse)
+
+Storage:
+- Uses Redis if REDIS_URL is set (recommended for production/scaling)
+- Falls back to in-memory storage for single-instance deployments
 """
+import os
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -14,6 +19,18 @@ from fastapi.responses import JSONResponse
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Determine storage backend
+# Redis is recommended for production (consistent limits across instances/workers)
+# Memory fallback is fine for single instance/worker deployments
+REDIS_URL = os.environ.get("REDIS_URL")
+STORAGE_URI = REDIS_URL if REDIS_URL else "memory://"
+
+if REDIS_URL:
+    logger.info("Rate limiting using Redis storage (distributed)")
+else:
+    logger.info("Rate limiting using in-memory storage (single instance only)")
+
 
 # Custom key functions
 def get_user_id_or_ip(request: Request) -> str:
@@ -35,12 +52,12 @@ def get_ip_only(request: Request) -> str:
     return f"ip:{get_remote_address(request)}"
 
 
-# Create limiter instance with in-memory storage
-# For production with multiple workers, use Redis: "redis://localhost:6379"
+# Create limiter instance
+# Uses Redis if REDIS_URL is set, otherwise falls back to in-memory
 limiter = Limiter(
     key_func=get_user_id_or_ip,
     default_limits=["200/minute"],  # Default fallback
-    storage_uri="memory://",
+    storage_uri=STORAGE_URI,
     strategy="fixed-window"
 )
 
