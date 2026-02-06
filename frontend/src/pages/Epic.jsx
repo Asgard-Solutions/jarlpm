@@ -648,7 +648,7 @@ const Epic = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate('/lean-canvas')}
+                        onClick={() => navigate(`/lean-canvas?epic=${epicId}`)}
                         className="bg-purple-500/10 border-purple-500/30 hover:bg-purple-500/20"
                         data-testid="view-lean-canvas-btn"
                       >
@@ -660,12 +660,41 @@ const Epic = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate('/prd')}
+                        onClick={() => navigate(`/prd?epic=${epicId}`)}
                         className="bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20"
                         data-testid="view-prd-btn"
                       >
                         <FileText className="w-4 h-4 mr-2 text-blue-400" />
                         PRD
+                      </Button>
+                    )}
+                  </div>
+                )}
+                {/* Show create buttons if documents don't exist */}
+                {(!hasPRD || !hasLeanCanvas) && (
+                  <div className="flex items-center gap-2 mr-4">
+                    {!hasLeanCanvas && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/lean-canvas?epic=${epicId}&create=true`)}
+                        className="bg-purple-500/5 border-purple-500/20 hover:bg-purple-500/10"
+                        data-testid="create-lean-canvas-btn"
+                      >
+                        <LayoutGrid className="w-4 h-4 mr-2 text-purple-400/70" />
+                        + Lean Canvas
+                      </Button>
+                    )}
+                    {!hasPRD && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/prd?epic=${epicId}&create=true`)}
+                        className="bg-blue-500/5 border-blue-500/20 hover:bg-blue-500/10"
+                        data-testid="create-prd-btn"
+                      >
+                        <FileText className="w-4 h-4 mr-2 text-blue-400/70" />
+                        + PRD
                       </Button>
                     )}
                   </div>
