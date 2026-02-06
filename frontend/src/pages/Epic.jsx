@@ -103,6 +103,10 @@ const Epic = () => {
   // PRD and Lean Canvas state
   const [hasPRD, setHasPRD] = useState(false);
   const [hasLeanCanvas, setHasLeanCanvas] = useState(false);
+  
+  // Push to Linear state
+  const [showPushToLinear, setShowPushToLinear] = useState(false);
+  const [hasLinearIntegration, setHasLinearIntegration] = useState(false);
 
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
