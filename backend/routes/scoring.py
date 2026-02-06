@@ -1651,7 +1651,7 @@ async def score_standalone_story(
     session: AsyncSession = Depends(get_db)
 ):
     """Score a standalone user story with RICE"""
-    user_id = await get_current_user_id(request, session)
+    await get_current_user_id(request, session)  # Auth check
     scoring_service = ScoringService(session)
     
     try:
