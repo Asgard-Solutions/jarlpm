@@ -1224,3 +1224,47 @@ When an Epic is locked, users enter Feature Planning Mode:
 - `/app/frontend/src/pages/CompletedEpic.jsx` - Added MoSCoW badge to epic header
 
 
+### 2026-02-06: Delivery Reality Enhancement (COMPLETE)
+**Feature:** Transform Delivery Reality from calculator to PM tool
+
+**Core UX Features (No LLM):**
+1. **"Why these cuts" summary** - Auto-generates human-readable cut explanation
+2. **MVP Feasibility Alert** - Red warning if must-haves exceed capacity  
+3. **Scope Decision Summary** - Exportable artifact (Sprint 1/2 scope, Deferred, Notes)
+
+**AI Features (Uses User's LLM):**
+1. **Scope Cut Rationale** - 3 bullets: rationale, user impact, validate first
+2. **Alternative Cut Sets** - 3 strategies: Cut Polish, Cut Integrations, Cut Low Adoption
+3. **Risk Review** - Top 3 risks, assumptions, suggested spike story
+
+**Files Created/Modified:**
+- `/app/backend/routes/delivery_reality.py` - 4 new endpoints + helper functions
+- `/app/frontend/src/pages/DeliveryReality.jsx` - Complete rewrite with AI tabs
+
+
+### 2026-02-06: Sprints Page Enhancement (COMPLETE)
+**Feature:** Transform Sprints from overview to daily driver PM tool
+
+**Database Changes:**
+- Added `sprint_number`, `status`, `blocked_reason` columns to user_stories table
+- New migration: `20260206_0345_add_sprint_fields_to_stories.py`
+
+**Core UX Features:**
+1. **Sprint Scope Selection** - Stories can be committed to Sprint N
+2. **Capacity Fit Display** - Shows committed vs capacity with overflow warning
+3. **Blocked Lane** - Stories can be marked blocked with reason
+4. **Kanban Board** - 4 columns: Ready, In Progress, Blocked, Done
+
+**AI Features (Uses User's LLM):**
+1. **Sprint Kickoff Plan** - Sprint goal, top 5 stories, sequencing, 3 risks
+2. **Daily Standup Summary** - What changed, blocked, next actions
+3. **WIP Optimization** - Finish first vs pause recommendations
+
+**Files Created:**
+- `/app/backend/routes/sprints.py` - Complete sprint management API
+- `/app/frontend/src/pages/Sprints.jsx` - Complete rewrite with AI insights
+
+**Key Integration:**
+- Delivery Reality → Sprints connection via `GET /sprints/from-delivery-reality/{epic_id}`
+
+
