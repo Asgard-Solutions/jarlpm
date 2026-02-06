@@ -334,6 +334,7 @@ class Epic(Base):
     
     # MoSCoW Scoring (must_have, should_have, could_have, wont_have)
     moscow_score: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    moscow_reasoning: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
