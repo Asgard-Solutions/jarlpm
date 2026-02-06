@@ -529,11 +529,72 @@ def compute_payload_hash(payload: Dict) -> str:
 class LinearPushService:
     """
     Service for pushing JarlPM items to Linear.
-    Handles idempotent create/update operations.
+    Handles idempotent create/update operations with priority and label mapping.
     """
+    
+    # Linear priority values: 0=No priority, 1=Urgent, 2=High, 3=Medium, 4=Low
+    DEFAULT_PRIORITY_MAPPING = {
+        "must": 2,      # High
+        "should": 3,    # Medium
+        "could": 4,     # Low
+        "wont": 0,      # No priority
+    }
     
     def __init__(self, graphql_service: LinearGraphQLService):
         self.graphql = graphql_service
+        self._label_cache: Dict[str, str] = {}  # name -> id mapping
+    
+    async def ensure_labels(
+        self,
+        team_id: str,
+        label_names: List[str],
+        label_policy: str = "create-missing"  # "create-missing" or "only-existing"
+    ) -> List[str]:
+        """
+        Ensure labels exist and return their IDs.
+        If label_policy is "create-missing", creates labels that don't exist.
+        If label_policy is "only-existing", only returns IDs for existing labels.
+        """
+        if not label_names:
+            return []
+        
+        # Fetch existing labels if cache is empty
+        if not self._label_cache:
+            existing_labels = await self.graphql.get_team_labels(team_id)
+            self._label_cache = {l["name"].lower(): l["id"] for l in existing_labels}
+        
+        label_ids = []
+        for name in label_names:
+            name_lower = name.lower()
+            
+            if name_lower in self._label_cache:
+                label_ids.append(self._label_cache[name_lower])
+            elif label_policy == "create-missing":
+                try:
+                    new_label = await self.graphql.create_label(team_id, name)
+                    self._label_cache[name_lower] = new_label["id"]
+                    label_ids.append(new_label["id"])
+                    logger.info(f"Created new label '{name}' in Linear")
+                except LinearAPIError as e:
+                    logger.warning(f"Failed to create label '{name}': {e}")
+            # If "only-existing", skip labels that don't exist
+        
+        return label_ids
+    
+    def map_priority(
+        self,
+        moscow_priority: Optional[str],
+        priority_mapping: Optional[Dict[str, int]] = None
+    ) -> Optional[int]:
+        """
+        Map MoSCoW priority to Linear priority value.
+        Linear priorities: 0=No priority, 1=Urgent, 2=High, 3=Medium, 4=Low
+        """
+        if not moscow_priority:
+            return None
+        
+        mapping = priority_mapping or self.DEFAULT_PRIORITY_MAPPING
+        return mapping.get(moscow_priority.lower(), None)
     
     def format_epic_description(self, epic: Dict, snapshot: Dict) -> str:
         """Format epic data as Linear issue description"""
