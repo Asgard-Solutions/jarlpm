@@ -484,6 +484,7 @@ async def preview_jira_push(
 
 
 @router.post("/push")
+@limiter.limit(RATE_LIMITS["integration_push"])
 async def push_to_jira(
     request: Request,
     body: JiraPushRequest,
