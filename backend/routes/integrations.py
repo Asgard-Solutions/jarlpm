@@ -576,6 +576,21 @@ async def get_linear_team_labels(
     return {"labels": labels}
 
 
+@router.get("/linear/labels")
+async def get_linear_organization_labels(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get all labels in the Linear organization"""
+    user_id = await get_current_user_id(request, session)
+    await check_subscription_required(session, user_id)
+    
+    graphql = await get_linear_service(session, user_id)
+    labels = await graphql.get_organization_labels()
+    
+    return {"labels": labels}
+
+
 @router.get("/linear/test")
 async def test_linear_connection(
     request: Request,
