@@ -203,6 +203,9 @@ async def generate_personas_for_epic(
     if not llm_config:
         raise HTTPException(status_code=400, detail="No LLM provider configured")
     
+    # Prepare for streaming - extract config BEFORE releasing session
+    config_data = llm_service.prepare_for_streaming(llm_config)
+    
     # Validate count (1-5)
     count = max(1, min(5, body.count))
     
