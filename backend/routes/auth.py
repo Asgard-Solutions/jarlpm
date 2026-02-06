@@ -207,7 +207,7 @@ async def signup(
     # Send verification email (async, non-blocking)
     email_service = get_email_service()
     # Get base URL from request origin or use a default
-    base_url = str(request.headers.get("origin", "https://pmcanvas.preview.emergentagent.com"))
+    base_url = str(request.headers.get("origin", "https://jarlpm-convtool.preview.emergentagent.com"))
     try:
         await email_service.send_verification_email(
             to_email=body.email,
@@ -646,7 +646,7 @@ async def resend_verification_email(
     
     # Send verification email
     email_service = get_email_service()
-    base_url = str(request.headers.get("origin", "https://pmcanvas.preview.emergentagent.com"))
+    base_url = str(request.headers.get("origin", "https://jarlpm-convtool.preview.emergentagent.com"))
     
     email_sent = await email_service.send_verification_email(
         to_email=user.email,
@@ -696,7 +696,7 @@ async def forgot_password(
     
     # Send password reset email
     email_service = get_email_service()
-    base_url = str(request.headers.get("origin", "https://pmcanvas.preview.emergentagent.com"))
+    base_url = str(request.headers.get("origin", "https://jarlpm-convtool.preview.emergentagent.com"))
     
     email_sent = await email_service.send_password_reset_email(
         to_email=user.email,
