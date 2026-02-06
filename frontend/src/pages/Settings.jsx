@@ -1588,8 +1588,8 @@ const Settings = () => {
                   </div>
                 </div>
 
-                {/* Azure DevOps Integration (Coming Soon) */}
-                <div className="border border-nordic-border rounded-lg overflow-hidden opacity-60">
+                {/* Azure DevOps Integration */}
+                <div className="border border-nordic-border rounded-lg overflow-hidden">
                   <div className="p-4 bg-nordic-bg-primary border-b border-nordic-border">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -1603,10 +1603,145 @@ const Settings = () => {
                           <p className="text-sm text-nordic-text-muted">Push work items to Azure DevOps</p>
                         </div>
                       </div>
-                      <Badge className="bg-nordic-bg-primary text-nordic-text-muted border border-nordic-border">
-                        Coming Soon
+                      <Badge
+                        className={
+                          integrations?.azure_devops?.status === 'connected'
+                            ? 'bg-nordic-green text-white'
+                            : 'bg-nordic-bg-primary text-nordic-text-muted border border-nordic-border'
+                        }
+                      >
+                        {integrations?.azure_devops?.status === 'connected'
+                          ? 'Connected'
+                          : 'Not Connected'}
                       </Badge>
                     </div>
+                  </div>
+                  
+                  <div className="p-4 space-y-4">
+                    {integrations?.azure_devops?.status === 'connected' ? (
+                      <>
+                        {/* Connected State */}
+                        <div className="flex items-center gap-2 text-sm text-nordic-text-secondary">
+                          <CheckCircle className="w-4 h-4 text-nordic-green" />
+                          Connected to: <span className="font-medium text-nordic-text-primary">{integrations.azure_devops.account_name || 'Azure DevOps Organization'}</span>
+                        </div>
+                        
+                        {integrations.azure_devops.default_project && (
+                          <div className="text-sm text-nordic-text-secondary">
+                            Default project: <span className="font-medium text-nordic-text-primary">{integrations.azure_devops.default_project.name}</span>
+                          </div>
+                        )}
+                        
+                        {/* Project Selection */}
+                        {!integrations.azure_devops.default_project && adoProjects.length > 0 && (
+                          <div className="space-y-3 p-3 bg-nordic-bg-primary rounded-lg border border-nordic-border">
+                            <Label className="text-nordic-text-secondary">Select Default Project</Label>
+                            <Select value={selectedAdoProject} onValueChange={setSelectedAdoProject}>
+                              <SelectTrigger className="bg-background border-border text-foreground">
+                                <SelectValue placeholder="Choose a project" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-popover border-border shadow-lg">
+                                {adoProjects.map((project) => (
+                                  <SelectItem key={project.id} value={project.name}>
+                                    {project.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              onClick={handleConfigureADO}
+                              disabled={!selectedAdoProject || configuringADO}
+                              size="sm"
+                              className="bg-nordic-accent hover:bg-nordic-accent/90 text-white"
+                            >
+                              {configuringADO ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Saving...
+                                </>
+                              ) : (
+                                'Save Configuration'
+                              )}
+                            </Button>
+                          </div>
+                        )}
+                        
+                        <Button
+                          onClick={handleDisconnectADO}
+                          disabled={disconnectingADO}
+                          variant="outline"
+                          className="border-red-500 text-red-500 hover:bg-red-500/10"
+                          data-testid="disconnect-ado-btn"
+                        >
+                          {disconnectingADO ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Disconnecting...
+                            </>
+                          ) : (
+                            <>
+                              <Unlink className="w-4 h-4 mr-2" />
+                              Disconnect
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        {/* Not Connected State - PAT Form */}
+                        <p className="text-sm text-nordic-text-muted">
+                          Connect using a Personal Access Token (PAT). You can create one in Azure DevOps &gt; User Settings &gt; Personal Access Tokens.
+                        </p>
+                        
+                        <div className="space-y-3 p-3 bg-nordic-bg-primary rounded-lg border border-nordic-border">
+                          <div className="space-y-2">
+                            <Label className="text-nordic-text-secondary">Organization URL</Label>
+                            <Input
+                              type="text"
+                              placeholder="https://dev.azure.com/your-org"
+                              value={adoOrgUrl}
+                              onChange={(e) => setAdoOrgUrl(e.target.value)}
+                              className="bg-background border-border text-foreground"
+                              data-testid="ado-org-url-input"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label className="text-nordic-text-secondary">Personal Access Token (PAT)</Label>
+                            <Input
+                              type="password"
+                              placeholder="Enter your PAT"
+                              value={adoPat}
+                              onChange={(e) => setAdoPat(e.target.value)}
+                              className="bg-background border-border text-foreground"
+                              data-testid="ado-pat-input"
+                            />
+                            <p className="text-xs text-nordic-text-muted">
+                              Required scopes: Work Items (Read &amp; Write), Project and Team (Read)
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <Button
+                          onClick={handleConnectADO}
+                          disabled={connectingADO || !adoOrgUrl || !adoPat || !isActive}
+                          className="bg-[#0078D7] hover:bg-[#0078D7]/90 text-white"
+                          data-testid="connect-ado-btn"
+                        >
+                          {connectingADO ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Connecting...
+                            </>
+                          ) : (
+                            <>
+                              <Link2 className="w-4 h-4 mr-2" />
+                              Connect to Azure DevOps
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
 
