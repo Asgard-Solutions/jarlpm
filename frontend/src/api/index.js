@@ -320,6 +320,15 @@ export const pokerAPI = {
   // Get AI personas
   getPersonas: () => api.get('/poker/personas'),
   
+  // Get epics with completed poker sessions
+  getCompletedEpics: () => api.get('/poker/completed-epics'),
+  
+  // Get epics that need estimation
+  getEpicsWithoutEstimation: () => api.get('/poker/epics-without-estimation'),
+  
+  // Get all poker sessions for an epic
+  getEpicSessions: (epicId) => api.get(`/poker/epic/${epicId}/sessions`),
+  
   // Estimate a story by ID
   estimateStory: (storyId) => {
     return fetch(`${API}/poker/estimate`, {
