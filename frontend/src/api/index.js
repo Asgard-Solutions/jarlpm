@@ -528,6 +528,16 @@ export const integrationsAPI = {
   getLinearProjects: (teamId) => api.get(`/integrations/linear/teams/${teamId}/projects`),
   getLinearLabels: (teamId) => api.get(`/integrations/linear/teams/${teamId}/labels`),
   
+  // Jira
+  connectJira: (callbackUrl) => api.post('/integrations/jira/connect', { frontend_callback_url: callbackUrl }),
+  disconnectJira: () => api.post('/integrations/jira/disconnect'),
+  configureJira: (data) => api.put('/integrations/jira/configure', data),
+  testJira: () => api.get('/integrations/jira/test'),
+  getJiraSites: () => api.get('/integrations/jira/sites'),
+  getJiraProjects: () => api.get('/integrations/jira/projects'),
+  getJiraIssueTypes: (projectKey) => api.get(`/integrations/jira/projects/${projectKey}/issue-types`),
+  getJiraFields: () => api.get('/integrations/jira/fields'),
+  
   // Push operations
   previewPush: (provider, data) => api.post(`/integrations/${provider}/preview`, data),
   push: (provider, data) => api.post(`/integrations/${provider}/push`, data),
