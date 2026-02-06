@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { epicAPI, featureAPI, userStoryAPI, llmProviderAPI, subscriptionAPI } from '@/api';
+import { epicAPI, featureAPI, userStoryAPI, llmProviderAPI, subscriptionAPI, leanCanvasAPI, prdAPI } from '@/api';
 import { useSubscriptionStore, useLLMProviderStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
