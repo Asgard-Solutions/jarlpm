@@ -656,6 +656,7 @@ class LinearPushService:
         existing_external_id: Optional[str] = None,
         parent_external_id: Optional[str] = None,
         estimate: Optional[int] = None,
+        priority: Optional[int] = None,
         project_id: Optional[str] = None,
         label_ids: Optional[List[str]] = None
     ) -> Dict[str, Any]:
@@ -678,6 +679,7 @@ class LinearPushService:
                 title=title,
                 description=description,
                 estimate=estimate,
+                priority=priority,
                 label_ids=label_ids
             )
             action = "updated"
@@ -688,6 +690,7 @@ class LinearPushService:
                 title=title,
                 description=description,
                 estimate=estimate,
+                priority=priority,
                 parent_id=parent_external_id,
                 project_id=project_id,
                 label_ids=label_ids
@@ -700,4 +703,32 @@ class LinearPushService:
             "external_key": issue.get("identifier"),
             "external_url": issue.get("url"),
             "payload_hash": payload_hash
+        }
+
+    async def create_or_get_epic_project(
+        self,
+        team_id: str,
+        epic_title: str,
+        epic_description: str,
+        existing_project_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Create a Linear Project for an Epic, or return existing.
+        This maps Epic → Linear Project (preferred mapping).
+        """
+        if existing_project_id:
+            # Return existing project info (would need to fetch it)
+            return {"id": existing_project_id, "action": "existing"}
+        
+        project = await self.graphql.create_project(
+            team_ids=[team_id],
+            name=epic_title,
+            description=epic_description[:1000] if epic_description else None  # Limit description
+        )
+        
+        return {
+            "id": project.get("id"),
+            "name": project.get("name"),
+            "url": project.get("url"),
+            "action": "created"
         }
