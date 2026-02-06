@@ -323,8 +323,10 @@ Respond ONLY with the JSON array, no other text."""
     async def generate():
         full_response = ""
         try:
-            async for chunk in llm_service.generate_stream(
-                user_id=user_id,
+            # Use sessionless streaming
+            llm = LLMService()  # No session needed
+            async for chunk in llm.stream_with_config(
+                config_data=config_data,
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
                 conversation_history=None
