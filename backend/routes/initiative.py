@@ -43,6 +43,7 @@ from services.strict_output_service import (
     TaskType, QualityMode, TASK_TEMPERATURE
 )
 from services.subscription_helper import is_subscription_active, get_user_subscription
+from services.rate_limit import limiter, RATE_LIMITS
 from routes.auth import get_current_user_id
 
 logger = logging.getLogger(__name__)
