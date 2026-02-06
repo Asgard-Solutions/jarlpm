@@ -1728,10 +1728,7 @@ async def push_to_jira(
                             "entity_id": feature.feature_id,
                             "error": str(e)
                         })
-                        parent_feature_key = None
                         continue
-                else:
-                    parent_feature_key = None
                 
                 # Push stories if scope includes them
                 if body.push_scope in ["epic_features_stories", "full"]:
