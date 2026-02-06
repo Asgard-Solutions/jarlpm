@@ -481,10 +481,10 @@ async def disconnect_linear(
 @router.put("/linear/configure")
 async def configure_linear_integration(
     request: Request,
-    body: ConfigureIntegrationRequest,
+    body: ConfigureLinearRequest,
     session: AsyncSession = Depends(get_db)
 ):
-    """Configure Linear integration defaults"""
+    """Configure Linear integration defaults including priority and label settings"""
     user_id = await get_current_user_id(request, session)
     await check_subscription_required(session, user_id)
     
@@ -497,8 +497,20 @@ async def configure_linear_integration(
     integration.default_team_name = body.team_name
     integration.default_project_id = body.project_id
     integration.default_project_name = body.project_name
+    
+    # Build field mappings including new Linear-specific options
+    field_mappings = integration.field_mappings or {}
+    
+    if body.priority_mapping:
+        field_mappings["priority_mapping"] = body.priority_mapping
+    if body.label_policy:
+        field_mappings["label_policy"] = body.label_policy
+    if body.epic_mapping:
+        field_mappings["epic_mapping"] = body.epic_mapping
     if body.field_mappings:
-        integration.field_mappings = body.field_mappings
+        field_mappings.update(body.field_mappings)
+    
+    integration.field_mappings = field_mappings
     integration.updated_at = datetime.now(timezone.utc)
     
     await session.commit()
@@ -506,7 +518,10 @@ async def configure_linear_integration(
     return {
         "status": "configured",
         "default_team": {"id": body.team_id, "name": body.team_name},
-        "default_project": {"id": body.project_id, "name": body.project_name} if body.project_id else None
+        "default_project": {"id": body.project_id, "name": body.project_name} if body.project_id else None,
+        "priority_mapping": field_mappings.get("priority_mapping"),
+        "label_policy": field_mappings.get("label_policy", "create-missing"),
+        "epic_mapping": field_mappings.get("epic_mapping", "issue")
     }
 
 
