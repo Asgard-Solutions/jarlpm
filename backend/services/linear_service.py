@@ -433,6 +433,92 @@ class LinearGraphQLService:
         result = await self.execute_query(query, {"id": issue_id})
         return result.get("issue", {})
 
+    async def create_label(
+        self,
+        team_id: str,
+        name: str,
+        color: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Create a new label in Linear"""
+        input_data = {
+            "teamId": team_id,
+            "name": name,
+        }
+        if color:
+            input_data["color"] = color
+        
+        mutation = """
+        mutation CreateLabel($input: IssueLabelCreateInput!) {
+            issueLabelCreate(input: $input) {
+                success
+                issueLabel {
+                    id
+                    name
+                    color
+                }
+            }
+        }
+        """
+        
+        result = await self.execute_query(mutation, {"input": input_data})
+        label_data = result.get("issueLabelCreate", {})
+        
+        if not label_data.get("success"):
+            raise LinearAPIError(f"Failed to create label '{name}' in Linear")
+        
+        return label_data.get("issueLabel", {})
+
+    async def create_project(
+        self,
+        team_ids: List[str],
+        name: str,
+        description: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Create a new project in Linear"""
+        input_data = {
+            "teamIds": team_ids,
+            "name": name,
+        }
+        if description:
+            input_data["description"] = description
+        
+        mutation = """
+        mutation CreateProject($input: ProjectCreateInput!) {
+            projectCreate(input: $input) {
+                success
+                project {
+                    id
+                    name
+                    url
+                }
+            }
+        }
+        """
+        
+        result = await self.execute_query(mutation, {"input": input_data})
+        project_data = result.get("projectCreate", {})
+        
+        if not project_data.get("success"):
+            raise LinearAPIError(f"Failed to create project '{name}' in Linear")
+        
+        return project_data.get("project", {})
+
+    async def get_organization_labels(self) -> List[Dict]:
+        """Fetch all labels in the organization"""
+        query = """
+        query IssueLabels {
+            issueLabels(first: 250) {
+                nodes {
+                    id
+                    name
+                    color
+                }
+            }
+        }
+        """
+        result = await self.execute_query(query)
+        return result.get("issueLabels", {}).get("nodes", [])
+
 
 def compute_payload_hash(payload: Dict) -> str:
     """Compute SHA256 hash of payload for idempotency checking"""
