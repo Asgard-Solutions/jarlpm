@@ -706,15 +706,9 @@ FEATURES & STORIES:
 
 TEAM CONTEXT:
 - Methodology: {methodology}
-- Sprint Length: {sprint_length} days
-- Team Velocity: ~{velocity} points/sprint
 
-SPRINT PLAN:
-- Sprint 1: {sprint1_points} points
-- Sprint 2: {sprint2_points} points
-- Total: {total_points} points (target: ~{target_points} for 2 sprints)
-
-Review for: industry-appropriate metrics, testable ACs, story sizing (split if >8), missing NFRs, scope vs capacity.
+Review for: industry-appropriate metrics, testable ACs, missing NFRs, clear descriptions.
+NOTE: Do NOT assess story points or sprint capacity - those are handled separately via Scoring/Poker.
 Return only valid JSON with issues and fixes."""
 
 
