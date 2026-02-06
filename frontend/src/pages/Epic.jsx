@@ -640,18 +640,49 @@ const Epic = () => {
                   <p className="text-sm text-muted-foreground">Generate features with AI, refine them through conversation, then approve to lock</p>
                 </div>
               </div>
-              <div className="flex items-center gap-6 text-center">
-                <div>
-                  <p className="text-lg font-bold text-amber-400">{draftFeatures.length + generatedDrafts.length}</p>
-                  <p className="text-xs text-muted-foreground">Drafts</p>
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-violet-400">{refiningFeatures.length}</p>
-                  <p className="text-xs text-muted-foreground">Refining</p>
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-success">{approvedFeatures.length}</p>
-                  <p className="text-xs text-muted-foreground">Approved</p>
+              <div className="flex items-center gap-4">
+                {/* PRD and Lean Canvas Quick Links */}
+                {(hasPRD || hasLeanCanvas) && (
+                  <div className="flex items-center gap-2 mr-4">
+                    {hasLeanCanvas && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate('/lean-canvas')}
+                        className="bg-purple-500/10 border-purple-500/30 hover:bg-purple-500/20"
+                        data-testid="view-lean-canvas-btn"
+                      >
+                        <LayoutGrid className="w-4 h-4 mr-2 text-purple-400" />
+                        Lean Canvas
+                      </Button>
+                    )}
+                    {hasPRD && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate('/prd')}
+                        className="bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20"
+                        data-testid="view-prd-btn"
+                      >
+                        <FileText className="w-4 h-4 mr-2 text-blue-400" />
+                        PRD
+                      </Button>
+                    )}
+                  </div>
+                )}
+                <div className="flex items-center gap-6 text-center">
+                  <div>
+                    <p className="text-lg font-bold text-amber-400">{draftFeatures.length + generatedDrafts.length}</p>
+                    <p className="text-xs text-muted-foreground">Drafts</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-violet-400">{refiningFeatures.length}</p>
+                    <p className="text-xs text-muted-foreground">Refining</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-success">{approvedFeatures.length}</p>
+                    <p className="text-xs text-muted-foreground">Approved</p>
+                  </div>
                 </div>
               </div>
             </div>
