@@ -9,7 +9,7 @@ import time
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://jarlpm-fix.preview.emergentagent.com"
+    BASE_URL = "https://convo-pm-system.preview.emergentagent.com"
 
 
 class TestSubscriptionAPI:
@@ -48,7 +48,7 @@ class TestSubscriptionAPI:
         """POST /api/subscription/create-checkout - Returns Stripe checkout URL"""
         response = self.session.post(
             f"{BASE_URL}/api/subscription/create-checkout",
-            json={"origin_url": "https://jarlpm-fix.preview.emergentagent.com"}
+            json={"origin_url": "https://convo-pm-system.preview.emergentagent.com"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -64,7 +64,7 @@ class TestSubscriptionAPI:
         # First create a checkout session
         create_response = self.session.post(
             f"{BASE_URL}/api/subscription/create-checkout",
-            json={"origin_url": "https://jarlpm-fix.preview.emergentagent.com"}
+            json={"origin_url": "https://convo-pm-system.preview.emergentagent.com"}
         )
         assert create_response.status_code == 200
         session_id = create_response.json()["session_id"]
@@ -474,7 +474,7 @@ class TestPaymentTransactionTracking:
         """POST /api/subscription/create-checkout - Creates payment transaction record"""
         response = self.session.post(
             f"{BASE_URL}/api/subscription/create-checkout",
-            json={"origin_url": "https://jarlpm-fix.preview.emergentagent.com"}
+            json={"origin_url": "https://convo-pm-system.preview.emergentagent.com"}
         )
         assert response.status_code == 200
         data = response.json()
