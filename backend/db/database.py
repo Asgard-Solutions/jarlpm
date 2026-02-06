@@ -127,6 +127,9 @@ async def init_db():
         logger.error("Database engine not initialized. Check DATABASE_URL.")
         return
     
+    # Log pool configuration
+    logger.info(f"Database pool: size={DB_POOL_SIZE}, max_overflow={DB_MAX_OVERFLOW}, timeout={DB_POOL_TIMEOUT}s, recycle={DB_POOL_RECYCLE}s")
+    
     from .models import Base
     from .feature_models import Feature, FeatureConversationEvent
     from .user_story_models import UserStory, UserStoryConversationEvent
