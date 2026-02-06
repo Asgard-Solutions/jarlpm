@@ -20,6 +20,7 @@ from services.backup_service import (
     AuditLogRetentionService,
     run_maintenance_tasks
 )
+from services.logging_service import metrics
 
 logger = logging.getLogger(__name__)
 
