@@ -1293,6 +1293,25 @@ When an Epic is locked, users enter Feature Planning Mode:
 **Testing:** 24/24 backend tests passed (subscription gating, LLM config check, error handling, StrictOutputService validation)
 
 
+### 2026-02-06: Sprint Insights Persistence (COMPLETE)
+**Feature:** AI-generated sprint insights (kickoff plan, standup summary, WIP suggestions) are now persisted to the database and automatically loaded when users return to the Sprints page.
+
+**Implementation:**
+1. **Database Model:** Added `SprintInsight` model with fields for `user_id`, `sprint_number`, `insight_type`, `content` (JSON), and `generated_at`
+2. **API Endpoints:**
+   - `GET /api/sprints/insights/current` - Get saved insights for current sprint
+   - `GET /api/sprints/insights/{sprint_number}` - Get saved insights for specific sprint
+3. **Auto-save on Generation:** All 3 AI endpoints (`kickoff-plan`, `standup-summary`, `wip-suggestions`) now save results to DB after generation
+4. **Frontend Integration:** Sprints page loads saved insights on mount and displays them automatically
+
+**Files Modified:**
+- `/app/backend/db/models.py` - Added `SprintInsight` model
+- `/app/backend/alembic/versions/20260206_0530_add_sprint_insights_table.py` - Migration
+- `/app/backend/routes/sprints.py` - Added GET endpoints and save logic
+- `/app/frontend/src/api/index.js` - Added `getSavedInsights()` function
+- `/app/frontend/src/pages/Sprints.jsx` - Load and display saved insights
+
+
 ### 2026-02-06: Security Fix - Story Ownership Checks (COMPLETE)
 **Issue:** `update_story_sprint`, `update_story_status`, and `commit_story_to_sprint` endpoints allowed any authenticated user to modify another user's stories if they guessed the ID.
 
