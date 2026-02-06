@@ -570,8 +570,8 @@ TONE: Professional, calm, direct, insightful."""
                     if update_json:
                         update_data = json.loads(update_json.group(0))
                         # Apply the update - need a new session for this
-                        from db import async_session_maker
-                        async with async_session_maker() as new_session:
+                        from db import AsyncSessionLocal
+                        async with AsyncSessionLocal() as new_session:
                             new_feature_service = FeatureService(new_session)
                             await new_feature_service.update_feature(
                                 feature_id=feature_id,
