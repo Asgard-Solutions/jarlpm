@@ -741,7 +741,6 @@ async def get_epic_poker_sessions(
         raise HTTPException(status_code=404, detail="Epic not found")
     
     # Get all features for this epic
-    from db.user_story_models import Feature
     features_result = await session.execute(
         select(Feature).where(Feature.epic_id == epic_id)
     )
