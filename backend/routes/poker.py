@@ -477,6 +477,9 @@ async def estimate_story_custom_text(
     if not llm_config:
         raise HTTPException(status_code=400, detail="No LLM provider configured")
     
+    # Prepare for streaming - extract config BEFORE releasing session
+    config_data = llm_service.prepare_for_streaming(llm_config)
+    
     # Get delivery context
     delivery_context = await prompt_service.get_delivery_context(user_id)
     delivery_context_text = prompt_service.format_delivery_context(delivery_context)
