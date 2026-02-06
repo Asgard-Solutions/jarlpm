@@ -27,7 +27,11 @@ from routes.auth import get_current_user_id
 from services.encryption import get_encryption_service
 from services.linear_service import (
     LinearOAuthService, LinearGraphQLService, LinearPushService,
-    LinearAPIError, AuthenticationError, compute_payload_hash
+    LinearAPIError, AuthenticationError as LinearAuthError, compute_payload_hash
+)
+from services.jira_service import (
+    JiraOAuthService, JiraRESTService, JiraPushService,
+    JiraAPIError, AuthenticationError as JiraAuthError
 )
 
 logger = logging.getLogger(__name__)
