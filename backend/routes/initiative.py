@@ -1424,7 +1424,7 @@ async def save_initiative(
                     risks=story_data.risks,
                     current_stage="draft",
                     source="ai_generated",
-                    story_points=story_data.points,
+                    # NOTE: story_points NOT set - scoring happens via Scoring/Poker features
                     priority=j,
                     created_at=now,
                     updated_at=now
