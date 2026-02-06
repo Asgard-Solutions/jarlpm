@@ -472,7 +472,7 @@ ${epic.risks || '_Not yet defined_'}
             </Button>
             <Button variant="outline" onClick={handleRegenerate} disabled={loadingPRD} className="gap-2">
               <RefreshCw className={loadingPRD ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
-              Regenerate
+              {loadingPRD ? 'Generating...' : 'Regenerate with AI'}
             </Button>
             <Button variant="outline" onClick={handleCopy} className="gap-2">
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
