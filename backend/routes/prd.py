@@ -133,7 +133,7 @@ async def get_prd(
         "epic_title": epic.title,
         "prd": {
             "prd_id": prd.prd_id,
-            "content": prd.sections,  # Return 'sections' as 'content' for frontend
+            "content": prd.sections.get("content", "") if prd.sections else "",  # Extract content from JSON
             "title": prd.title,
             "version": prd.version,
             "status": prd.status,
