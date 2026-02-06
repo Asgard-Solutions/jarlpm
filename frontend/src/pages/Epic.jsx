@@ -670,7 +670,7 @@ const Epic = () => {
               </div>
               <div className="flex items-center gap-4">
                 {/* PRD and Lean Canvas Quick Links */}
-                {(hasPRD || hasLeanCanvas || hasLinearIntegration) && (
+                {(hasPRD || hasLeanCanvas || hasLinearIntegration || hasJiraIntegration) && (
                   <div className="flex items-center gap-2 mr-4">
                     {hasLinearIntegration && (
                       <Button
@@ -682,6 +682,18 @@ const Epic = () => {
                       >
                         <Upload className="w-4 h-4 mr-2 text-[#5E6AD2]" />
                         Push to Linear
+                      </Button>
+                    )}
+                    {hasJiraIntegration && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowPushToJira(true)}
+                        className="bg-[#0052CC]/10 border-[#0052CC]/30 hover:bg-[#0052CC]/20"
+                        data-testid="push-to-jira-btn"
+                      >
+                        <Upload className="w-4 h-4 mr-2 text-[#0052CC]" />
+                        Push to Jira
                       </Button>
                     )}
                     {hasLeanCanvas && (
