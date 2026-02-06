@@ -1,219 +1,214 @@
 """
-Tests for Linear Integration API endpoints.
-These tests verify the integration endpoints work correctly,
-even when OAuth credentials are not configured.
+Linear Integration API Tests for JarlPM
+Tests the Linear OAuth-based integration endpoints.
 """
 import pytest
-from httpx import AsyncClient, ASGITransport
-from server import app
+import requests
+import os
 
-BASE_URL = "http://test"
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
-@pytest.fixture
-def test_credentials():
-    return {
-        "email": "test@jarlpm.com",
-        "password": "Test123!"
-    }
+# Test credentials
+TEST_EMAIL = "test@jarlpm.com"
+TEST_PASSWORD = "Test123!"
 
-@pytest.fixture
-async def auth_client(test_credentials):
-    """Create an authenticated client."""
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url=BASE_URL) as client:
-        # Login
-        response = await client.post("/api/auth/login", json=test_credentials)
-        if response.status_code == 200:
-            cookies = response.cookies
-            client.cookies = cookies
-        yield client
+# Test epic ID (locked epic for testing)
+TEST_EPIC_ID = "epic_54e41a1b"
 
 
-class TestLinearStatusEndpoints:
-    """Test Linear integration status endpoints."""
+class TestLinearIntegration:
+    """Linear integration endpoint tests"""
+    
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """Setup test session with authentication"""
+        self.session = requests.Session()
+        self.session.headers.update({"Content-Type": "application/json"})
+        
+        # Login to get session
+        login_response = self.session.post(
+            f"{BASE_URL}/api/auth/login",
+            json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
+        )
+        assert login_response.status_code == 200, f"Login failed: {login_response.text}"
+        
+    def teardown_method(self):
+        """Cleanup after each test"""
+        self.session.close()
 
-    @pytest.mark.asyncio
-    async def test_get_linear_status_unauthenticated(self):
-        """Test that status endpoint requires authentication."""
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url=BASE_URL) as client:
-            response = await client.get("/api/integrations/status/linear")
-            assert response.status_code == 401
-
-    @pytest.mark.asyncio
-    async def test_get_linear_status_authenticated(self, auth_client):
-        """Test getting Linear status when authenticated."""
-        response = await auth_client.get("/api/integrations/status/linear")
-        assert response.status_code in [200, 402]  # 402 if no subscription
-        if response.status_code == 200:
-            data = response.json()
-            assert "connected" in data
-            assert "status" in data
-
-    @pytest.mark.asyncio
-    async def test_overall_status_includes_linear(self, auth_client):
-        """Test that overall status includes Linear."""
-        response = await auth_client.get("/api/integrations/status")
-        assert response.status_code in [200, 402]
-        if response.status_code == 200:
-            data = response.json()
-            assert "linear" in data
-
-
-class TestLinearConnectEndpoints:
-    """Test Linear OAuth connection endpoints."""
-
-    @pytest.mark.asyncio
-    async def test_connect_requires_auth(self):
-        """Test that connect endpoint requires authentication."""
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url=BASE_URL) as client:
-            response = await client.post(
-                "/api/integrations/linear/connect",
-                json={"frontend_callback_url": "http://localhost:3000/settings"}
-            )
-            assert response.status_code == 401
-
-    @pytest.mark.asyncio
-    async def test_connect_requires_callback_url(self, auth_client):
-        """Test that connect requires frontend_callback_url."""
-        response = await auth_client.post(
-            "/api/integrations/linear/connect",
+    # ==================== STATUS ENDPOINTS ====================
+    
+    def test_get_linear_status(self):
+        """Test GET /api/integrations/status/linear returns proper status"""
+        response = self.session.get(f"{BASE_URL}/api/integrations/status/linear")
+        assert response.status_code == 200
+        data = response.json()
+        assert "connected" in data
+        assert "status" in data
+        assert data["status"] in ["connected", "disconnected"]
+        
+    def test_overall_status_includes_linear(self):
+        """Test GET /api/integrations/status includes Linear"""
+        response = self.session.get(f"{BASE_URL}/api/integrations/status")
+        assert response.status_code == 200
+        data = response.json()
+        assert "linear" in data
+        # Linear should have configured = false (OAuth not set)
+        
+    # ==================== CONNECT ENDPOINTS ====================
+    
+    def test_connect_requires_callback_url(self):
+        """Test POST /api/integrations/linear/connect requires frontend_callback_url"""
+        response = self.session.post(
+            f"{BASE_URL}/api/integrations/linear/connect",
             json={}
         )
         assert response.status_code == 422  # Validation error
-
-    @pytest.mark.asyncio
-    async def test_connect_returns_oauth_url_or_error(self, auth_client):
-        """Test connect endpoint returns OAuth URL or configuration error."""
-        response = await auth_client.post(
-            "/api/integrations/linear/connect",
+        
+    def test_connect_returns_error_when_oauth_not_configured(self):
+        """Test connect returns error when OAuth credentials not configured"""
+        response = self.session.post(
+            f"{BASE_URL}/api/integrations/linear/connect",
             json={"frontend_callback_url": "http://localhost:3000/settings"}
         )
-        # Will be 400 if OAuth not configured, or 200 with auth_url
-        assert response.status_code in [200, 400, 402]
-        if response.status_code == 400:
-            data = response.json()
-            assert "detail" in data
-
-
-class TestLinearDisconnectEndpoints:
-    """Test Linear disconnect endpoint."""
-
-    @pytest.mark.asyncio
-    async def test_disconnect_requires_auth(self):
-        """Test that disconnect requires authentication."""
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url=BASE_URL) as client:
-            response = await client.post("/api/integrations/linear/disconnect")
-            assert response.status_code == 401
-
-    @pytest.mark.asyncio
-    async def test_disconnect_when_not_connected(self, auth_client):
-        """Test disconnect when not connected."""
-        response = await auth_client.post("/api/integrations/linear/disconnect")
-        assert response.status_code in [200, 400, 402]
-
-
-class TestLinearDataEndpoints:
-    """Test Linear data fetching endpoints."""
-
-    @pytest.mark.asyncio
-    async def test_get_teams_requires_connection(self, auth_client):
-        """Test teams endpoint when not connected."""
-        response = await auth_client.get("/api/integrations/linear/teams")
-        assert response.status_code in [400, 402]  # Not connected or no subscription
-
-    @pytest.mark.asyncio
-    async def test_get_labels_requires_connection(self, auth_client):
-        """Test labels endpoint when not connected."""
-        response = await auth_client.get("/api/integrations/linear/labels")
-        assert response.status_code in [400, 402]
-
-
-class TestLinearPushEndpoints:
-    """Test Linear push endpoints."""
-
-    @pytest.mark.asyncio
-    async def test_preview_requires_auth(self):
-        """Test preview requires authentication."""
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url=BASE_URL) as client:
-            response = await client.post(
-                "/api/integrations/linear/preview",
-                json={"epic_id": "epic_test", "push_scope": "epic_only"}
-            )
-            assert response.status_code == 401
-
-    @pytest.mark.asyncio
-    async def test_preview_requires_connection(self, auth_client):
-        """Test preview when not connected."""
-        response = await auth_client.post(
-            "/api/integrations/linear/preview",
-            json={"epic_id": "epic_test", "push_scope": "epic_only"}
-        )
-        assert response.status_code in [400, 402]
-        if response.status_code == 400:
-            data = response.json()
-            assert "not connected" in data.get("detail", "").lower() or "linear" in data.get("detail", "").lower()
-
-    @pytest.mark.asyncio
-    async def test_push_requires_auth(self):
-        """Test push requires authentication."""
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url=BASE_URL) as client:
-            response = await client.post(
-                "/api/integrations/linear/push",
-                json={
-                    "epic_id": "epic_test",
-                    "team_id": "team_123",
-                    "push_scope": "epic_only"
-                }
-            )
-            assert response.status_code == 401
-
-    @pytest.mark.asyncio
-    async def test_push_requires_connection(self, auth_client):
-        """Test push when not connected."""
-        response = await auth_client.post(
-            "/api/integrations/linear/push",
+        # Should return 400 because OAuth is not configured on server
+        assert response.status_code == 400
+        data = response.json()
+        assert "detail" in data
+        assert "oauth" in data["detail"].lower() or "credential" in data["detail"].lower() or "configured" in data["detail"].lower()
+        
+    # ==================== DISCONNECT ENDPOINTS ====================
+    
+    def test_disconnect_when_not_connected(self):
+        """Test POST /api/integrations/linear/disconnect when not connected"""
+        response = self.session.post(f"{BASE_URL}/api/integrations/linear/disconnect")
+        # Should succeed or return status
+        assert response.status_code in [200, 400]
+        
+    # ==================== DATA ENDPOINTS ====================
+    
+    def test_get_teams_when_not_connected(self):
+        """Test GET /api/integrations/linear/teams returns error when not connected"""
+        response = self.session.get(f"{BASE_URL}/api/integrations/linear/teams")
+        assert response.status_code == 400
+        data = response.json()
+        assert "not connected" in data["detail"].lower()
+        
+    def test_get_labels_when_not_connected(self):
+        """Test GET /api/integrations/linear/labels returns error when not connected"""
+        response = self.session.get(f"{BASE_URL}/api/integrations/linear/labels")
+        assert response.status_code == 400
+        
+    # ==================== PREVIEW ENDPOINTS ====================
+    
+    def test_preview_when_not_connected(self):
+        """Test POST /api/integrations/linear/preview returns error when not connected"""
+        response = self.session.post(
+            f"{BASE_URL}/api/integrations/linear/preview",
             json={
-                "epic_id": "epic_test",
-                "team_id": "team_123",
+                "epic_id": TEST_EPIC_ID,
+                "push_scope": "epic_features_stories",
+                "include_bugs": False
+            }
+        )
+        assert response.status_code == 400
+        data = response.json()
+        assert "not connected" in data["detail"].lower()
+        
+    def test_preview_requires_epic_id(self):
+        """Test preview validates required epic_id field"""
+        response = self.session.post(
+            f"{BASE_URL}/api/integrations/linear/preview",
+            json={"push_scope": "epic_only"}
+        )
+        assert response.status_code in [400, 422]
+        
+    # ==================== PUSH ENDPOINTS ====================
+    
+    def test_push_when_not_connected(self):
+        """Test POST /api/integrations/linear/push returns error when not connected"""
+        response = self.session.post(
+            f"{BASE_URL}/api/integrations/linear/push",
+            json={
+                "epic_id": TEST_EPIC_ID,
+                "team_id": "team_test",
+                "push_scope": "epic_features_stories"
+            }
+        )
+        assert response.status_code == 400
+        data = response.json()
+        assert "not connected" in data["detail"].lower()
+        
+    def test_push_requires_team_id(self):
+        """Test push validates required team_id field"""
+        response = self.session.post(
+            f"{BASE_URL}/api/integrations/linear/push",
+            json={
+                "epic_id": TEST_EPIC_ID,
                 "push_scope": "epic_only"
             }
         )
-        assert response.status_code in [400, 402]
-
-    @pytest.mark.asyncio
-    async def test_push_validates_required_fields(self, auth_client):
-        """Test push validation for required fields."""
-        response = await auth_client.post(
-            "/api/integrations/linear/push",
-            json={"epic_id": "epic_test"}  # Missing team_id
+        assert response.status_code in [400, 422]
+        
+    # ==================== CONFIGURE ENDPOINTS ====================
+    
+    def test_configure_when_not_connected(self):
+        """Test PUT /api/integrations/linear/configure returns error when not connected"""
+        response = self.session.put(
+            f"{BASE_URL}/api/integrations/linear/configure",
+            json={"default_team_id": "team_test"}
         )
-        assert response.status_code in [400, 402, 422]
+        assert response.status_code == 400
+        data = response.json()
+        assert "not connected" in data["detail"].lower()
 
 
-class TestLinearConfigureEndpoints:
-    """Test Linear configuration endpoint."""
-
-    @pytest.mark.asyncio
-    async def test_configure_requires_auth(self):
-        """Test configure requires authentication."""
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url=BASE_URL) as client:
-            response = await client.put(
-                "/api/integrations/linear/configure",
-                json={"default_team_id": "team_123"}
-            )
-            assert response.status_code == 401
-
-    @pytest.mark.asyncio
-    async def test_configure_requires_connection(self, auth_client):
-        """Test configure when not connected."""
-        response = await auth_client.put(
-            "/api/integrations/linear/configure",
-            json={"default_team_id": "team_123"}
+class TestLinearAuthRequired:
+    """Test Linear endpoints require authentication"""
+    
+    def test_status_requires_auth(self):
+        """Test status endpoint requires authentication"""
+        response = requests.get(f"{BASE_URL}/api/integrations/status/linear")
+        assert response.status_code == 401
+        
+    def test_connect_requires_auth(self):
+        """Test connect endpoint requires authentication"""
+        response = requests.post(
+            f"{BASE_URL}/api/integrations/linear/connect",
+            json={"frontend_callback_url": "http://localhost:3000"}
         )
-        assert response.status_code in [400, 402]
+        assert response.status_code == 401
+        
+    def test_disconnect_requires_auth(self):
+        """Test disconnect endpoint requires authentication"""
+        response = requests.post(f"{BASE_URL}/api/integrations/linear/disconnect")
+        assert response.status_code == 401
+        
+    def test_teams_requires_auth(self):
+        """Test teams endpoint requires authentication"""
+        response = requests.get(f"{BASE_URL}/api/integrations/linear/teams")
+        assert response.status_code == 401
+        
+    def test_preview_requires_auth(self):
+        """Test preview endpoint requires authentication"""
+        response = requests.post(
+            f"{BASE_URL}/api/integrations/linear/preview",
+            json={"epic_id": "test"}
+        )
+        assert response.status_code == 401
+        
+    def test_push_requires_auth(self):
+        """Test push endpoint requires authentication"""
+        response = requests.post(
+            f"{BASE_URL}/api/integrations/linear/push",
+            json={"epic_id": "test", "team_id": "test"}
+        )
+        assert response.status_code == 401
+        
+    def test_configure_requires_auth(self):
+        """Test configure endpoint requires authentication"""
+        response = requests.put(
+            f"{BASE_URL}/api/integrations/linear/configure",
+            json={}
+        )
+        assert response.status_code == 401
