@@ -637,3 +637,236 @@ async def get_poker_session(
         ]
     }
 
+
+
+@router.get("/completed-epics")
+async def get_completed_poker_epics(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get all epics that have completed poker planning sessions"""
+    user_id = await get_current_user_id(request, session)
+    
+    # Get all poker sessions for this user with their stories
+    sessions_result = await session.execute(
+        select(PokerEstimateSession)
+        .where(PokerEstimateSession.user_id == user_id)
+        .order_by(PokerEstimateSession.created_at.desc())
+    )
+    poker_sessions = sessions_result.scalars().all()
+    
+    # Get unique story IDs
+    story_ids = list(set(ps.story_id for ps in poker_sessions))
+    
+    if not story_ids:
+        return {"epics": []}
+    
+    # Get the stories to find their epics
+    stories_result = await session.execute(
+        select(UserStory).where(UserStory.story_id.in_(story_ids))
+    )
+    stories = stories_result.scalars().all()
+    
+    # Map stories to their feature_ids
+    story_map = {s.story_id: s for s in stories}
+    
+    # Get features to find epic_ids
+    from db.user_story_models import Feature
+    feature_ids = list(set(s.feature_id for s in stories if s.feature_id))
+    
+    epic_story_count = {}  # epic_id -> {total_stories, estimated_stories}
+    
+    if feature_ids:
+        features_result = await session.execute(
+            select(Feature).where(Feature.feature_id.in_(feature_ids))
+        )
+        features = features_result.scalars().all()
+        feature_to_epic = {f.feature_id: f.epic_id for f in features}
+        
+        # Count stories per epic
+        for story in stories:
+            if story.feature_id and story.feature_id in feature_to_epic:
+                epic_id = feature_to_epic[story.feature_id]
+                if epic_id not in epic_story_count:
+                    epic_story_count[epic_id] = {"estimated": 0, "session_ids": set()}
+                epic_story_count[epic_id]["estimated"] += 1
+                # Track session IDs for this epic
+                for ps in poker_sessions:
+                    if ps.story_id == story.story_id:
+                        epic_story_count[epic_id]["session_ids"].add(ps.session_id)
+    
+    # Get epic details
+    epic_ids = list(epic_story_count.keys())
+    if not epic_ids:
+        return {"epics": []}
+    
+    epics_result = await session.execute(
+        select(Epic).where(
+            Epic.epic_id.in_(epic_ids),
+            Epic.user_id == user_id
+        )
+    )
+    epics = epics_result.scalars().all()
+    
+    result = []
+    for epic in epics:
+        count_data = epic_story_count.get(epic.epic_id, {})
+        result.append({
+            "epic_id": epic.epic_id,
+            "title": epic.title,
+            "stage": epic.current_stage,
+            "estimated_stories": count_data.get("estimated", 0),
+            "session_count": len(count_data.get("session_ids", set())),
+            "updated_at": epic.updated_at.isoformat() if epic.updated_at else None
+        })
+    
+    return {"epics": result}
+
+
+@router.get("/epic/{epic_id}/sessions")
+async def get_epic_poker_sessions(
+    epic_id: str,
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get all poker sessions for stories in an epic"""
+    user_id = await get_current_user_id(request, session)
+    
+    # Verify epic ownership
+    epic_result = await session.execute(
+        select(Epic).where(Epic.epic_id == epic_id, Epic.user_id == user_id)
+    )
+    epic = epic_result.scalar_one_or_none()
+    if not epic:
+        raise HTTPException(status_code=404, detail="Epic not found")
+    
+    # Get all features for this epic
+    from db.user_story_models import Feature
+    features_result = await session.execute(
+        select(Feature).where(Feature.epic_id == epic_id)
+    )
+    features = features_result.scalars().all()
+    feature_ids = [f.feature_id for f in features]
+    
+    if not feature_ids:
+        return {"epic": {"epic_id": epic_id, "title": epic.title}, "stories": []}
+    
+    # Get all stories for these features
+    stories_result = await session.execute(
+        select(UserStory).where(UserStory.feature_id.in_(feature_ids))
+    )
+    stories = stories_result.scalars().all()
+    story_ids = [s.story_id for s in stories]
+    story_map = {s.story_id: s for s in stories}
+    
+    if not story_ids:
+        return {"epic": {"epic_id": epic_id, "title": epic.title}, "stories": []}
+    
+    # Get all poker sessions for these stories
+    sessions_result = await session.execute(
+        select(PokerEstimateSession)
+        .where(PokerEstimateSession.story_id.in_(story_ids))
+        .order_by(PokerEstimateSession.created_at.desc())
+    )
+    poker_sessions = sessions_result.scalars().all()
+    
+    # Build response with story details and their sessions
+    stories_data = []
+    for story in stories:
+        # Get sessions for this story
+        story_sessions = [ps for ps in poker_sessions if ps.story_id == story.story_id]
+        
+        if story_sessions:
+            # Get the most recent session with persona estimates
+            latest_session = story_sessions[0]
+            estimates_result = await session.execute(
+                select(PokerPersonaEstimate)
+                .where(PokerPersonaEstimate.session_id == latest_session.session_id)
+            )
+            persona_estimates = estimates_result.scalars().all()
+            
+            stories_data.append({
+                "story_id": story.story_id,
+                "title": story.title,
+                "description": story.description,
+                "story_points": story.story_points,
+                "stage": story.stage,
+                "session": {
+                    "session_id": latest_session.session_id,
+                    "min_estimate": latest_session.min_estimate,
+                    "max_estimate": latest_session.max_estimate,
+                    "average_estimate": latest_session.average_estimate,
+                    "suggested_estimate": latest_session.suggested_estimate,
+                    "accepted_estimate": latest_session.accepted_estimate,
+                    "created_at": latest_session.created_at.isoformat(),
+                    "estimates": [
+                        {
+                            "persona_name": est.persona_name,
+                            "persona_role": est.persona_role,
+                            "estimate_points": est.estimate_points,
+                            "reasoning": est.reasoning,
+                            "confidence": est.confidence
+                        }
+                        for est in persona_estimates
+                    ]
+                }
+            })
+    
+    return {
+        "epic": {"epic_id": epic_id, "title": epic.title},
+        "stories": stories_data
+    }
+
+
+@router.get("/epics-without-estimation")
+async def get_epics_without_estimation(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get epics that have stories without poker planning"""
+    user_id = await get_current_user_id(request, session)
+    
+    # Get all user's epics
+    epics_result = await session.execute(
+        select(Epic).where(Epic.user_id == user_id)
+    )
+    epics = epics_result.scalars().all()
+    
+    if not epics:
+        return {"epics": []}
+    
+    from db.user_story_models import Feature
+    
+    result = []
+    for epic in epics:
+        # Get features for this epic
+        features_result = await session.execute(
+            select(Feature).where(Feature.epic_id == epic.epic_id)
+        )
+        features = features_result.scalars().all()
+        feature_ids = [f.feature_id for f in features]
+        
+        if not feature_ids:
+            continue
+        
+        # Get stories for these features
+        stories_result = await session.execute(
+            select(UserStory).where(UserStory.feature_id.in_(feature_ids))
+        )
+        stories = stories_result.scalars().all()
+        
+        # Count stories without estimates (no story_points set)
+        unestimated_count = sum(1 for s in stories if s.story_points is None or s.story_points == 0)
+        total_count = len(stories)
+        
+        if unestimated_count > 0:
+            result.append({
+                "epic_id": epic.epic_id,
+                "title": epic.title,
+                "stage": epic.current_stage,
+                "total_stories": total_count,
+                "unestimated_stories": unestimated_count
+            })
+    
+    return {"epics": result}
+
