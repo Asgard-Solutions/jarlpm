@@ -800,12 +800,17 @@ Start by asking about the user or persona for this story."""
             "content": msg.get("content", "")
         })
     
+    # Capture user content for generator
+    user_content = body.content
+    
     async def generate():
         full_response = ""
-        async for chunk in llm_service.generate_stream(
-            user_id=user_id,
+        # Use sessionless streaming
+        llm = LLMService()  # No session needed
+        async for chunk in llm.stream_with_config(
+            config_data=config_data,
             system_prompt=system_prompt,
-            user_prompt=body.content,
+            user_prompt=user_content,
             conversation_history=formatted_history if formatted_history else None
         ):
             full_response += chunk
