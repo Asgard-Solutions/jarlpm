@@ -254,6 +254,25 @@ async def get_jira_service(session: AsyncSession, user_id: str) -> JiraRESTServi
     return JiraRESTService(access_token, integration.external_account_id)
 
 
+async def get_azure_devops_service(session: AsyncSession, user_id: str) -> AzureDevOpsRESTService:
+    """Get authenticated Azure DevOps REST service for user"""
+    integration = await get_user_integration(session, user_id, IntegrationProvider.AZURE_DEVOPS.value)
+    
+    if not integration or integration.status != IntegrationStatus.CONNECTED.value:
+        raise HTTPException(status_code=400, detail="Azure DevOps integration not connected")
+    
+    if not integration.pat_encrypted:
+        raise HTTPException(status_code=400, detail="Azure DevOps PAT not found")
+    
+    if not integration.org_url:
+        raise HTTPException(status_code=400, detail="Azure DevOps organization URL not found")
+    
+    # Decrypt PAT and return service
+    encryption = get_encryption_service()
+    pat = encryption.decrypt(integration.pat_encrypted)
+    return AzureDevOpsRESTService(integration.org_url, pat)
+
+
 # ============================================
 # Integration Status Endpoints
 # ============================================
