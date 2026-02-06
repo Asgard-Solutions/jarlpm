@@ -90,7 +90,7 @@ const Settings = () => {
       setLoading(true);
       const [subRes, provRes, contextRes, integrationsRes] = await Promise.all([
         subscriptionAPI.getStatus().catch(() => ({ data: null })),
-        llmProviderAPI.getAll().catch(() => ({ data: { configs: [] } })),
+        llmProviderAPI.list().catch(() => ({ data: { configs: [] } })),
         deliveryContextAPI.get().catch(() => ({ data: {} })),
         integrationsAPI.getStatus().catch(() => ({ data: {} })),
       ]);
