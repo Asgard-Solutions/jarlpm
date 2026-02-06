@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { epicAPI, featureAPI, userStoryAPI, personaAPI } from '@/api';
+import { epicAPI, featureAPI, userStoryAPI, personaAPI, leanCanvasAPI, prdAPI } from '@/api';
 import { useThemeStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +18,7 @@ import {
   ArrowLeft, Loader2, Lock, CheckCircle2, 
   ChevronDown, ChevronRight, FileText, Settings,
   Layers, Puzzle, BookOpen, Trophy, Calendar,
-  Users, Sparkles, User, AlertCircle
+  Users, Sparkles, User, AlertCircle, LayoutGrid
 } from 'lucide-react';
 
 const CompletedEpic = () => {
