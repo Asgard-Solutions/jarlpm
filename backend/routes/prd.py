@@ -378,35 +378,39 @@ Generate a professional, stakeholder-ready PRD document in Markdown format."""
 
     try:
         full_response = ""
-        async for chunk in llm_service.generate_stream(user_id, system_prompt, user_prompt):
+        # Use sessionless streaming
+        llm = LLMService()  # No session needed
+        async for chunk in llm.stream_with_config(config_data, system_prompt, user_prompt):
             full_response += chunk
         
         if not full_response.strip():
             raise HTTPException(status_code=500, detail="LLM returned empty response")
         
-        # Save the generated PRD
-        existing_result = await session.execute(
-            select(PRDDocument).where(PRDDocument.epic_id == epic_id)
-        )
-        existing_prd = existing_result.scalar_one_or_none()
-        
-        if existing_prd:
-            existing_prd.sections = {"content": full_response}
-            existing_prd.source = "ai_generated"
-            existing_prd.updated_at = datetime.now(timezone.utc)
-        else:
-            new_prd = PRDDocument(
-                epic_id=epic_id,
-                user_id=user_id,
-                sections={"content": full_response},
-                title=epic.title,
-                version="1.0",
-                status="draft",
-                source="ai_generated"
+        # Save the generated PRD with a fresh session
+        from db import AsyncSessionLocal
+        async with AsyncSessionLocal() as new_session:
+            existing_result = await new_session.execute(
+                select(PRDDocument).where(PRDDocument.epic_id == epic_id)
             )
-            session.add(new_prd)
-        
-        await session.commit()
+            existing_prd = existing_result.scalar_one_or_none()
+            
+            if existing_prd:
+                existing_prd.sections = {"content": full_response}
+                existing_prd.source = "ai_generated"
+                existing_prd.updated_at = datetime.now(timezone.utc)
+            else:
+                new_prd = PRDDocument(
+                    epic_id=epic_id,
+                    user_id=user_id,
+                    sections={"content": full_response},
+                    title=epic.title,
+                    version="1.0",
+                    status="draft",
+                    source="ai_generated"
+                )
+                new_session.add(new_prd)
+            
+            await new_session.commit()
         
         return {
             "success": True,
