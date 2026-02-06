@@ -164,13 +164,75 @@ class FeatureSchema(BaseModel):
         return v_lower if v_lower in valid else 'should-have'
 
 
+class UserPersonaSchema(BaseModel):
+    """Detailed user persona for PM-quality PRDs"""
+    persona: str = ""  # e.g., "Busy pharmacy manager"
+    context: str = ""  # e.g., "Managing a small independent pharmacy with 2-3 staff"
+    pain_points: List[str] = Field(default_factory=list)  # Specific frustrations
+    current_workaround: str = ""  # How they solve this today
+    jtbd: str = ""  # Job-to-be-done framing
+
+
+class ConstraintSchema(BaseModel):
+    """Product constraint with rationale"""
+    constraint: str = ""
+    rationale: str = ""
+    impact: str = ""  # high/medium/low
+
+
+class AssumptionSchema(BaseModel):
+    """Assumption that needs validation"""
+    assumption: str = ""
+    risk_if_wrong: str = ""
+    validation_approach: str = ""
+
+
+class PositioningSchema(BaseModel):
+    """Competitive positioning statement"""
+    for_who: str = ""  # Target user
+    who_struggle_with: str = ""  # Current problem
+    our_solution: str = ""  # Product name/type
+    unlike: str = ""  # Key competitor or alternative
+    key_benefit: str = ""  # Primary differentiator
+
+
+class MVPScopeItemSchema(BaseModel):
+    """MVP scope item with rationale"""
+    item: str = ""
+    rationale: str = ""
+
+
 class PRDSchema(BaseModel):
-    problem_statement: str = ""
-    target_users: str = ""
-    desired_outcome: str = ""
-    key_metrics: List[str] = Field(default_factory=list)
-    out_of_scope: List[str] = Field(default_factory=list)
-    risks: List[str] = Field(default_factory=list)
+    """Senior PM-quality PRD schema with depth for teams without a PM"""
+    # Core problem definition
+    problem_statement: str = ""  # 2-4 sentences, specific and actionable
+    problem_evidence: str = ""  # Data/quotes/research supporting the problem
+    
+    # User understanding (rich, structured)
+    target_users: List[UserPersonaSchema] = Field(default_factory=list)
+    
+    # Success definition
+    desired_outcome: str = ""  # What success looks like
+    key_metrics: List[str] = Field(default_factory=list)  # Measurable KPIs
+    
+    # Scope boundaries with rationale
+    mvp_scope: List[MVPScopeItemSchema] = Field(default_factory=list)  # What's IN MVP
+    not_now: List[MVPScopeItemSchema] = Field(default_factory=list)  # What's OUT with rationale
+    out_of_scope: List[str] = Field(default_factory=list)  # Hard boundaries (legacy field)
+    
+    # Risk and validation
+    assumptions: List[AssumptionSchema] = Field(default_factory=list)
+    constraints: List[ConstraintSchema] = Field(default_factory=list)
+    risks: List[str] = Field(default_factory=list)  # Legacy field
+    riskiest_unknown: str = ""  # Single biggest uncertainty
+    validation_plan: str = ""  # How to de-risk before full build
+    
+    # Market context
+    positioning: PositioningSchema = Field(default_factory=PositioningSchema)
+    alternatives: List[str] = Field(default_factory=list)  # Competitor/workaround list
+    
+    # Optional GTM notes
+    gtm_notes: str = ""  # Go-to-market considerations
 
 
 class EpicSchema(BaseModel):
