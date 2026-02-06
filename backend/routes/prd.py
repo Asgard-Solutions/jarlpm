@@ -76,7 +76,7 @@ async def get_epics_without_prd(
         .outerjoin(PRDDocument, Epic.epic_id == PRDDocument.epic_id)
         .where(
             Epic.user_id == user_id,
-            PRDDocument.id == None
+            PRDDocument.id.is_(None)
         )
         .order_by(Epic.updated_at.desc())
     )
