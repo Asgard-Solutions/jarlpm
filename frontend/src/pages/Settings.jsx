@@ -108,6 +108,16 @@ const Settings = () => {
           quality_mode: ctxRes.data.quality_mode || 'standard',
         });
       }
+      
+      // Load integrations status (only if subscribed)
+      if (subRes.data?.status === 'active') {
+        try {
+          const intRes = await integrationsAPI.getStatus();
+          setIntegrations(intRes.data);
+        } catch (intError) {
+          console.log('Integrations status not available:', intError);
+        }
+      }
     } catch (error) {
       console.error('Failed to load settings:', error);
     } finally {
