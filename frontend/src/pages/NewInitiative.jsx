@@ -202,6 +202,38 @@ and small agencies (2-5 people)."`}
                   Include: the problem, who has it, any constraints, nice-to-haves
                 </p>
               </div>
+              
+              {/* Quality Mode Toggle */}
+              <div className="flex items-center justify-between p-3 bg-nordic-bg-primary rounded-lg border border-nordic-border">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${qualityMode === 'quality' ? 'bg-nordic-accent/20' : 'bg-nordic-bg-secondary'}`}>
+                    <Sparkles className={`w-4 h-4 ${qualityMode === 'quality' ? 'text-nordic-accent' : 'text-nordic-text-muted'}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-nordic-text-primary">Quality Mode</p>
+                    <p className="text-xs text-nordic-text-muted">
+                      {qualityMode === 'quality' 
+                        ? '2-pass generation with self-critique (slower, more thorough)' 
+                        : 'Standard single-pass generation (faster)'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setQualityMode(prev => prev === 'standard' ? 'quality' : 'standard')}
+                  disabled={generating}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-nordic-accent focus:ring-offset-2 focus:ring-offset-nordic-bg-secondary ${
+                    qualityMode === 'quality' ? 'bg-nordic-accent' : 'bg-nordic-bg-tertiary'
+                  } ${generating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  data-testid="quality-mode-toggle"
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      qualityMode === 'quality' ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
 
               {error && (
                 <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
