@@ -103,7 +103,7 @@ async def get_delivery_context(user_id: str, session: AsyncSession) -> Optional[
     return {
         "num_developers": ctx.num_developers or 0,
         "sprint_cycle_length": ctx.sprint_cycle_length or 14,
-        "points_per_dev_per_sprint": ctx.points_per_dev_per_sprint or 10,
+        "points_per_dev_per_sprint": ctx.points_per_dev_per_sprint or 8,
         "sprint_start_date": ctx.sprint_start_date,
     }
 
