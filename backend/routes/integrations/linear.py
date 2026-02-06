@@ -457,6 +457,7 @@ async def preview_linear_push(
 
 
 @router.post("/push")
+@limiter.limit(RATE_LIMITS["integration_push"])
 async def push_to_linear(
     request: Request,
     body: LinearPushRequest,
