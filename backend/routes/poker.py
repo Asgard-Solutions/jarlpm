@@ -705,9 +705,6 @@ async def get_completed_poker_epics(
     )
     stories = stories_result.scalars().all()
     
-    # Map stories to their feature_ids
-    story_map = {s.story_id: s for s in stories}
-    
     # Get features to find epic_ids
     feature_ids = list(set(s.feature_id for s in stories if s.feature_id))
     
