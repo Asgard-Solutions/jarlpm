@@ -517,7 +517,7 @@ Return only valid JSON matching the schema. No markdown fences, no commentary.""
 # Pass 2: Feature Decomposition
 # ============================================
 
-DECOMP_SYSTEM = """You are JarlPM. Given a PRD, decompose it into features and user stories.
+DECOMP_SYSTEM = """You are JarlPM, a Senior Product Manager. Given a PRD, decompose it into features and user stories with enough detail that engineers can build confidently without a PM in the room.
 {context}
 
 OUTPUT FORMAT:
@@ -532,11 +532,12 @@ SCHEMA:
   "features": [
     {{
       "name": "Feature name (2-5 words)",
-      "description": "What it does (1-2 sentences)",
+      "description": "What it does and why it matters (2-3 sentences)",
       "priority": "must-have | should-have | nice-to-have",
       "stories": [
         {{
           "title": "Short, actionable title (5-10 words)",
+          "description": "PM-level context: what success looks like, key behaviors, important edge cases to consider (2-4 sentences)",
           "persona": "a [specific user type]",
           "action": "[what they want to do]",
           "benefit": "[why they want it]",
@@ -544,6 +545,12 @@ SCHEMA:
             "Given X, When Y, Then Z",
             "Given A, When B, Then C"
           ],
+          "success_criteria": "What 'done' looks like beyond the AC - the real-world outcome",
+          "non_goals": ["What this story explicitly does NOT do", "Scope boundary"],
+          "edge_cases": ["Edge case to handle", "Edge case to explicitly ignore with reason"],
+          "ux_notes": "Loading states, error messages, empty states, accessibility considerations",
+          "instrumentation": ["track_event: user_did_X", "metric: time_to_complete_Y"],
+          "notes_for_engineering": "Technical tradeoffs, data storage approach, perf/security considerations, known constraints",
           "labels": ["backend", "frontend", "api"],
           "priority": "must-have | should-have | nice-to-have",
           "dependencies": ["Description of what this story depends on"],
@@ -564,15 +571,24 @@ HARD CONSTRAINTS:
 - Stories should be small enough to complete in 1-3 days
 - REQUIRED: Include at least 1 NFR story (security/performance/reliability/accessibility) in MVP features
 
+STORY QUALITY REQUIREMENTS:
+- description: Concrete context, not just restating the title. Include the "why" and key behaviors.
+- success_criteria: Observable outcome (e.g., "User can send 100+ messages/day without errors")
+- non_goals: At least 1 scope boundary per story (what you're NOT building)
+- edge_cases: At least 1 edge case to handle OR explicitly note "out of scope for MVP"
+- ux_notes: Required for any frontend-touching story (loading, errors, empty states)
+- instrumentation: At least 1 analytics event for must-have stories
+- notes_for_engineering: Required for backend/api stories (data model hints, API design, perf considerations)
+
 PRIORITY RULES:
 - must-have: Required for launch, no workarounds
 - should-have: Important, but can launch without
 - nice-to-have: Enhances UX, defer if needed
 
-Use platform-appropriate story format."""
+Write stories that would make a senior engineer say "I know exactly what to build"."""
 
 
-DECOMP_USER = """Decompose this PRD into features and user stories:
+DECOMP_USER = """Decompose this PRD into features and user stories with Senior PM-level detail:
 
 PRODUCT: {product_name}
 TAGLINE: {tagline}
@@ -585,7 +601,14 @@ OUT OF SCOPE: {out_of_scope}
 
 {dod_section}
 
-Generate features with detailed user stories and acceptance criteria. 
+Generate features with detailed user stories including:
+- Rich descriptions with context and key behaviors
+- Clear success criteria and non-goals
+- Edge cases to handle or explicitly defer
+- UX notes for frontend stories
+- Instrumentation/analytics events
+- Engineering notes with technical considerations
+
 IMPORTANT: Include at least 1 NFR story for security, performance, or reliability.
 Return only valid JSON. No markdown fences, no commentary."""
 
