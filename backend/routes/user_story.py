@@ -299,6 +299,7 @@ IMPORTANT GUIDELINES:
 - Each story should deliver tangible user value
 - Stories should be small enough to complete in one sprint
 - Acceptance criteria must be testable and specific
+- Do NOT include story points - those are assigned later via Scoring/Poker features
 
 RESPONSE FORMAT (JSON only):
 [
@@ -309,12 +310,9 @@ RESPONSE FORMAT (JSON only):
     "acceptance_criteria": [
       "Given [context], When [action], Then [expected result]",
       "Given [context], When [action], Then [expected result]"
-    ],
-    "story_points": 3
+    ]
   }}
 ]
-
-Story points should be 1, 2, 3, 5, or 8 based on complexity.
 
 Respond ONLY with the JSON array, no other text."""
 
