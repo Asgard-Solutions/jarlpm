@@ -13,6 +13,8 @@ import {
   Zap, TrendingUp, ShieldCheck, Sparkles, Calendar, Edit3
 } from 'lucide-react';
 import { epicAPI, leanCanvasAPI } from '@/api';
+import PageHeader from '@/components/PageHeader';
+import EmptyState from '@/components/EmptyState';
 
 const CANVAS_SECTIONS = [
   { 
