@@ -909,6 +909,13 @@ async def bulk_score_epic_features(
     if not llm_config:
         raise HTTPException(status_code=400, detail="Please configure an LLM provider in Settings first")
     
+    # Prepare for streaming - extract config BEFORE releasing session
+    config_data = llm_service.prepare_for_streaming(llm_config)
+    
+    # Capture features data for closure
+    features_data = [(f.feature_id, f.title, f.description) for f in features]
+    epic_title = epic.title
+    
     # Build context for all features
     features_context = []
     for f in features:
@@ -918,7 +925,7 @@ async def bulk_score_epic_features(
     
     system_prompt = f"""You are a Senior Product Manager helping prioritize features using MoSCoW and RICE frameworks.
 
-EPIC: {epic.title}
+EPIC: {epic_title}
 
 FEATURES TO SCORE:
 {features_list}
@@ -948,8 +955,10 @@ Return format:
     
     try:
         response_text = ""
-        async for chunk in llm_service.generate_stream(
-            user_id=user_id,
+        # Use sessionless streaming
+        llm = LLMService()  # No session needed
+        async for chunk in llm.stream_with_config(
+            config_data=config_data,
             system_prompt=system_prompt,
             user_prompt=user_prompt
         ):
@@ -964,25 +973,25 @@ Return format:
         import json as json_lib
         result = json_lib.loads(clean_response)
         
-        # Map suggestions back to features
+        # Map suggestions back to features using captured data
         suggestions = []
         for suggestion in result.get("features", []):
             # Find matching feature
             matching_feature = next(
-                (f for f in features if f.title.lower() == suggestion.get("title", "").lower()),
+                ((fid, ftitle) for fid, ftitle, _ in features_data if ftitle.lower() == suggestion.get("title", "").lower()),
                 None
             )
             if matching_feature:
                 suggestions.append(FeatureScoreSuggestion(
-                    feature_id=matching_feature.feature_id,
-                    title=matching_feature.title,
+                    feature_id=matching_feature[0],
+                    title=matching_feature[1],
                     moscow=suggestion.get("moscow", {}),
                     rice=suggestion.get("rice", {})
                 ))
         
         return BulkScoringResponse(
             epic_id=epic_id,
-            epic_title=epic.title,
+            epic_title=epic_title,
             suggestions=suggestions,
             generated_at=datetime.now(timezone.utc).isoformat()
         )
