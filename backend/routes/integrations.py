@@ -71,6 +71,28 @@ class PushRequest(BaseModel):
     dry_run: bool = False
 
 
+# Jira-specific models
+class ConnectJiraRequest(BaseModel):
+    frontend_callback_url: str
+
+class ConfigureJiraRequest(BaseModel):
+    cloud_id: str
+    site_name: str
+    project_key: str
+    project_name: str
+    issue_type_mapping: Optional[dict] = None  # e.g., {"feature": "Task", "story": "Story", "bug": "Bug"}
+    story_points_field: Optional[str] = None   # e.g., "customfield_10016"
+    epic_link_field: Optional[str] = None      # e.g., "customfield_10014"
+    label_prefix: Optional[str] = None         # e.g., "jarlpm-"
+
+class JiraPushRequest(BaseModel):
+    epic_id: str
+    project_key: str
+    push_scope: Literal["epic_only", "epic_features", "epic_features_stories", "full"] = "epic_features_stories"
+    include_bugs: bool = False
+    dry_run: bool = False
+
+
 # Helper functions
 async def check_subscription_required(session: AsyncSession, user_id: str):
     """Check if user has an active subscription. Raise 402 if not."""
