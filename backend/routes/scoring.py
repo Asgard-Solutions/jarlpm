@@ -1280,20 +1280,24 @@ async def apply_all_bulk_scores(
     for suggestion in body.feature_suggestions:
         try:
             if suggestion.moscow and suggestion.moscow.get("score"):
+                moscow_reasoning = suggestion.moscow.get("reasoning")
                 await scoring_service.update_feature_moscow(
                     suggestion.item_id, 
-                    suggestion.moscow["score"]
+                    suggestion.moscow["score"],
+                    moscow_reasoning
                 )
             if suggestion.rice:
                 # Normalize RICE values to allowed discrete values
                 rice = normalize_rice_values(suggestion.rice)
+                rice_reasoning = suggestion.rice.get("reasoning")
                 if all(k in rice for k in ["reach", "impact", "confidence", "effort"]):
                     await scoring_service.update_feature_rice(
                         suggestion.item_id,
                         rice["reach"],
                         rice["impact"],
                         rice["confidence"],
-                        rice["effort"]
+                        rice["effort"],
+                        rice_reasoning
                     )
             applied["features"] += 1
         except Exception as e:
@@ -1305,13 +1309,15 @@ async def apply_all_bulk_scores(
             if suggestion.rice:
                 # Normalize RICE values to allowed discrete values
                 rice = normalize_rice_values(suggestion.rice)
+                rice_reasoning = suggestion.rice.get("reasoning")
                 if all(k in rice for k in ["reach", "impact", "confidence", "effort"]):
                     await scoring_service.update_story_rice(
                         suggestion.item_id,
                         rice["reach"],
                         rice["impact"],
                         rice["confidence"],
-                        rice["effort"]
+                        rice["effort"],
+                        rice_reasoning
                     )
             applied["stories"] += 1
         except Exception as e:
@@ -1323,6 +1329,7 @@ async def apply_all_bulk_scores(
             if suggestion.rice:
                 # Normalize RICE values to allowed discrete values
                 rice = normalize_rice_values(suggestion.rice)
+                rice_reasoning = suggestion.rice.get("reasoning")
                 if all(k in rice for k in ["reach", "impact", "confidence", "effort"]):
                     await scoring_service.update_bug_rice(
                         suggestion.item_id,
@@ -1330,7 +1337,8 @@ async def apply_all_bulk_scores(
                         rice["reach"],
                         rice["impact"],
                         rice["confidence"],
-                        rice["effort"]
+                        rice["effort"],
+                        rice_reasoning
                     )
             applied["bugs"] += 1
         except Exception as e:
