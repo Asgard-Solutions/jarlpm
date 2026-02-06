@@ -63,7 +63,7 @@ class ScoringService:
         )
         return result.scalar_one_or_none()
     
-    async def update_epic_moscow(self, epic_id: str, user_id: str, moscow_score: str) -> Epic:
+    async def update_epic_moscow(self, epic_id: str, user_id: str, moscow_score: str, reasoning: str = None) -> Epic:
         """Update MoSCoW score for an Epic"""
         epic = await self.get_epic(epic_id, user_id)
         if not epic:
@@ -74,6 +74,8 @@ class ScoringService:
             raise ValueError(error)
         
         epic.moscow_score = moscow_score
+        if reasoning:
+            epic.moscow_reasoning = reasoning
         await self.session.commit()
         await self.session.refresh(epic)
         return epic
