@@ -1489,3 +1489,57 @@ LINEAR_OAUTH_REDIRECT_URI=
 - Azure DevOps integration (PAT-based first, OAuth later)
 
 **Migration:** `alembic upgrade head` adds 3 new tables
+
+
+### 2026-02-06: Jira Cloud Integration (Phase 1 Complete)
+**Goal:** Allow paid users to push Epics, Features, and Stories to Jira Cloud projects.
+
+**Implementation:**
+
+1. **Jira Service** (`/app/backend/services/jira_service.py`):
+   - `JiraOAuthService` - OAuth 2.0 (3LO) flow for Jira Cloud
+   - `JiraRESTService` - REST API v3 operations (projects, issue types, fields, issues)
+   - `JiraPushService` - Formats JarlPM items for Jira, handles idempotent create/update
+
+2. **Backend Routes** (`/app/backend/routes/integrations.py`):
+   - `POST /api/integrations/jira/connect` - Initiate OAuth
+   - `GET /api/integrations/jira/callback` - OAuth callback
+   - `POST /api/integrations/jira/disconnect` - Disconnect
+   - `PUT /api/integrations/jira/configure` - Set default project, field mappings
+   - `GET /api/integrations/jira/sites` - List accessible Jira sites (cloudIds)
+   - `GET /api/integrations/jira/projects` - List projects
+   - `GET /api/integrations/jira/projects/{key}/issue-types` - Get issue types
+   - `GET /api/integrations/jira/fields` - Get custom fields for mapping
+   - `GET /api/integrations/jira/test` - Test connection
+   - `POST /api/integrations/jira/preview` - Preview push (dry run)
+   - `POST /api/integrations/jira/push` - Execute push
+
+3. **Frontend - Settings Integrations Tab**:
+   - Jira card with connect/disconnect buttons
+   - Project selection dropdown
+   - OAuth status display
+
+4. **Frontend - Push to Jira Modal** (`/app/frontend/src/components/PushToJiraModal.jsx`):
+   - Project selection
+   - Push scope options (Epic only, +Features, +Stories)
+   - Preview with create/update counts
+   - Push execution with results display
+
+5. **Epic Page Integration**:
+   - "Push to Jira" button (visible when Jira connected)
+
+**Mapping Rules:**
+- JarlPM Epic → Jira Issue Type: "Epic"
+- JarlPM Feature → Jira Issue Type: "Task" (configurable)
+- JarlPM Story → Jira Issue Type: "Story"
+- Epic Link field supported (configurable custom field)
+- Story points field supported (configurable custom field)
+
+**Environment Variables Required:**
+```
+JIRA_OAUTH_CLIENT_ID=
+JIRA_OAUTH_CLIENT_SECRET=
+JIRA_OAUTH_REDIRECT_URI=
+```
+
+**Status:** Complete but requires OAuth credentials to test end-to-end
