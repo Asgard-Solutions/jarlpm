@@ -1,6 +1,8 @@
 from fastapi import FastAPI, APIRouter, Request
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 import os
 import logging
 from pathlib import Path
@@ -12,12 +14,19 @@ sys.path.insert(0, str(Path(__file__).parent))
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# Import rate limiter
+from services.rate_limit import limiter, rate_limit_exceeded_handler
+
 # Create the main app
 app = FastAPI(
     title="JarlPM API",
     description="AI-agnostic Product Management System",
     version="1.0.0"
 )
+
+# Add rate limiter to app state
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
