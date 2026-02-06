@@ -269,15 +269,6 @@ class InitiativeSchema(BaseModel):
                 if not story.id or not story.id.startswith('story_'):
                     story.id = generate_id('story_')
         return self
-    
-    def calculate_totals(self):
-        """Calculate total points"""
-        total = 0
-        for feature in self.features:
-            for story in feature.stories:
-                total += story.points
-        self.total_points = total
-        return self
 
 
 class NewInitiativeRequest(BaseModel):
