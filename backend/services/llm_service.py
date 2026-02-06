@@ -13,12 +13,14 @@ from services.encryption import get_encryption_service
 class LLMService:
     """LLM-agnostic service for text generation"""
     
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession = None):
         self.session = session
         self.encryption = get_encryption_service()
     
     async def get_user_llm_config(self, user_id: str) -> Optional[LLMProviderConfig]:
         """Get the active LLM configuration for a user"""
+        if not self.session:
+            raise ValueError("Session required to fetch LLM config")
         result = await self.session.execute(
             select(LLMProviderConfig)
             .where(LLMProviderConfig.user_id == user_id, LLMProviderConfig.is_active.is_(True))
@@ -29,6 +31,52 @@ class LLMService:
         """Decrypt the API key for use"""
         return self.encryption.decrypt(config.encrypted_api_key)
     
+    def prepare_for_streaming(self, config: LLMProviderConfig) -> dict:
+        """
+        Prepare all data needed for streaming WITHOUT holding the session.
+        Call this before releasing the DB session, then use stream_with_config().
+        
+        Returns a dict with provider, model, api_key, base_url that can be used
+        after the session is closed.
+        """
+        return {
+            "provider": config.provider,
+            "model_name": config.model_name,
+            "api_key": self._decrypt_api_key(config),
+            "base_url": config.base_url
+        }
+    
+    async def stream_with_config(
+        self,
+        config_data: dict,
+        system_prompt: str,
+        user_prompt: str,
+        conversation_history: list[dict] = None,
+        temperature: float = None
+    ) -> AsyncGenerator[str, None]:
+        """
+        Stream using pre-fetched config data. Does NOT require a DB session.
+        Use this for long-running streams to avoid holding DB connections.
+        
+        config_data should come from prepare_for_streaming()
+        """
+        provider = config_data["provider"]
+        model = config_data["model_name"]
+        api_key = config_data["api_key"]
+        base_url = config_data.get("base_url")
+        
+        if provider == LLMProvider.OPENAI.value:
+            async for chunk in self._openai_stream(api_key, model, system_prompt, user_prompt, conversation_history, temperature):
+                yield chunk
+        elif provider == LLMProvider.ANTHROPIC.value:
+            async for chunk in self._anthropic_stream(api_key, model, system_prompt, user_prompt, conversation_history, temperature):
+                yield chunk
+        elif provider == LLMProvider.LOCAL.value:
+            async for chunk in self._local_stream(api_key, base_url, model, system_prompt, user_prompt, conversation_history, temperature):
+                yield chunk
+        else:
+            raise ValueError(f"Unsupported LLM provider: {provider}")
+    
     async def generate_stream(
         self,
         user_id: str,
@@ -37,7 +85,16 @@ class LLMService:
         conversation_history: list[dict] = None,
         temperature: float = None  # None = use model default
     ) -> AsyncGenerator[str, None]:
-        """Generate text using the user's configured LLM provider (streaming)"""
+        """
+        Generate text using the user's configured LLM provider (streaming).
+        
+        NOTE: This method holds the session reference during streaming.
+        For long-running streams in HTTP handlers, prefer:
+        1. config = await llm_service.get_user_llm_config(user_id)
+        2. config_data = llm_service.prepare_for_streaming(config)
+        3. Release session
+        4. async for chunk in llm_service.stream_with_config(config_data, ...):
+        """
         
         config = await self.get_user_llm_config(user_id)
         if not config:
