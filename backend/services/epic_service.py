@@ -21,11 +21,8 @@ class EpicService:
     
     async def check_subscription_active(self, user_id: str) -> bool:
         """Check if user has an active subscription"""
-        result = await self.session.execute(
-            select(Subscription).where(Subscription.user_id == user_id)
-        )
-        sub = result.scalar_one_or_none()
-        return sub is not None and sub.status == SubscriptionStatus.ACTIVE.value
+        subscription = await get_user_subscription(self.session, user_id)
+        return is_subscription_active(subscription)
     
     async def create_epic(self, user_id: str, title: str) -> Epic:
         """Create a new epic with initial snapshot"""
