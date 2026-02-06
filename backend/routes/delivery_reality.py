@@ -292,7 +292,7 @@ async def get_delivery_summary(
     # Get all active (non-archived) initiatives
     epics_q = select(Epic).where(
         Epic.user_id == user_id,
-        Epic.is_archived == False
+        Epic.is_archived.is_(False)
     )
     epics_result = await session.execute(epics_q)
     epics = epics_result.scalars().all()
@@ -335,7 +335,7 @@ async def list_initiatives_delivery(
     # Get all active (non-archived) initiatives
     epics_q = select(Epic).where(
         Epic.user_id == user_id,
-        Epic.is_archived == False
+        Epic.is_archived.is_(False)
     ).order_by(Epic.updated_at.desc())
     
     epics_result = await session.execute(epics_q)
