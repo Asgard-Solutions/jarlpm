@@ -27,6 +27,7 @@ const NewInitiative = () => {
   const [progressPercent, setProgressPercent] = useState(0);
   const [initiative, setInitiative] = useState(null);
   const [error, setError] = useState('');
+  const [qualityMode, setQualityMode] = useState('standard'); // 'standard' or 'quality'
 
   const handleGenerate = async () => {
     if (!idea.trim()) return;
@@ -42,7 +43,8 @@ const NewInitiative = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           idea: idea.trim(),
-          product_name: productName.trim() || null
+          product_name: productName.trim() || null,
+          quality_mode: qualityMode
         }),
         credentials: 'include',
       });
