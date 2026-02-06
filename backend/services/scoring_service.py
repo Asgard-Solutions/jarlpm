@@ -144,7 +144,7 @@ class ScoringService:
         return result.scalar_one_or_none()
     
     async def update_story_rice(
-        self, story_id: str, reach: int, impact: float, confidence: float, effort: float
+        self, story_id: str, reach: int, impact: float, confidence: float, effort: float, reasoning: str = None
     ) -> UserStory:
         """Update RICE score for a User Story"""
         story = await self.get_user_story(story_id)
@@ -160,6 +160,8 @@ class ScoringService:
         story.rice_confidence = confidence
         story.rice_effort = effort
         story.rice_total = self.calculate_rice_total(reach, impact, confidence, effort)
+        if reasoning:
+            story.rice_reasoning = reasoning
         
         await self.session.commit()
         await self.session.refresh(story)
@@ -177,7 +179,7 @@ class ScoringService:
         return result.scalar_one_or_none()
     
     async def update_bug_rice(
-        self, bug_id: str, user_id: str, reach: int, impact: float, confidence: float, effort: float
+        self, bug_id: str, user_id: str, reach: int, impact: float, confidence: float, effort: float, reasoning: str = None
     ) -> Bug:
         """Update RICE score for a Bug"""
         bug = await self.get_bug(bug_id, user_id)
@@ -193,6 +195,8 @@ class ScoringService:
         bug.rice_confidence = confidence
         bug.rice_effort = effort
         bug.rice_total = self.calculate_rice_total(reach, impact, confidence, effort)
+        if reasoning:
+            bug.rice_reasoning = reasoning
         
         await self.session.commit()
         await self.session.refresh(bug)
