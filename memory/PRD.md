@@ -1208,3 +1208,19 @@ When an Epic is locked, users enter Feature Planning Mode:
 **Tests:** 23/23 backend tests passed, 100% frontend coverage
 
 
+### 2026-02-06: Bug Fix - RICE Values Normalization & Display (COMPLETE)
+**Issues Fixed:**
+1. **AI-generated RICE values validation error**: AI was generating continuous values (e.g., confidence=0.9) but validation expected discrete values ([0.5, 0.8, 1.0]). Added `normalize_rice_values()` helper that snaps AI values to nearest allowed discrete values.
+2. **User Stories missing RICE badges**: `UserStoryResponse` model didn't include RICE fields. Added `rice_reach`, `rice_impact`, `rice_confidence`, `rice_effort`, `rice_total` to the response model and `story_to_response()` function.
+
+**UI Updates:**
+- Epic header now shows MoSCoW badge next to "Epic Locked" badge (when epic has moscow_score)
+- User Stories now display RICE badges (e.g., "RICE: 24.0")
+- Features continue to show MoSCoW + RICE badges
+
+**Files Modified:**
+- `/app/backend/routes/scoring.py` - Added `normalize_rice_values()` function
+- `/app/backend/routes/user_story.py` - Added RICE fields to UserStoryResponse
+- `/app/frontend/src/pages/CompletedEpic.jsx` - Added MoSCoW badge to epic header
+
+
