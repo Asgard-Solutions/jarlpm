@@ -570,13 +570,6 @@ async def get_sprint_insights(
         standup_summary=insights_by_type.get("standup_summary"),
         wip_suggestions=insights_by_type.get("wip_suggestions")
     )
-    
-    return SprintInsightsResponse(
-        sprint_number=sprint_info.sprint_number,
-        kickoff_plan=insights_by_type.get("kickoff_plan"),
-        standup_summary=insights_by_type.get("standup_summary"),
-        wip_suggestions=insights_by_type.get("wip_suggestions")
-    )
 
 
 # ============================================
