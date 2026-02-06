@@ -1228,6 +1228,7 @@ async def generate_initiative(
     - Delivery Context: Every prompt is personalized
     
     Logs all generation metrics for quality analysis.
+    NOTE: Uses session-less streaming to avoid DB pool exhaustion.
     """
     user_id = await get_current_user_id(request, session)
     
@@ -1252,11 +1253,15 @@ async def generate_initiative(
     if not llm_config:
         raise HTTPException(status_code=400, detail="Please configure an LLM provider in Settings first")
     
-    # Initialize strict output service with DB session for persistent metrics
-    strict_service = get_strict_output_service(session)
+    # Prepare for streaming - extract all needed data BEFORE releasing session
+    config_data = llm_service.prepare_for_streaming(llm_config)
     
-    # Check for weak model warning (async, from DB - keyed by user+provider+model)
-    model_warning = await strict_service.get_model_warning(
+    # Initialize strict output service (doesn't need session for validation)
+    strict_service = get_strict_output_service(None)
+    
+    # Check for weak model warning - capture the value before streaming
+    strict_service_with_session = get_strict_output_service(session)
+    model_warning = await strict_service_with_session.get_model_warning(
         user_id, 
         llm_config.provider, 
         llm_config.model_name
@@ -1279,16 +1284,20 @@ async def generate_initiative(
     else:
         quality_mode = "standard"
     
-    # Initialize analytics
-    analytics = AnalyticsService(session)
-    metrics = analytics.create_metrics(
-        user_id=user_id,
-        idea=body.idea,
-        product_name_provided=bool(body.product_name),
-        llm_provider=llm_config.provider,
-        model_name=llm_config.model_name,
-        delivery_context=ctx
-    )
+    # Initialize analytics and capture metrics structure
+    # Note: We'll save analytics after streaming with a fresh session
+    metrics_data = {
+        "user_id": user_id,
+        "idea": body.idea,
+        "product_name_provided": bool(body.product_name),
+        "llm_provider": llm_config.provider,
+        "model_name": llm_config.model_name,
+        "delivery_context": ctx
+    }
+    
+    # Pre-capture all the data we need for the streaming generator
+    request_idea = body.idea
+    request_product_name = body.product_name
 
     async def generate():
         try:
