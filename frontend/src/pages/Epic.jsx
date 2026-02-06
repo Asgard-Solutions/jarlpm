@@ -210,6 +210,15 @@ const Epic = () => {
           setHasLeanCanvas(false);
         }
         
+        // Check if Linear integration is connected
+        try {
+          const intRes = await integrationsAPI.getProviderStatus('linear');
+          setHasLinearIntegration(intRes.data?.connected || false);
+        } catch (e) {
+          // Ignore - may not have subscription or integration
+          setHasLinearIntegration(false);
+        }
+        
         // If fully complete (all features approved, all have approved stories), redirect to review
         if (featuresData.length > 0 && allFeaturesComplete && hasAnyStories) {
           navigate(`/epic/${epicId}/review`);
