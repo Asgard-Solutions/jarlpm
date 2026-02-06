@@ -742,3 +742,41 @@ class PRDDocument(Base):
         Index('idx_prd_user_id', 'user_id'),
         UniqueConstraint('epic_id', name='uq_prd_epic'),  # One PRD per epic
     )
+
+
+class SprintInsightType(str, PyEnum):
+    """Types of AI-generated sprint insights"""
+    KICKOFF_PLAN = "kickoff_plan"
+    STANDUP_SUMMARY = "standup_summary"
+    WIP_SUGGESTIONS = "wip_suggestions"
+
+
+class SprintInsight(Base):
+    """
+    Persisted AI-generated sprint insights.
+    Stores kickoff plans, standup summaries, and WIP suggestions
+    so users can view them later without regenerating.
+    """
+    __tablename__ = "sprint_insights"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    insight_id: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, default=lambda: generate_uuid("si_"))
+    user_id: Mapped[str] = mapped_column(String(50), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    
+    # Sprint identification
+    sprint_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    insight_type: Mapped[str] = mapped_column(String(50), nullable=False)  # kickoff_plan, standup_summary, wip_suggestions
+    
+    # Content - stores the full AI response as JSON
+    content: Mapped[dict] = mapped_column(JSON, nullable=False)
+    
+    # Timestamps
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    __table_args__ = (
+        Index('idx_sprint_insight_user_sprint', 'user_id', 'sprint_number'),
+        Index('idx_sprint_insight_type', 'user_id', 'sprint_number', 'insight_type'),
+        # Allow multiple insights of same type per sprint (history)
+    )
