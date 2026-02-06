@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db
 from db.user_story_models import UserStory
-from db.models import Epic, ProductDeliveryContext
+from db.models import Epic, ProductDeliveryContext, SprintInsight
 from routes.auth import get_current_user_id
 
 logger = logging.getLogger(__name__)
