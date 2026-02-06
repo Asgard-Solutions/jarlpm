@@ -272,6 +272,9 @@ async def generate_prd_with_llm(
     if not llm_config:
         raise HTTPException(status_code=400, detail="No LLM provider configured. Please add your API key in Settings.")
     
+    # Prepare for streaming - extract config BEFORE releasing session
+    config_data = llm_service.prepare_for_streaming(llm_config)
+    
     # Get features
     features_result = await session.execute(
         select(Feature).where(Feature.epic_id == epic_id)
