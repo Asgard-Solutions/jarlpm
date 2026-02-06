@@ -1293,3 +1293,26 @@ When an Epic is locked, users enter Feature Planning Mode:
 **Testing:** 24/24 backend tests passed (subscription gating, LLM config check, error handling, StrictOutputService validation)
 
 
+### 2026-02-06: Security Fix - Story Ownership Checks (COMPLETE)
+**Issue:** `update_story_sprint`, `update_story_status`, and `commit_story_to_sprint` endpoints allowed any authenticated user to modify another user's stories if they guessed the ID.
+
+**Fix Applied:**
+- Added ownership verification for all 3 endpoints
+- For standalone stories: checks `UserStory.user_id == current_user_id`
+- For feature-based stories: verifies ownership via `feature→epic→user_id`
+- Returns 403 "Not authorized to modify this story" for unauthorized access
+
+**Files Modified:**
+- `/app/backend/routes/sprints.py` - Added ownership checks to lines 252-420
+
+### 2026-02-06: Fix - Capacity Default Mismatch (COMPLETE)
+**Issue:** `sprints.py` used `or 10` for default velocity while rest of app uses 8.
+
+**Fix Applied:**
+- Changed all occurrences of `or 10` to `or 8` in sprints.py
+- Now consistent with `DEFAULT_POINTS_PER_DEV_PER_SPRINT = 8` in delivery_reality.py
+
+**Files Modified:**
+- `/app/backend/routes/sprints.py` - Lines 106, 498, 995
+
+
