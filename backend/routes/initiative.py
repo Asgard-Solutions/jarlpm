@@ -1459,11 +1459,10 @@ async def generate_initiative(
                 stories_list=stories_list
             )
             
-            # Use strict output with schema validation (low temperature for planning)
-            planning_result = await run_llm_pass_with_validation(
-                llm_service=llm_service,
+            # Use sessionless strict output with schema validation (low temperature for planning)
+            planning_result = await run_llm_pass_with_validation_sessionless(
+                config_data=config_data,
                 strict_service=strict_service,
-                user_id=user_id,
                 system=planning_system,
                 user=planning_prompt,
                 schema=Pass3PlanningOutput,
