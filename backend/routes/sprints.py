@@ -257,7 +257,7 @@ async def update_story_sprint(
     session: AsyncSession = Depends(get_db)
 ):
     """Assign or unassign a story to a sprint"""
-    user_id = await get_current_user_id(request, session)
+    await get_current_user_id(request, session)  # Auth check
     
     # Get the story
     result = await session.execute(
