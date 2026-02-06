@@ -565,6 +565,9 @@ async def ai_suggest_severity(
     if not config:
         raise HTTPException(status_code=400, detail="No LLM provider configured")
     
+    # Prepare for streaming - extract all needed data BEFORE releasing session
+    config_data = llm_service.prepare_for_streaming(config)
+    
     # Build context
     context = f"""Bug Title: {bug.title}
 Description: {bug.description}
@@ -578,13 +581,16 @@ Analyze this bug and suggest appropriate severity (critical, high, medium, low) 
 Provide a brief justification for each suggestion.
 Return ONLY valid JSON in this format: {"severity": "...", "priority": "...", "severity_reason": "...", "priority_reason": "..."}"""
 
+    user_prompt = f"Analyze this bug and suggest severity/priority:\n\n{context}"
+
     try:
-        # Collect streaming response
+        # Use stream_with_config which doesn't need a session
         full_response = ""
-        async for chunk in llm_service.generate_stream(
-            user_id=user_id,
+        llm = LLMService()  # No session needed for streaming
+        async for chunk in llm.stream_with_config(
+            config_data=config_data,
             system_prompt=system_prompt,
-            user_prompt=f"Analyze this bug and suggest severity/priority:\n\n{context}",
+            user_prompt=user_prompt,
             conversation_history=None
         ):
             full_response += chunk
