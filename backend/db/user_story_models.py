@@ -95,6 +95,7 @@ class UserStory(Base):
     rice_confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # 0.5, 0.8, 1.0
     rice_effort: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # 0.5-10 person-months
     rice_total: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # Calculated score
+    rice_reasoning: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
     # Versioning support
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
