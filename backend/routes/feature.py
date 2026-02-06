@@ -488,6 +488,9 @@ async def chat_with_feature(
     if not llm_config:
         raise HTTPException(status_code=400, detail="No LLM provider configured")
     
+    # Prepare for streaming - extract all needed data BEFORE releasing session
+    config_data = llm_service.prepare_for_streaming(llm_config)
+    
     # Move to refining stage if in draft
     if feature.current_stage == FeatureStage.DRAFT.value:
         await feature_service.start_refinement(feature_id)
@@ -503,16 +506,24 @@ async def chat_with_feature(
     delivery_context = await prompt_service.get_delivery_context(user_id)
     delivery_context_text = prompt_service.format_delivery_context(delivery_context)
     
+    # Get conversation history - capture before streaming
+    history = await feature_service.get_conversation_history(feature_id, limit=10)
+    
+    # Capture feature details for prompt (extract from ORM object before session releases)
+    feature_title = feature.title
+    feature_description = feature.description
+    feature_acceptance_criteria = feature.acceptance_criteria or []
+    
     # Build refinement prompt
     system_prompt = f"""{delivery_context_text}
 
 You are a Senior Product Manager helping refine a Feature.
 
 CURRENT FEATURE:
-- Title: {feature.title}
-- Description: {feature.description}
+- Title: {feature_title}
+- Description: {feature_description}
 - Acceptance Criteria:
-{chr(10).join(f'  - {c}' for c in (feature.acceptance_criteria or []))}
+{chr(10).join(f'  - {c}' for c in feature_acceptance_criteria)}
 
 YOUR ROLE:
 - Help the user refine this feature based on their feedback
@@ -536,14 +547,13 @@ TONE: Professional, calm, direct, insightful."""
 
     user_prompt = body.content
     
-    # Get conversation history
-    history = await feature_service.get_conversation_history(feature_id, limit=10)
-    
     async def generate():
         full_response = ""
         try:
-            async for chunk in llm_service.generate_stream(
-                user_id=user_id,
+            # Use stream_with_config which doesn't need a session
+            llm = LLMService()  # No session needed for streaming
+            async for chunk in llm.stream_with_config(
+                config_data=config_data,
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
                 conversation_history=history[:-1] if history else None
@@ -559,23 +569,29 @@ TONE: Professional, calm, direct, insightful."""
                     update_json = re.search(r'\{[\s\S]*\}', update_match.group(1))
                     if update_json:
                         update_data = json.loads(update_json.group(0))
-                        # Apply the update
-                        await feature_service.update_feature(
-                            feature_id=feature_id,
-                            title=update_data.get("title"),
-                            description=update_data.get("description"),
-                            acceptance_criteria=update_data.get("acceptance_criteria")
-                        )
+                        # Apply the update - need a new session for this
+                        from db import async_session_maker
+                        async with async_session_maker() as new_session:
+                            new_feature_service = FeatureService(new_session)
+                            await new_feature_service.update_feature(
+                                feature_id=feature_id,
+                                title=update_data.get("title"),
+                                description=update_data.get("description"),
+                                acceptance_criteria=update_data.get("acceptance_criteria")
+                            )
                         yield f"data: {json.dumps({'type': 'feature_updated', 'update': update_data})}\n\n"
                 except (json.JSONDecodeError, ValueError) as e:
                     logger.warning(f"Failed to parse feature update: {e}")
             
-            # Save assistant response
-            await feature_service.add_conversation_event(
-                feature_id=feature_id,
-                role="assistant",
-                content=full_response
-            )
+            # Save assistant response - need a new session for this
+            from db import async_session_maker
+            async with async_session_maker() as new_session:
+                new_feature_service = FeatureService(new_session)
+                await new_feature_service.add_conversation_event(
+                    feature_id=feature_id,
+                    role="assistant",
+                    content=full_response
+                )
             
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
             
