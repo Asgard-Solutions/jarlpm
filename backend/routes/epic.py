@@ -267,6 +267,9 @@ async def chat_with_epic(
             detail="No LLM provider configured. Please add your API key in settings."
         )
     
+    # Prepare for streaming - extract config BEFORE releasing session
+    config_data = llm_service.prepare_for_streaming(llm_config)
+    
     # Add user message to transcript
     await epic_service.add_transcript_event(
         epic_id=epic_id,
@@ -295,11 +298,16 @@ async def chat_with_epic(
     # Get conversation history
     history = await epic_service.get_conversation_history(epic_id, limit=20)
     
+    # Capture epic data for use in generator
+    epic_current_stage = epic.current_stage
+    
     async def generate():
         full_response = ""
         try:
-            async for chunk in llm_service.generate_stream(
-                user_id=user_id,
+            # Use sessionless streaming
+            llm = LLMService()  # No session needed
+            async for chunk in llm.stream_with_config(
+                config_data=config_data,
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
                 conversation_history=history[:-1] if history else None
@@ -308,38 +316,45 @@ async def chat_with_epic(
                 yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
             
             # Check for proposal in response
-            proposal = llm_service.extract_proposal(full_response)
+            proposal = llm.extract_proposal(full_response)
             if proposal:
                 target_stage = None
                 field = None
                 
-                if proposal["type"] == "PROBLEM_STATEMENT" and epic.current_stage == EpicStage.PROBLEM_CAPTURE.value:
+                if proposal["type"] == "PROBLEM_STATEMENT" and epic_current_stage == EpicStage.PROBLEM_CAPTURE.value:
                     target_stage = EpicStage.PROBLEM_CONFIRMED
                     field = "problem_statement"
-                elif proposal["type"] == "DESIRED_OUTCOME" and epic.current_stage == EpicStage.OUTCOME_CAPTURE.value:
+                elif proposal["type"] == "DESIRED_OUTCOME" and epic_current_stage == EpicStage.OUTCOME_CAPTURE.value:
                     target_stage = EpicStage.OUTCOME_CONFIRMED
                     field = "desired_outcome"
-                elif proposal["type"] == "EPIC_FINAL" and epic.current_stage == EpicStage.EPIC_DRAFTED.value:
+                elif proposal["type"] == "EPIC_FINAL" and epic_current_stage == EpicStage.EPIC_DRAFTED.value:
                     target_stage = EpicStage.EPIC_LOCKED
                     field = "epic_final"
                 
                 if target_stage and field:
-                    pending = await epic_service.set_pending_proposal(
-                        epic_id=epic_id,
-                        user_id=user_id,
-                        field=field,
-                        content=proposal["content"],
-                        target_stage=target_stage
-                    )
+                    # Use a fresh session for DB operations
+                    from db import AsyncSessionLocal
+                    async with AsyncSessionLocal() as new_session:
+                        new_epic_service = EpicService(new_session)
+                        pending = await new_epic_service.set_pending_proposal(
+                            epic_id=epic_id,
+                            user_id=user_id,
+                            field=field,
+                            content=proposal["content"],
+                            target_stage=target_stage
+                        )
                     yield f"data: {json.dumps({'type': 'proposal', 'proposal_id': pending['proposal_id'], 'field': field, 'content': proposal['content'], 'target_stage': target_stage.value})}\n\n"
             
-            # Add assistant response to transcript
-            await epic_service.add_transcript_event(
-                epic_id=epic_id,
-                role="assistant",
-                content=full_response,
-                stage=epic.current_stage
-            )
+            # Add assistant response to transcript with a fresh session
+            from db import AsyncSessionLocal
+            async with AsyncSessionLocal() as new_session:
+                new_epic_service = EpicService(new_session)
+                await new_epic_service.add_transcript_event(
+                    epic_id=epic_id,
+                    role="assistant",
+                    content=full_response,
+                    stage=epic_current_stage
+                )
             
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
             
