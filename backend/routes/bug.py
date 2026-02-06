@@ -642,6 +642,9 @@ async def ai_bug_chat(
     if not config:
         raise HTTPException(status_code=400, detail="No LLM provider configured")
     
+    # Prepare for streaming - extract all needed data BEFORE releasing session
+    config_data = llm_service.prepare_for_streaming(config)
+    
     # Build conversation context
     conversation = body.conversation_history or []
     
@@ -700,10 +703,15 @@ Start the conversation by asking about the problem they encountered."""
             "content": msg.get("content", "")
         })
     
+    # Session can be released here - streaming happens without DB connection
+    # (FastAPI will handle session cleanup after this function returns)
+    
     async def generate():
         full_response = ""
-        async for chunk in llm_service.generate_stream(
-            user_id=user_id,
+        # Use stream_with_config which doesn't need a session
+        llm = LLMService()  # No session needed for streaming
+        async for chunk in llm.stream_with_config(
+            config_data=config_data,
             system_prompt=system_prompt,
             user_prompt=body.content,
             conversation_history=formatted_history if formatted_history else None
