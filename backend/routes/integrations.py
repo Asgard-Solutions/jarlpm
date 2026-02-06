@@ -1956,3 +1956,762 @@ async def push_to_jira(
         await session.commit()
         raise HTTPException(status_code=500, detail=str(e))
 
+
+
+# ============================================
+# Azure DevOps Endpoints (PAT-based Auth)
+# ============================================
+
+@router.post("/azure-devops/connect")
+async def connect_azure_devops(
+    request: Request,
+    body: ConnectAzureDevOpsRequest,
+    session: AsyncSession = Depends(get_db)
+):
+    """Connect Azure DevOps using Personal Access Token (PAT)"""
+    user_id = await get_current_user_id(request, session)
+    await check_subscription_required(session, user_id)
+    
+    encryption = get_encryption_service()
+    
+    # Verify the PAT works by making a test API call
+    try:
+        ado_service = AzureDevOpsRESTService(body.organization_url, body.pat)
+        connection_test = await ado_service.verify_connection()
+        
+        if not connection_test.get("valid"):
+            raise HTTPException(status_code=400, detail="Failed to verify Azure DevOps connection")
+        
+    except AzureDevOpsAPIError as e:
+        raise HTTPException(status_code=400, detail=f"Failed to connect to Azure DevOps: {str(e)}")
+    except Exception as e:
+        logger.error(f"Azure DevOps connection error: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid organization URL or PAT: {str(e)}")
+    
+    # Encrypt the PAT
+    encrypted_pat = encryption.encrypt(body.pat)
+    
+    # Extract organization name from URL
+    org_name = body.organization_url.rstrip('/').split('/')[-1]
+    
+    # Create or update integration record
+    integration = await get_user_integration(session, user_id, IntegrationProvider.AZURE_DEVOPS.value)
+    
+    now = datetime.now(timezone.utc)
+    
+    if integration:
+        integration.status = IntegrationStatus.CONNECTED.value
+        integration.org_url = body.organization_url
+        integration.external_account_name = org_name
+        integration.pat_encrypted = encrypted_pat
+        integration.updated_at = now
+    else:
+        integration = ExternalIntegration(
+            user_id=user_id,
+            provider=IntegrationProvider.AZURE_DEVOPS.value,
+            status=IntegrationStatus.CONNECTED.value,
+            org_url=body.organization_url,
+            external_account_name=org_name,
+            pat_encrypted=encrypted_pat
+        )
+        session.add(integration)
+    
+    await session.commit()
+    logger.info(f"Azure DevOps integration connected for user {user_id}, org: {org_name}")
+    
+    return {
+        "status": "connected",
+        "organization": org_name,
+        "project_count": connection_test.get("project_count", 0)
+    }
+
+
+@router.post("/azure-devops/disconnect")
+async def disconnect_azure_devops(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Disconnect Azure DevOps integration"""
+    user_id = await get_current_user_id(request, session)
+    
+    integration = await get_user_integration(session, user_id, IntegrationProvider.AZURE_DEVOPS.value)
+    
+    if not integration:
+        return {"status": "not_connected"}
+    
+    # Clear PAT and update status
+    integration.status = IntegrationStatus.DISCONNECTED.value
+    integration.pat_encrypted = None
+    integration.updated_at = datetime.now(timezone.utc)
+    
+    await session.commit()
+    
+    return {"status": "disconnected"}
+
+
+@router.put("/azure-devops/configure")
+async def configure_azure_devops_integration(
+    request: Request,
+    body: ConfigureAzureDevOpsRequest,
+    session: AsyncSession = Depends(get_db)
+):
+    """Configure Azure DevOps integration defaults"""
+    user_id = await get_current_user_id(request, session)
+    await check_subscription_required(session, user_id)
+    
+    integration = await get_user_integration(session, user_id, IntegrationProvider.AZURE_DEVOPS.value)
+    
+    if not integration or integration.status != IntegrationStatus.CONNECTED.value:
+        raise HTTPException(status_code=400, detail="Azure DevOps not connected")
+    
+    # Update configuration
+    integration.org_url = body.organization_url
+    integration.default_project_id = body.project_id
+    integration.default_project_name = body.project_name
+    
+    # Store field mappings
+    field_mappings = integration.field_mappings or {}
+    
+    if body.default_area_path:
+        field_mappings["default_area_path"] = body.default_area_path
+    if body.default_iteration_path:
+        field_mappings["default_iteration_path"] = body.default_iteration_path
+    if body.story_points_field:
+        field_mappings["story_points_field"] = body.story_points_field
+    if body.description_format:
+        field_mappings["description_format"] = body.description_format
+    if body.tag_policy:
+        field_mappings["tag_policy"] = body.tag_policy
+    if body.work_item_types:
+        field_mappings["work_item_types"] = body.work_item_types
+    
+    integration.field_mappings = field_mappings
+    integration.updated_at = datetime.now(timezone.utc)
+    
+    await session.commit()
+    
+    return {
+        "status": "configured",
+        "organization_url": body.organization_url,
+        "default_project": body.project_name,
+        "field_mappings": field_mappings
+    }
+
+
+# ============================================
+# Azure DevOps Data Endpoints
+# ============================================
+
+@router.get("/azure-devops/projects")
+async def get_azure_devops_projects(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get projects from Azure DevOps organization"""
+    user_id = await get_current_user_id(request, session)
+    await check_subscription_required(session, user_id)
+    
+    ado = await get_azure_devops_service(session, user_id)
+    projects = await ado.get_projects()
+    
+    return {
+        "projects": [
+            {
+                "id": p.get("id"),
+                "name": p.get("name"),
+                "description": p.get("description"),
+                "state": p.get("state")
+            }
+            for p in projects
+        ]
+    }
+
+
+@router.get("/azure-devops/projects/{project_name}/teams")
+async def get_azure_devops_teams(
+    project_name: str,
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get teams for an Azure DevOps project"""
+    user_id = await get_current_user_id(request, session)
+    await check_subscription_required(session, user_id)
+    
+    ado = await get_azure_devops_service(session, user_id)
+    teams = await ado.get_teams(project_name)
+    
+    return {
+        "teams": [
+            {
+                "id": t.get("id"),
+                "name": t.get("name"),
+                "description": t.get("description")
+            }
+            for t in teams
+        ]
+    }
+
+
+@router.get("/azure-devops/projects/{project_name}/iterations")
+async def get_azure_devops_iterations(
+    project_name: str,
+    request: Request,
+    team_name: Optional[str] = Query(None),
+    session: AsyncSession = Depends(get_db)
+):
+    """Get iterations (sprints) for an Azure DevOps project/team"""
+    user_id = await get_current_user_id(request, session)
+    await check_subscription_required(session, user_id)
+    
+    ado = await get_azure_devops_service(session, user_id)
+    iterations = await ado.get_iterations(project_name, team_name)
+    
+    return {
+        "iterations": [
+            {
+                "id": i.get("id"),
+                "name": i.get("name"),
+                "path": i.get("path")
+            }
+            for i in iterations
+        ]
+    }
+
+
+@router.get("/azure-devops/projects/{project_name}/areas")
+async def get_azure_devops_area_paths(
+    project_name: str,
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get area paths for an Azure DevOps project"""
+    user_id = await get_current_user_id(request, session)
+    await check_subscription_required(session, user_id)
+    
+    ado = await get_azure_devops_service(session, user_id)
+    areas = await ado.get_area_paths(project_name)
+    
+    return {
+        "areas": [
+            {
+                "id": a.get("id"),
+                "name": a.get("name"),
+                "path": a.get("path")
+            }
+            for a in areas
+        ]
+    }
+
+
+@router.get("/azure-devops/projects/{project_name}/work-item-types")
+async def get_azure_devops_work_item_types(
+    project_name: str,
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get available work item types for an Azure DevOps project"""
+    user_id = await get_current_user_id(request, session)
+    await check_subscription_required(session, user_id)
+    
+    ado = await get_azure_devops_service(session, user_id)
+    work_item_types = await ado.get_work_item_types(project_name)
+    
+    return {
+        "work_item_types": [
+            {
+                "name": wit.get("name"),
+                "description": wit.get("description"),
+                "icon": wit.get("icon", {}).get("url")
+            }
+            for wit in work_item_types
+        ]
+    }
+
+
+@router.get("/azure-devops/projects/{project_name}/fields")
+async def get_azure_devops_fields(
+    project_name: str,
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Get fields for an Azure DevOps project"""
+    user_id = await get_current_user_id(request, session)
+    await check_subscription_required(session, user_id)
+    
+    ado = await get_azure_devops_service(session, user_id)
+    fields = await ado.get_fields(project_name)
+    
+    # Filter to relevant fields
+    relevant_fields = [
+        f for f in fields
+        if "point" in f.get("name", "").lower() or 
+           "effort" in f.get("name", "").lower() or
+           f.get("referenceName", "").startswith("Microsoft.VSTS.Scheduling")
+    ]
+    
+    return {
+        "fields": [
+            {
+                "name": f.get("name"),
+                "referenceName": f.get("referenceName"),
+                "type": f.get("type")
+            }
+            for f in relevant_fields
+        ]
+    }
+
+
+@router.get("/azure-devops/test")
+async def test_azure_devops_connection(
+    request: Request,
+    session: AsyncSession = Depends(get_db)
+):
+    """Test Azure DevOps connection"""
+    user_id = await get_current_user_id(request, session)
+    await check_subscription_required(session, user_id)
+    
+    try:
+        ado = await get_azure_devops_service(session, user_id)
+        result = await ado.verify_connection()
+        
+        return {
+            "status": "connected",
+            "project_count": result.get("project_count", 0)
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+
+
+# ============================================
+# Azure DevOps Push Endpoints
+# ============================================
+
+@router.post("/azure-devops/preview")
+async def preview_azure_devops_push(
+    request: Request,
+    body: PushPreviewRequest,
+    session: AsyncSession = Depends(get_db)
+):
+    """Preview what will be pushed to Azure DevOps"""
+    user_id = await get_current_user_id(request, session)
+    await check_subscription_required(session, user_id)
+    
+    # Get integration
+    integration = await get_user_integration(session, user_id, IntegrationProvider.AZURE_DEVOPS.value)
+    if not integration or integration.status != IntegrationStatus.CONNECTED.value:
+        raise HTTPException(status_code=400, detail="Azure DevOps not connected")
+    
+    # Get epic with related data
+    epic_result = await session.execute(
+        select(Epic)
+        .options(selectinload(Epic.snapshot))
+        .where(and_(Epic.epic_id == body.epic_id, Epic.user_id == user_id))
+    )
+    epic = epic_result.scalar_one_or_none()
+    
+    if not epic:
+        raise HTTPException(status_code=404, detail="Epic not found")
+    
+    # Get existing mappings
+    mappings_result = await session.execute(
+        select(ExternalPushMapping).where(
+            and_(
+                ExternalPushMapping.user_id == user_id,
+                ExternalPushMapping.provider == IntegrationProvider.AZURE_DEVOPS.value
+            )
+        )
+    )
+    existing_mappings = {m.entity_id: m for m in mappings_result.scalars().all()}
+    
+    preview = {
+        "epic": None,
+        "features": [],
+        "stories": [],
+        "bugs": [],
+        "totals": {"create": 0, "update": 0, "skip": 0}
+    }
+    
+    # Preview epic
+    epic_action = "update" if epic.epic_id in existing_mappings else "create"
+    epic_mapping = existing_mappings.get(epic.epic_id)
+    preview["epic"] = {
+        "entity_id": epic.epic_id,
+        "title": epic.title,
+        "work_item_type": "Epic",
+        "action": epic_action,
+        "existing_id": epic_mapping.external_id if epic_mapping else None
+    }
+    preview["totals"][epic_action] += 1
+    
+    # Preview features
+    if body.push_scope in ["epic_features", "epic_features_stories", "full"]:
+        features_result = await session.execute(
+            select(Feature).where(Feature.epic_id == body.epic_id)
+        )
+        features = features_result.scalars().all()
+        
+        for feature in features:
+            feature_action = "update" if feature.feature_id in existing_mappings else "create"
+            feature_mapping = existing_mappings.get(feature.feature_id)
+            preview["features"].append({
+                "entity_id": feature.feature_id,
+                "title": feature.title,
+                "work_item_type": "Feature",
+                "action": feature_action,
+                "existing_id": feature_mapping.external_id if feature_mapping else None
+            })
+            preview["totals"][feature_action] += 1
+            
+            # Preview stories
+            if body.push_scope in ["epic_features_stories", "full"]:
+                stories_result = await session.execute(
+                    select(UserStory).where(UserStory.feature_id == feature.feature_id)
+                )
+                stories = stories_result.scalars().all()
+                
+                for story in stories:
+                    story_action = "update" if story.story_id in existing_mappings else "create"
+                    story_mapping = existing_mappings.get(story.story_id)
+                    preview["stories"].append({
+                        "entity_id": story.story_id,
+                        "title": story.story_text[:100] + "..." if len(story.story_text) > 100 else story.story_text,
+                        "work_item_type": "User Story",
+                        "action": story_action,
+                        "existing_id": story_mapping.external_id if story_mapping else None
+                    })
+                    preview["totals"][story_action] += 1
+    
+    return preview
+
+
+@router.post("/azure-devops/push")
+async def push_to_azure_devops(
+    request: Request,
+    body: AzureDevOpsPushRequest,
+    session: AsyncSession = Depends(get_db)
+):
+    """Push epic (and optionally features/stories) to Azure DevOps"""
+    user_id = await get_current_user_id(request, session)
+    await check_subscription_required(session, user_id)
+    
+    # Get integration
+    integration = await get_user_integration(session, user_id, IntegrationProvider.AZURE_DEVOPS.value)
+    if not integration or integration.status != IntegrationStatus.CONNECTED.value:
+        raise HTTPException(status_code=400, detail="Azure DevOps not connected")
+    
+    # Get service
+    ado = await get_azure_devops_service(session, user_id)
+    push_service = AzureDevOpsPushService(ado)
+    
+    # Get configuration
+    field_mappings = integration.field_mappings or {}
+    work_item_types = field_mappings.get("work_item_types", {})
+    story_points_field = field_mappings.get("story_points_field", "Microsoft.VSTS.Scheduling.StoryPoints")
+    description_format = field_mappings.get("description_format", "html")
+    tag_policy = field_mappings.get("tag_policy", "add")
+    default_area_path = body.area_path or field_mappings.get("default_area_path")
+    default_iteration_path = body.iteration_path or field_mappings.get("default_iteration_path")
+    
+    # Get epic
+    epic_result = await session.execute(
+        select(Epic)
+        .options(selectinload(Epic.snapshot))
+        .where(and_(Epic.epic_id == body.epic_id, Epic.user_id == user_id))
+    )
+    epic = epic_result.scalar_one_or_none()
+    
+    if not epic:
+        raise HTTPException(status_code=404, detail="Epic not found")
+    
+    # Create push run
+    push_run = ExternalPushRun(
+        user_id=user_id,
+        integration_id=integration.integration_id,
+        provider=IntegrationProvider.AZURE_DEVOPS.value,
+        epic_id=body.epic_id,
+        push_scope=body.push_scope,
+        include_bugs=body.include_bugs,
+        is_dry_run=body.dry_run
+    )
+    session.add(push_run)
+    
+    results = {
+        "run_id": push_run.run_id,
+        "created": [],
+        "updated": [],
+        "errors": [],
+        "links": []
+    }
+    
+    try:
+        # Get existing mappings
+        mappings_result = await session.execute(
+            select(ExternalPushMapping).where(
+                and_(
+                    ExternalPushMapping.user_id == user_id,
+                    ExternalPushMapping.provider == IntegrationProvider.AZURE_DEVOPS.value
+                )
+            )
+        )
+        existing_mappings = {m.entity_id: m for m in mappings_result.scalars().all()}
+        
+        # Prepare tags
+        base_tags = ["jarlpm"] if tag_policy == "add" else []
+        
+        # Push epic
+        snapshot = epic.snapshot
+        epic_description = push_service.format_epic_description(
+            {"epic_id": epic.epic_id, "title": epic.title},
+            {
+                "problem_statement": snapshot.problem_statement if snapshot else None,
+                "desired_outcome": snapshot.desired_outcome if snapshot else None,
+                "epic_summary": snapshot.epic_summary if snapshot else None,
+                "acceptance_criteria": snapshot.acceptance_criteria if snapshot else None
+            },
+            description_format
+        )
+        
+        existing_epic_mapping = existing_mappings.get(epic.epic_id)
+        epic_work_item_type = work_item_types.get("epic", "Epic")
+        
+        if not body.dry_run:
+            epic_result_data = await push_service.push_item(
+                project_name=body.project_name,
+                work_item_type=epic_work_item_type,
+                title=epic.title,
+                description=epic_description,
+                entity_type=EntityType.EPIC.value,
+                entity_id=epic.epic_id,
+                existing_work_item_id=int(existing_epic_mapping.external_id) if existing_epic_mapping else None,
+                area_path=default_area_path,
+                iteration_path=default_iteration_path,
+                tags=base_tags + ["epic"],
+                description_format=description_format
+            )
+            
+            if existing_epic_mapping:
+                existing_epic_mapping.external_url = epic_result_data["url"]
+                existing_epic_mapping.last_pushed_at = datetime.now(timezone.utc)
+                existing_epic_mapping.last_push_hash = epic_result_data["payload_hash"]
+                results["updated"].append({
+                    "type": "epic",
+                    "entity_id": epic.epic_id,
+                    "external_id": epic_result_data["id"],
+                    "url": epic_result_data["url"]
+                })
+            else:
+                new_mapping = ExternalPushMapping(
+                    user_id=user_id,
+                    integration_id=integration.integration_id,
+                    provider=IntegrationProvider.AZURE_DEVOPS.value,
+                    entity_type=EntityType.EPIC.value,
+                    entity_id=epic.epic_id,
+                    external_type="Azure DevOps Work Item",
+                    external_id=str(epic_result_data["id"]),
+                    external_url=epic_result_data["url"],
+                    project_id=body.project_name,
+                    last_push_hash=epic_result_data["payload_hash"]
+                )
+                session.add(new_mapping)
+                existing_mappings[epic.epic_id] = new_mapping
+                results["created"].append({
+                    "type": "epic",
+                    "entity_id": epic.epic_id,
+                    "external_id": epic_result_data["id"],
+                    "url": epic_result_data["url"]
+                })
+            
+            results["links"].append(epic_result_data["url"])
+            parent_epic_id = epic_result_data["id"]
+        else:
+            parent_epic_id = None
+        
+        # Push features
+        if body.push_scope in ["epic_features", "epic_features_stories", "full"]:
+            features_result = await session.execute(
+                select(Feature).where(Feature.epic_id == body.epic_id)
+            )
+            features = features_result.scalars().all()
+            
+            feature_work_item_type = work_item_types.get("feature", "Feature")
+            
+            for feature in features:
+                feature_description = push_service.format_feature_description({
+                    "feature_id": feature.feature_id,
+                    "description": feature.description,
+                    "acceptance_criteria": feature.acceptance_criteria
+                }, description_format)
+                
+                existing_feature_mapping = existing_mappings.get(feature.feature_id)
+                
+                if not body.dry_run:
+                    try:
+                        feature_result_data = await push_service.push_item(
+                            project_name=body.project_name,
+                            work_item_type=feature_work_item_type,
+                            title=feature.title,
+                            description=feature_description,
+                            entity_type=EntityType.FEATURE.value,
+                            entity_id=feature.feature_id,
+                            existing_work_item_id=int(existing_feature_mapping.external_id) if existing_feature_mapping else None,
+                            parent_work_item_id=parent_epic_id,
+                            area_path=default_area_path,
+                            iteration_path=default_iteration_path,
+                            tags=base_tags + ["feature"],
+                            description_format=description_format
+                        )
+                        
+                        if existing_feature_mapping:
+                            existing_feature_mapping.external_url = feature_result_data["url"]
+                            existing_feature_mapping.last_pushed_at = datetime.now(timezone.utc)
+                            existing_feature_mapping.last_push_hash = feature_result_data["payload_hash"]
+                            results["updated"].append({
+                                "type": "feature",
+                                "entity_id": feature.feature_id,
+                                "external_id": feature_result_data["id"],
+                                "url": feature_result_data["url"]
+                            })
+                        else:
+                            new_mapping = ExternalPushMapping(
+                                user_id=user_id,
+                                integration_id=integration.integration_id,
+                                provider=IntegrationProvider.AZURE_DEVOPS.value,
+                                entity_type=EntityType.FEATURE.value,
+                                entity_id=feature.feature_id,
+                                external_type="Azure DevOps Work Item",
+                                external_id=str(feature_result_data["id"]),
+                                external_url=feature_result_data["url"],
+                                project_id=body.project_name,
+                                last_push_hash=feature_result_data["payload_hash"]
+                            )
+                            session.add(new_mapping)
+                            existing_mappings[feature.feature_id] = new_mapping
+                            results["created"].append({
+                                "type": "feature",
+                                "entity_id": feature.feature_id,
+                                "external_id": feature_result_data["id"],
+                                "url": feature_result_data["url"]
+                            })
+                        
+                        results["links"].append(feature_result_data["url"])
+                        parent_feature_id = feature_result_data["id"]
+                    except Exception as e:
+                        logger.error(f"Error pushing feature {feature.feature_id}: {e}")
+                        results["errors"].append({
+                            "type": "feature",
+                            "entity_id": feature.feature_id,
+                            "error": str(e)
+                        })
+                        parent_feature_id = parent_epic_id  # Fall back to Epic as parent
+                        continue
+                else:
+                    parent_feature_id = None
+                
+                # Push stories
+                if body.push_scope in ["epic_features_stories", "full"]:
+                    stories_result = await session.execute(
+                        select(UserStory).where(UserStory.feature_id == feature.feature_id)
+                    )
+                    stories = stories_result.scalars().all()
+                    
+                    story_work_item_type = work_item_types.get("story", "User Story")
+                    
+                    for story in stories:
+                        story_title = story.title if story.title else story.story_text[:80]
+                        story_description = push_service.format_story_description({
+                            "story_id": story.story_id,
+                            "persona": story.persona,
+                            "action": story.action,
+                            "benefit": story.benefit,
+                            "acceptance_criteria": story.acceptance_criteria,
+                            "story_points": story.story_points
+                        }, description_format)
+                        
+                        existing_story_mapping = existing_mappings.get(story.story_id)
+                        
+                        if not body.dry_run:
+                            try:
+                                story_result_data = await push_service.push_item(
+                                    project_name=body.project_name,
+                                    work_item_type=story_work_item_type,
+                                    title=story_title,
+                                    description=story_description,
+                                    entity_type=EntityType.STORY.value,
+                                    entity_id=story.story_id,
+                                    existing_work_item_id=int(existing_story_mapping.external_id) if existing_story_mapping else None,
+                                    parent_work_item_id=parent_feature_id or parent_epic_id,
+                                    area_path=default_area_path,
+                                    iteration_path=default_iteration_path,
+                                    story_points=story.story_points,
+                                    story_points_field=story_points_field,
+                                    tags=base_tags + ["story"],
+                                    description_format=description_format
+                                )
+                                
+                                if existing_story_mapping:
+                                    existing_story_mapping.external_url = story_result_data["url"]
+                                    existing_story_mapping.last_pushed_at = datetime.now(timezone.utc)
+                                    existing_story_mapping.last_push_hash = story_result_data["payload_hash"]
+                                    results["updated"].append({
+                                        "type": "story",
+                                        "entity_id": story.story_id,
+                                        "external_id": story_result_data["id"],
+                                        "url": story_result_data["url"]
+                                    })
+                                else:
+                                    new_mapping = ExternalPushMapping(
+                                        user_id=user_id,
+                                        integration_id=integration.integration_id,
+                                        provider=IntegrationProvider.AZURE_DEVOPS.value,
+                                        entity_type=EntityType.STORY.value,
+                                        entity_id=story.story_id,
+                                        external_type="Azure DevOps Work Item",
+                                        external_id=str(story_result_data["id"]),
+                                        external_url=story_result_data["url"],
+                                        project_id=body.project_name,
+                                        last_push_hash=story_result_data["payload_hash"]
+                                    )
+                                    session.add(new_mapping)
+                                    results["created"].append({
+                                        "type": "story",
+                                        "entity_id": story.story_id,
+                                        "external_id": story_result_data["id"],
+                                        "url": story_result_data["url"]
+                                    })
+                                
+                                results["links"].append(story_result_data["url"])
+                            except Exception as e:
+                                logger.error(f"Error pushing story {story.story_id}: {e}")
+                                results["errors"].append({
+                                    "type": "story",
+                                    "entity_id": story.story_id,
+                                    "error": str(e)
+                                })
+        
+        # Update push run
+        push_run.ended_at = datetime.now(timezone.utc)
+        push_run.status = PushStatus.PARTIAL.value if results["errors"] else PushStatus.SUCCESS.value
+        push_run.summary_json = {
+            "created": len(results["created"]),
+            "updated": len(results["updated"]),
+            "errors": len(results["errors"]),
+            "links": results["links"][:10]
+        }
+        if results["errors"]:
+            push_run.error_json = {"errors": results["errors"]}
+        
+        await session.commit()
+        
+        return results
+    
+    except Exception as e:
+        logger.error(f"Push to Azure DevOps failed: {e}")
+        push_run.ended_at = datetime.now(timezone.utc)
+        push_run.status = PushStatus.FAILED.value
+        push_run.error_json = {"error": str(e)}
+        await session.commit()
+        raise HTTPException(status_code=500, detail=str(e))
+
