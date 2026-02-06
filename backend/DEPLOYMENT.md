@@ -92,6 +92,50 @@ alembic downgrade <revision_id>
 alembic history
 ```
 
+### Long-Running Streams and Connection Pool
+
+**Problem:** AI streaming endpoints can hold DB connections for 30+ seconds, exhausting the pool.
+
+**Solution Pattern:**
+```python
+# DO THIS - Release session before streaming
+@router.post("/ai/generate")
+async def generate(request: Request, session: AsyncSession = Depends(get_db)):
+    user_id = await get_current_user_id(request, session)
+    
+    # 1. Do ALL database reads upfront
+    llm_service = LLMService(session)
+    config = await llm_service.get_user_llm_config(user_id)
+    my_data = await session.execute(select(MyModel).where(...))
+    
+    # 2. Prepare streaming config (extracts API key, etc.)
+    config_data = llm_service.prepare_for_streaming(config)
+    
+    # 3. Extract all needed data from ORM objects
+    context = f"Title: {my_data.title}, ..."
+    
+    # Session will be released when this function returns
+    
+    async def generate():
+        # 4. Use stream_with_config - NO session needed
+        llm = LLMService()  # No session
+        async for chunk in llm.stream_with_config(config_data, system, user):
+            yield f"data: {chunk}\n\n"
+    
+    return StreamingResponse(generate(), media_type="text/event-stream")
+
+# DON'T DO THIS - Holds session during entire stream
+async def bad_example(session: AsyncSession = Depends(get_db)):
+    llm_service = LLMService(session)  # Session captured in closure
+    
+    async def generate():
+        # This keeps session open for entire stream duration!
+        async for chunk in llm_service.generate_stream(user_id, ...):
+            yield chunk
+    
+    return StreamingResponse(generate())
+```
+
 ### Troubleshooting
 
 **"Table does not exist" errors:**
