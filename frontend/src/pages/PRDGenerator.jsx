@@ -551,23 +551,30 @@ ${epic.risks || '_Not yet defined_'}
                     <Eye className="h-4 w-4 mr-2" />
                     Preview
                   </TabsTrigger>
-                  <TabsTrigger value="edit" className="data-[state=active]:bg-muted">
-                    <Edit3 className="h-4 w-4 mr-2" />
-                    Edit
-                  </TabsTrigger>
+                  {prdFormat === 'markdown' && (
+                    <TabsTrigger value="edit" className="data-[state=active]:bg-muted">
+                      <Edit3 className="h-4 w-4 mr-2" />
+                      Edit
+                    </TabsTrigger>
+                  )}
                 </TabsList>
               </div>
               
               <TabsContent value="preview" className="m-0">
-                <PRDPreview content={prdContent} />
+                <PRDPreview 
+                  content={prdContent} 
+                  prdData={prdData}
+                  format={prdFormat}
+                />
               </TabsContent>
               
-              <TabsContent value="edit" className="m-0">
-                <Textarea
-                  value={prdContent}
-                  onChange={(e) => setPrdContent(e.target.value)}
-                  className="min-h-[600px] border-0 rounded-none font-mono text-sm resize-none focus-visible:ring-0"
-                  placeholder="PRD content will appear here..."
+              {prdFormat === 'markdown' && (
+                <TabsContent value="edit" className="m-0">
+                  <Textarea
+                    value={prdContent}
+                    onChange={(e) => setPrdContent(e.target.value)}
+                    className="min-h-[600px] border-0 rounded-none font-mono text-sm resize-none focus-visible:ring-0"
+                    placeholder="PRD content will appear here..."
                 />
               </TabsContent>
             </Tabs>
