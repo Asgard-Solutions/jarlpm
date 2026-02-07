@@ -100,7 +100,7 @@ async def get_prd(
     request: Request,
     session: AsyncSession = Depends(get_db)
 ):
-    """Get saved PRD for an Epic"""
+    """Get saved PRD for an Epic - returns structured JSON or legacy markdown"""
     user_id = await get_current_user_id(request, session)
     
     # Get epic to verify ownership
@@ -128,19 +128,42 @@ async def get_prd(
             "exists": False
         }
     
-    return {
-        "epic_id": epic_id,
-        "epic_title": epic.title,
-        "prd": {
-            "prd_id": prd.prd_id,
-            "content": prd.sections.get("content", "") if prd.sections else "",  # Extract content from JSON
-            "title": prd.title,
-            "version": prd.version,
-            "status": prd.status,
-        },
-        "updated_at": prd.updated_at.isoformat(),
-        "exists": True
-    }
+    # Determine format and extract content
+    sections = prd.sections or {}
+    prd_format = sections.get("format", "markdown")
+    
+    if prd_format == "json" and "prd" in sections:
+        # New structured JSON format
+        return {
+            "epic_id": epic_id,
+            "epic_title": epic.title,
+            "prd": {
+                "prd_id": prd.prd_id,
+                "data": sections.get("prd"),
+                "format": "json",
+                "title": prd.title,
+                "version": prd.version,
+                "status": prd.status,
+            },
+            "updated_at": prd.updated_at.isoformat(),
+            "exists": True
+        }
+    else:
+        # Legacy markdown format
+        return {
+            "epic_id": epic_id,
+            "epic_title": epic.title,
+            "prd": {
+                "prd_id": prd.prd_id,
+                "content": sections.get("content", ""),
+                "format": "markdown",
+                "title": prd.title,
+                "version": prd.version,
+                "status": prd.status,
+            },
+            "updated_at": prd.updated_at.isoformat(),
+            "exists": True
+        }
 
 
 @router.post("/save")
