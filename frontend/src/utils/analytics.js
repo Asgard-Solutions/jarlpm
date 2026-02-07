@@ -36,8 +36,10 @@ export function trackEvent(eventName, properties = {}) {
     ...properties,
   };
 
-  // Log to console for now (easy to see in dev tools)
-  console.log('[JarlPM Track]', eventName, event);
+  // Log to console for now (only in dev)
+  if (LOG_TO_CONSOLE) {
+    console.log('[JarlPM Track]', eventName, event);
+  }
 
   // Add to queue for future analytics integration
   eventQueue.push(event);
