@@ -592,10 +592,10 @@ ${prd.validation_plan}
                         <Flag className="h-4 w-4 text-blue-400" />
                         Ready
                       </span>
-                      <Badge variant="secondary" className="text-xs">3</Badge>
+                      <Badge variant="secondary" className="text-xs">{exampleData.sprint_plan.sprint_1.story_ids.length}</Badge>
                     </div>
                     <div className="space-y-2">
-                      {exampleData.sprint_plan.sprint_1.story_ids.slice(0, 3).map((storyId) => {
+                      {exampleData.sprint_plan.sprint_1.story_ids.map((storyId) => {
                         const story = exampleData.features
                           .flatMap(f => f.stories)
                           .find(s => s.id === storyId);
@@ -624,26 +624,10 @@ ${prd.validation_plan}
                         <Play className="h-4 w-4 text-amber-400" />
                         In Progress
                       </span>
-                      <Badge variant="secondary" className="text-xs">2</Badge>
+                      <Badge variant="secondary" className="text-xs">0</Badge>
                     </div>
-                    <div className="space-y-2">
-                      {exampleData.sprint_plan.sprint_1.story_ids.slice(3, 5).map((storyId) => {
-                        const story = exampleData.features
-                          .flatMap(f => f.stories)
-                          .find(s => s.id === storyId);
-                        return story ? (
-                          <Card key={storyId} className="bg-[#0d0d1a] border-slate-700/50">
-                            <CardContent className="p-3">
-                              <p className="font-medium text-sm text-nordic-text-primary truncate">{story.title}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs border-slate-600">
-                                  {story.points} pts
-                                </Badge>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ) : null;
-                      })}
+                    <div className="text-center py-6">
+                      <p className="text-sm text-nordic-text-muted">Sprint not started yet</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -658,8 +642,8 @@ ${prd.validation_plan}
                       </span>
                       <Badge variant="secondary" className="text-xs">0</Badge>
                     </div>
-                    <div className="text-center py-4">
-                      <p className="text-sm text-nordic-text-muted">No blocked stories</p>
+                    <div className="text-center py-6">
+                      <p className="text-sm text-nordic-text-muted">No blockers</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -672,26 +656,10 @@ ${prd.validation_plan}
                         <CheckCircle2 className="h-4 w-4 text-green-400" />
                         Done
                       </span>
-                      <Badge variant="secondary" className="text-xs">1</Badge>
+                      <Badge variant="secondary" className="text-xs">0</Badge>
                     </div>
-                    <div className="space-y-2">
-                      {exampleData.sprint_plan.sprint_1.story_ids.slice(5, 6).map((storyId) => {
-                        const story = exampleData.features
-                          .flatMap(f => f.stories)
-                          .find(s => s.id === storyId);
-                        return story ? (
-                          <Card key={storyId} className="bg-[#0d0d1a] border-slate-700/50">
-                            <CardContent className="p-3">
-                              <p className="font-medium text-sm text-nordic-text-primary truncate">{story.title}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs border-slate-600">
-                                  {story.points} pts
-                                </Badge>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ) : null;
-                      })}
+                    <div className="text-center py-6">
+                      <p className="text-sm text-nordic-text-muted">Sprint not started yet</p>
                     </div>
                   </CardContent>
                 </Card>
