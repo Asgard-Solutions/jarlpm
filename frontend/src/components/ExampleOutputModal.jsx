@@ -513,7 +513,7 @@ ${prd.validation_plan}
                           .flatMap(f => f.stories)
                           .find(s => s.id === storyId);
                         return story ? (
-                          <div key={storyId} className="flex items-center justify-between p-2 bg-nordic-bg-primary rounded">
+                          <div key={storyId} className="flex items-center justify-between p-2 bg-[#0d0d1a] rounded">
                             <span className="text-sm text-nordic-text-primary">{story.title}</span>
                             <Badge variant="outline" className="text-xs border-nordic-border">{story.points} pts</Badge>
                           </div>
@@ -549,7 +549,7 @@ ${prd.validation_plan}
                           .flatMap(f => f.stories)
                           .find(s => s.id === storyId);
                         return story ? (
-                          <div key={storyId} className="flex items-center justify-between p-2 bg-nordic-bg-primary rounded">
+                          <div key={storyId} className="flex items-center justify-between p-2 bg-[#0d0d1a] rounded">
                             <span className="text-sm text-nordic-text-primary">{story.title}</span>
                             <Badge variant="outline" className="text-xs border-nordic-border">{story.points} pts</Badge>
                           </div>
