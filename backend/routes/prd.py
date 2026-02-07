@@ -3,13 +3,13 @@ PRD Document API for JarlPM
 Save and retrieve Product Requirements Documents
 """
 import logging
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from db import get_db
 from db.models import Epic, PRDDocument
@@ -18,6 +18,124 @@ from routes.auth import get_current_user_id
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/prd", tags=["prd"])
+
+
+# Pydantic schemas for PRD validation
+class PRDSummary(BaseModel):
+    title: str = Field(default="Untitled PRD")
+    version: str = Field(default="1.0")
+    owner: str = Field(default="Product Manager")
+    overview: str = Field(default="")
+    problem_statement: str = Field(default="")
+    goal: str = Field(default="")
+    target_users: str = Field(default="")
+
+
+class PRDContext(BaseModel):
+    evidence: List[str] = Field(default_factory=list)
+    current_workflow: str = Field(default="")
+    why_now: str = Field(default="")
+
+
+class PRDPersona(BaseModel):
+    name: str = Field(default="User")
+    context: str = Field(default="")
+    jtbd: str = Field(default="")
+    pain_points: List[str] = Field(default_factory=list)
+    current_workaround: str = Field(default="")
+
+
+class PRDScopeItem(BaseModel):
+    item: str
+    rationale: str = Field(default="")
+
+
+class PRDAssumption(BaseModel):
+    assumption: str
+    risk_if_wrong: str = Field(default="")
+    validation: str = Field(default="")
+
+
+class PRDScope(BaseModel):
+    mvp_in: List[PRDScopeItem] = Field(default_factory=list)
+    not_now: List[PRDScopeItem] = Field(default_factory=list)
+    assumptions: List[PRDAssumption] = Field(default_factory=list)
+
+
+class PRDStory(BaseModel):
+    story: str
+    acceptance_criteria: List[str] = Field(default_factory=list)
+    edge_cases: List[str] = Field(default_factory=list)
+
+
+class PRDFeature(BaseModel):
+    name: str
+    description: str = Field(default="")
+    priority: str = Field(default="should-have")
+    stories: List[PRDStory] = Field(default_factory=list)
+
+
+class PRDRequirements(BaseModel):
+    features: List[PRDFeature] = Field(default_factory=list)
+
+
+class PRDNFRs(BaseModel):
+    performance: List[str] = Field(default_factory=list)
+    reliability: List[str] = Field(default_factory=list)
+    security: List[str] = Field(default_factory=list)
+    accessibility: List[str] = Field(default_factory=list)
+
+
+class PRDSuccessMetric(BaseModel):
+    metric: str
+    target: str = Field(default="")
+    measurement: str = Field(default="")
+
+
+class PRDMetrics(BaseModel):
+    success_metrics: List[PRDSuccessMetric] = Field(default_factory=list)
+    guardrails: List[str] = Field(default_factory=list)
+    instrumentation: List[str] = Field(default_factory=list)
+    evaluation_window: str = Field(default="")
+
+
+class PRDRisk(BaseModel):
+    risk: str
+    type: str = Field(default="product")
+    likelihood: str = Field(default="medium")
+    impact: str = Field(default="medium")
+    mitigation: str = Field(default="")
+
+
+class PRDOpenQuestion(BaseModel):
+    question: str
+    owner: str = Field(default="TBD")
+    due_date: str = Field(default="TBD")
+    status: str = Field(default="open")
+
+
+class PRDGlossaryItem(BaseModel):
+    term: str
+    definition: str = Field(default="")
+
+
+class PRDAppendix(BaseModel):
+    alternatives_considered: List[str] = Field(default_factory=list)
+    glossary: List[PRDGlossaryItem] = Field(default_factory=list)
+
+
+class StructuredPRD(BaseModel):
+    """Complete structured PRD schema for validation"""
+    summary: PRDSummary = Field(default_factory=PRDSummary)
+    context: PRDContext = Field(default_factory=PRDContext)
+    personas: List[PRDPersona] = Field(default_factory=list)
+    scope: PRDScope = Field(default_factory=PRDScope)
+    requirements: PRDRequirements = Field(default_factory=PRDRequirements)
+    nfrs: PRDNFRs = Field(default_factory=PRDNFRs)
+    metrics: PRDMetrics = Field(default_factory=PRDMetrics)
+    risks: List[PRDRisk] = Field(default_factory=list)
+    open_questions: List[PRDOpenQuestion] = Field(default_factory=list)
+    appendix: PRDAppendix = Field(default_factory=PRDAppendix)
 
 
 class SavePRDRequest(BaseModel):
