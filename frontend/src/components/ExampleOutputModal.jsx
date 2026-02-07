@@ -560,7 +560,7 @@ ${prd.validation_plan}
                 </Card>
 
                 {/* Capacity Note */}
-                <div className="text-center p-4 bg-nordic-bg-primary rounded-lg border border-nordic-border">
+                <div className="text-center p-4 bg-[#0d0d1a] rounded-lg border border-nordic-border">
                   <p className="text-sm text-nordic-text-muted">
                     Based on a team velocity of ~16 points/sprint
                   </p>
