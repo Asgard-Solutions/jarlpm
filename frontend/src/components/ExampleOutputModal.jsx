@@ -184,7 +184,7 @@ ${prd.validation_plan}
                 </Button>
               </div>
 
-              <Card className="bg-nordic-bg-secondary border-nordic-border">
+              <Card className="bg-[#0d0d1a] border-nordic-border">
                 <CardContent className="p-6">
                   <h3 className="text-lg font-semibold text-nordic-text-primary flex items-center gap-2 mb-4">
                     <FileText className="w-5 h-5 text-nordic-accent" />
@@ -331,7 +331,7 @@ ${prd.validation_plan}
 
             {/* Stories Tab - Matches NewInitiative.jsx Features & Stories Section */}
             <TabsContent value="stories" className="p-6 mt-0">
-              <Card className="bg-nordic-bg-secondary border-nordic-border">
+              <Card className="bg-[#0d0d1a] border-nordic-border">
                 <CardContent className="p-6">
                   <h3 className="text-lg font-semibold text-nordic-text-primary flex items-center gap-2 mb-4">
                     <Layers className="w-5 h-5 text-nordic-accent" />
@@ -488,7 +488,7 @@ ${prd.validation_plan}
 
               <div className="space-y-4">
                 {/* Sprint 1 */}
-                <Card className="bg-nordic-bg-secondary border-nordic-border">
+                <Card className="bg-[#0d0d1a] border-nordic-border">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="font-semibold text-nordic-text-primary">Sprint 1</h4>
@@ -524,7 +524,7 @@ ${prd.validation_plan}
                 </Card>
 
                 {/* Sprint 2 */}
-                <Card className="bg-nordic-bg-secondary border-nordic-border">
+                <Card className="bg-[#0d0d1a] border-nordic-border">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="font-semibold text-nordic-text-primary">Sprint 2</h4>
