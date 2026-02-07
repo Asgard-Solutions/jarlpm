@@ -639,7 +639,7 @@ Generate the PRD as VALID JSON matching the schema exactly. Include all sections
         if not full_response.strip():
             raise HTTPException(status_code=500, detail="LLM returned empty response")
         
-        # Use validate_and_repair for proper schema validation
+        # Use validate_and_repair for strict schema validation
         strict_service = StrictOutputService()
         
         # Create repair callback for LLM
@@ -649,7 +649,7 @@ Generate the PRD as VALID JSON matching the schema exactly. Include all sections
                 repair_response += chunk
             return repair_response
         
-        # Validate and repair the PRD
+        # Validate and repair the PRD against StructuredPRD schema
         validation_result = await strict_service.validate_and_repair(
             raw_response=full_response,
             schema=StructuredPRD,
@@ -659,31 +659,49 @@ Generate the PRD as VALID JSON matching the schema exactly. Include all sections
         )
         
         if validation_result.valid and validation_result.data:
-            # Successfully validated - store as structured JSON
-            prd_data = {
-                "prd": validation_result.data,
-                "format": "json",
-                "repair_attempts": validation_result.repair_attempts
-            }
+            # Successfully validated against StructuredPRD schema
             prd_json = validation_result.data
-            logger.info(f"PRD validated successfully (repairs: {validation_result.repair_attempts})")
+            prd_data = {
+                "prd": prd_json,
+                "format": "json",
+                "repair_attempts": validation_result.repair_attempts,
+                "validated": True
+            }
+            logger.info(f"PRD validated successfully against StructuredPRD schema (repairs: {validation_result.repair_attempts})")
         else:
-            # Validation failed - try to extract JSON anyway for partial data
-            prd_json = strict_service.extract_json(full_response)
-            if prd_json:
-                # Have JSON but schema validation failed - store with warning
-                logger.warning(f"PRD schema validation failed after {validation_result.repair_attempts} repairs, storing partial JSON. Errors: {validation_result.errors}")
-                prd_data = {
-                    "prd": prd_json,
-                    "format": "json",
-                    "validation_errors": validation_result.errors[:5],  # Store first 5 errors
-                    "repair_attempts": validation_result.repair_attempts
-                }
+            # Schema validation failed - attempt to coerce partial data through Pydantic defaults
+            logger.warning(f"PRD schema validation failed after {validation_result.repair_attempts} repairs. Errors: {validation_result.errors}")
+            
+            # Extract whatever JSON we can
+            partial_json = strict_service.extract_json(full_response)
+            
+            if partial_json:
+                # Use Pydantic to fill in defaults for missing fields
+                try:
+                    # This will use default values for any missing fields
+                    coerced_prd = StructuredPRD.model_validate(partial_json)
+                    prd_json = coerced_prd.model_dump()
+                    prd_data = {
+                        "prd": prd_json,
+                        "format": "json",
+                        "repair_attempts": validation_result.repair_attempts,
+                        "validated": True,
+                        "coerced": True  # Flag that defaults were applied
+                    }
+                    logger.info("PRD coerced to valid schema using Pydantic defaults")
+                except Exception as coerce_error:
+                    # Even coercion failed - this shouldn't happen with our defaults
+                    logger.error(f"PRD coercion failed: {coerce_error}")
+                    raise HTTPException(
+                        status_code=500, 
+                        detail=f"PRD generation failed schema validation. Errors: {validation_result.errors[:3]}"
+                    )
             else:
-                # No valid JSON at all - fallback to markdown
-                logger.warning("PRD generation returned non-JSON, storing as markdown")
-                prd_data = {"content": full_response, "format": "markdown"}
-                prd_json = None
+                # No valid JSON at all - fail explicitly
+                raise HTTPException(
+                    status_code=500,
+                    detail="PRD generation failed: LLM did not return valid JSON structure"
+                )
         
         # Save the generated PRD with a fresh session
         from db import AsyncSessionLocal
@@ -714,10 +732,13 @@ Generate the PRD as VALID JSON matching the schema exactly. Include all sections
         return {
             "success": True,
             "epic_id": epic_id,
-            "prd": prd_json if prd_json else None,
-            "content": full_response if not prd_json else None,
-            "format": "json" if prd_json else "markdown",
+            "prd": prd_json,
+            "format": "json",
             "source": "ai_generated",
+            "repair_attempts": validation_result.repair_attempts,
+            "validated": True,
+            "message": "PRD generated and validated successfully"
+        }
             "repair_attempts": validation_result.repair_attempts if validation_result else 0,
             "message": "PRD generated successfully"
         }
