@@ -25,7 +25,7 @@ const PRDPreview = ({ content, className = '' }) => {
 
   if (!parsedPRD) {
     return (
-      <div className={`p-6 text-nordic-text-muted ${className}`}>
+      <div className={`p-6 text-muted-foreground ${className}`}>
         <p>No PRD content to preview.</p>
       </div>
     );
@@ -34,64 +34,54 @@ const PRDPreview = ({ content, className = '' }) => {
   return (
     <ScrollArea className={`h-[600px] ${className}`}>
       <div className="p-6">
-        <Card className="bg-[#0d0d1a] border-nordic-border">
+        <Card className="bg-[#0d0d1a] border-slate-700/50">
           <CardContent className="p-6">
-            <h3 className="text-lg font-semibold text-nordic-text-primary flex items-center gap-2 mb-4">
-              <FileText className="w-5 h-5 text-nordic-accent" />
+            <h3 className="text-lg font-semibold text-slate-100 flex items-center gap-2 mb-4">
+              <FileText className="w-5 h-5 text-violet-400" />
               {parsedPRD.title || 'PRD Summary'}
             </h3>
             
             <div className="space-y-4">
-              {/* Executive Summary / Problem */}
+              {/* Problem Statement */}
               {parsedPRD.problem && (
                 <div>
-                  <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-1">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-400 mb-1">
                     <Target className="w-4 h-4" /> Problem
                   </div>
-                  <p className="text-nordic-text-primary">{parsedPRD.problem}</p>
+                  <p className="text-slate-100">{parsedPRD.problem}</p>
                   {parsedPRD.evidence && (
-                    <p className="text-sm text-nordic-text-muted mt-2 italic bg-[#1a1a2e] p-2 rounded">
+                    <p className="text-sm text-slate-400 mt-2 italic bg-slate-800/50 p-2 rounded">
                       Evidence: {parsedPRD.evidence}
                     </p>
                   )}
                 </div>
               )}
 
-              {/* Vision */}
-              {parsedPRD.vision && (
-                <div>
-                  <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-1">
-                    <TrendingUp className="w-4 h-4" /> Vision
-                  </div>
-                  <p className="text-nordic-text-primary">{parsedPRD.vision}</p>
-                </div>
-              )}
-              
               {/* Target Users */}
               {parsedPRD.targetUsers && parsedPRD.targetUsers.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-400 mb-2">
                     <Users className="w-4 h-4" /> Target Users
                   </div>
                   <div className="space-y-3">
                     {parsedPRD.targetUsers.map((user, i) => (
-                      <div key={i} className="bg-[#1a1a2e] p-3 rounded-lg border border-nordic-border">
-                        <div className="font-medium text-nordic-text-primary mb-1">{user.persona}</div>
-                        {user.context && <p className="text-sm text-nordic-text-muted mb-2">{user.context}</p>}
+                      <div key={i} className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                        <div className="font-medium text-slate-100 mb-1">{user.persona}</div>
+                        {user.context && <p className="text-sm text-slate-400 mb-2">{user.context}</p>}
                         {user.painPoints && user.painPoints.length > 0 && (
                           <div className="mb-2">
                             <span className="text-xs font-medium text-red-400">Pain Points: </span>
-                            <span className="text-sm text-nordic-text-muted">{user.painPoints.join(', ')}</span>
+                            <span className="text-sm text-slate-400">{user.painPoints.join(', ')}</span>
                           </div>
                         )}
                         {user.currentWorkaround && (
                           <div className="mb-2">
                             <span className="text-xs font-medium text-amber-400">Current Workaround: </span>
-                            <span className="text-sm text-nordic-text-muted">{user.currentWorkaround}</span>
+                            <span className="text-sm text-slate-400">{user.currentWorkaround}</span>
                           </div>
                         )}
                         {user.jtbd && (
-                          <div className="text-sm text-nordic-accent italic">&ldquo;{user.jtbd}&rdquo;</div>
+                          <div className="text-sm text-violet-400 italic">&ldquo;{user.jtbd}&rdquo;</div>
                         )}
                       </div>
                     ))}
@@ -99,118 +89,66 @@ const PRDPreview = ({ content, className = '' }) => {
                 </div>
               )}
               
-              {/* Goals / Desired Outcome */}
+              {/* Desired Outcome / Goals */}
               {parsedPRD.goals && (
                 <div>
-                  <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-1">
-                    <Check className="w-4 h-4" /> Goals & Objectives
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-400 mb-1">
+                    <Check className="w-4 h-4" /> Desired Outcome
                   </div>
-                  <p className="text-nordic-text-primary">{parsedPRD.goals}</p>
+                  <p className="text-slate-100">{parsedPRD.goals}</p>
                 </div>
               )}
 
               {/* Positioning */}
               {parsedPRD.positioning && (
-                <div className="bg-gradient-to-r from-nordic-accent/10 to-transparent p-3 rounded-lg border border-nordic-accent/20">
-                  <div className="flex items-center gap-2 text-sm font-medium text-nordic-accent mb-2">
+                <div className="bg-gradient-to-r from-violet-500/10 to-transparent p-3 rounded-lg border border-violet-500/20">
+                  <div className="flex items-center gap-2 text-sm font-medium text-violet-400 mb-2">
                     <TrendingUp className="w-4 h-4" /> Positioning
                   </div>
-                  <p className="text-sm text-nordic-text-primary">{parsedPRD.positioning}</p>
+                  <p className="text-sm text-slate-100">{parsedPRD.positioning}</p>
                 </div>
               )}
               
-              {/* Key Metrics & Risks */}
-              {(parsedPRD.metrics || parsedPRD.risks) && (
+              {/* Key Metrics & Riskiest Unknown */}
+              {(parsedPRD.metrics.length > 0 || parsedPRD.riskiestUnknown) && (
                 <div className="grid grid-cols-2 gap-4">
-                  {parsedPRD.metrics && parsedPRD.metrics.length > 0 && (
+                  {parsedPRD.metrics.length > 0 && (
                     <div>
-                      <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-2">
+                      <div className="flex items-center gap-2 text-sm font-medium text-slate-400 mb-2">
                         <BarChart3 className="w-4 h-4" /> Key Metrics
                       </div>
                       <div className="space-y-1">
                         {parsedPRD.metrics.map((m, i) => (
-                          <Badge key={i} variant="outline" className="mr-1 mb-1 text-nordic-text-primary border-nordic-border block w-fit">
+                          <Badge key={i} variant="outline" className="mr-1 mb-1 text-slate-100 border-slate-700 block w-fit">
                             {m}
                           </Badge>
                         ))}
                       </div>
                     </div>
                   )}
-                  {parsedPRD.risks && parsedPRD.risks.length > 0 && (
+                  {parsedPRD.riskiestUnknown && (
                     <div>
-                      <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-2">
-                        <AlertTriangle className="w-4 h-4" /> Risks
+                      <div className="flex items-center gap-2 text-sm font-medium text-slate-400 mb-2">
+                        <AlertTriangle className="w-4 h-4" /> Riskiest Unknown
                       </div>
-                      <div className="space-y-1">
-                        {parsedPRD.risks.map((r, i) => (
-                          <p key={i} className="text-sm text-amber-400">{r}</p>
-                        ))}
-                      </div>
+                      <p className="text-sm text-amber-400">{parsedPRD.riskiestUnknown}</p>
                     </div>
                   )}
                 </div>
               )}
               
-              {/* Scope - In */}
-              {parsedPRD.scopeIn && parsedPRD.scopeIn.length > 0 && (
+              {/* MVP Scope (In) */}
+              {parsedPRD.scopeIn.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 text-sm font-medium text-green-400 mb-2">
-                    <CheckCircle2 className="w-4 h-4" /> In Scope
+                    <CheckCircle2 className="w-4 h-4" /> MVP Scope (In)
                   </div>
                   <div className="space-y-2">
                     {parsedPRD.scopeIn.map((item, i) => (
                       <div key={i} className="bg-green-500/5 border border-green-500/20 p-2 rounded">
-                        <span className="text-nordic-text-primary">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Scope - Out */}
-              {parsedPRD.scopeOut && parsedPRD.scopeOut.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-2">
-                    <Shield className="w-4 h-4" /> Out of Scope
-                  </div>
-                  <div className="space-y-2">
-                    {parsedPRD.scopeOut.map((item, i) => (
-                      <div key={i} className="bg-[#1a1a2e] p-2 rounded border border-nordic-border">
-                        <span className="text-nordic-text-muted">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Assumptions */}
-              {parsedPRD.assumptions && parsedPRD.assumptions.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-2">
-                    <Lightbulb className="w-4 h-4" /> Assumptions
-                  </div>
-                  <div className="space-y-2">
-                    {parsedPRD.assumptions.map((a, i) => (
-                      <div key={i} className="bg-amber-500/5 border border-amber-500/20 p-2 rounded">
-                        <span className="text-nordic-text-primary">{a}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Features */}
-              {parsedPRD.features && parsedPRD.features.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 text-sm font-medium text-nordic-accent mb-2">
-                    <CheckCircle2 className="w-4 h-4" /> Features
-                  </div>
-                  <div className="space-y-2">
-                    {parsedPRD.features.map((feature, i) => (
-                      <div key={i} className="bg-nordic-accent/5 border border-nordic-accent/20 p-2 rounded">
-                        <span className="font-medium text-nordic-text-primary">{feature.name}</span>
-                        {feature.description && (
-                          <p className="text-xs text-nordic-text-muted mt-1">{feature.description}</p>
+                        <span className="font-medium text-slate-100">{item.name || item}</span>
+                        {item.rationale && (
+                          <p className="text-xs text-slate-400 mt-1">{item.rationale}</p>
                         )}
                       </div>
                     ))}
@@ -218,30 +156,99 @@ const PRDPreview = ({ content, className = '' }) => {
                 </div>
               )}
 
-              {/* Acceptance Criteria */}
-              {parsedPRD.acceptanceCriteria && parsedPRD.acceptanceCriteria.length > 0 && (
+              {/* Out of Scope / Deferred */}
+              {parsedPRD.scopeOut.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-2 text-sm font-medium text-green-400 mb-2">
-                    <CheckCircle2 className="w-4 h-4" /> Acceptance Criteria
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-400 mb-2">
+                    <Shield className="w-4 h-4" /> Deferred (Not Now)
                   </div>
-                  <ul className="space-y-1">
-                    {parsedPRD.acceptanceCriteria.map((ac, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm">
-                        <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                        <span className="text-nordic-text-primary">{ac}</span>
-                      </li>
+                  <div className="space-y-2">
+                    {parsedPRD.scopeOut.map((item, i) => (
+                      <div key={i} className="bg-slate-800/50 p-2 rounded border border-slate-700/50">
+                        <span className="text-slate-300">{item.name || item}</span>
+                        {item.rationale && (
+                          <p className="text-xs text-slate-500 mt-1">Why: {item.rationale}</p>
+                        )}
+                      </div>
                     ))}
-                  </ul>
+                  </div>
+                </div>
+              )}
+              
+              {/* Assumptions to Validate */}
+              {parsedPRD.assumptions.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-400 mb-2">
+                    <Lightbulb className="w-4 h-4" /> Assumptions to Validate
+                  </div>
+                  <div className="space-y-2">
+                    {parsedPRD.assumptions.map((a, i) => (
+                      <div key={i} className="bg-amber-500/5 border border-amber-500/20 p-2 rounded">
+                        <span className="font-medium text-slate-100">{a.assumption || a}</span>
+                        {a.risk && (
+                          <p className="text-xs text-red-400 mt-1">Risk if wrong: {a.risk}</p>
+                        )}
+                        {a.validation && (
+                          <p className="text-xs text-green-400 mt-1">Validation: {a.validation}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Risks */}
+              {parsedPRD.risks.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-400 mb-2">
+                    <AlertTriangle className="w-4 h-4" /> Risks & Mitigations
+                  </div>
+                  <div className="space-y-2">
+                    {parsedPRD.risks.map((r, i) => (
+                      <div key={i} className="bg-red-500/5 border border-red-500/20 p-2 rounded">
+                        <span className="text-slate-100">{r}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Validation Plan */}
+              {parsedPRD.validationPlan && (
+                <div className="bg-green-500/5 border border-green-500/20 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm font-medium text-green-400 mb-1">
+                    <CheckCircle2 className="w-4 h-4" /> Validation Plan
+                  </div>
+                  <p className="text-sm text-slate-100">{parsedPRD.validationPlan}</p>
+                </div>
+              )}
+
+              {/* Features */}
+              {parsedPRD.features.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-medium text-violet-400 mb-2">
+                    <CheckCircle2 className="w-4 h-4" /> Features
+                  </div>
+                  <div className="space-y-2">
+                    {parsedPRD.features.map((feature, i) => (
+                      <div key={i} className="bg-violet-500/5 border border-violet-500/20 p-2 rounded">
+                        <span className="font-medium text-slate-100">{feature.name}</span>
+                        {feature.description && (
+                          <p className="text-xs text-slate-400 mt-1">{feature.description}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
               {/* Timeline */}
               {parsedPRD.timeline && (
-                <div className="bg-[#1a1a2e] p-3 rounded-lg border border-nordic-border">
-                  <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-1">
+                <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-400 mb-1">
                     Timeline
                   </div>
-                  <p className="text-sm text-nordic-text-primary">{parsedPRD.timeline}</p>
+                  <p className="text-sm text-slate-100">{parsedPRD.timeline}</p>
                 </div>
               )}
             </div>
@@ -267,18 +274,20 @@ function parsePRDContent(content) {
     positioning: '',
     targetUsers: [],
     metrics: [],
+    riskiestUnknown: '',
     risks: [],
     scopeIn: [],
     scopeOut: [],
     assumptions: [],
     features: [],
-    acceptanceCriteria: [],
+    validationPlan: '',
     timeline: '',
   };
 
-  // Split content into sections
+  // Split content into lines
   const lines = content.split('\n');
   let currentSection = '';
+  let currentSubsection = '';
   let currentUser = null;
   let buffer = [];
 
@@ -290,114 +299,174 @@ function parsePRDContent(content) {
 
   const extractListItems = (text) => {
     return text.split('\n')
-      .map(line => line.replace(/^[-*]\s*/, '').trim())
-      .filter(line => line.length > 0);
+      .map(line => line.replace(/^[-*•]\s*/, '').replace(/^\d+\.\s*/, '').trim())
+      .filter(line => line.length > 0 && !line.startsWith('#') && !line.startsWith('**'));
   };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmedLine = line.trim();
 
-    // Detect section headers
-    if (trimmedLine.startsWith('# ')) {
-      prd.title = trimmedLine.replace('# ', '').replace('Product Requirements Document (PRD)', '').trim();
+    // Skip empty lines and separators
+    if (trimmedLine === '' || trimmedLine === '---') {
       continue;
     }
 
+    // Detect main title
+    if (trimmedLine.startsWith('# ')) {
+      const title = trimmedLine.replace('# ', '').replace(/Product Requirements Document.*$/i, '').replace(/\(PRD\)/i, '').trim();
+      if (title) prd.title = title;
+      continue;
+    }
+
+    // Detect section headers
     if (trimmedLine.startsWith('## ')) {
       // Save previous section
       if (currentSection && buffer.length > 0) {
-        const text = flushBuffer();
-        assignToSection(prd, currentSection, text, currentUser);
+        assignToSection(prd, currentSection, currentSubsection, flushBuffer(), currentUser);
       }
-      currentSection = trimmedLine.replace('## ', '').toLowerCase();
+      currentSection = trimmedLine.replace('## ', '').replace(/^\d+\.\s*/, '').toLowerCase();
+      currentSubsection = '';
       currentUser = null;
       continue;
     }
 
+    // Detect subsection headers
     if (trimmedLine.startsWith('### ')) {
-      // Sub-section (often user personas)
+      // Save previous subsection
       if (buffer.length > 0) {
-        const text = flushBuffer();
-        assignToSection(prd, currentSection, text, currentUser);
+        assignToSection(prd, currentSection, currentSubsection, flushBuffer(), currentUser);
       }
-      const subSection = trimmedLine.replace('### ', '');
-      if (currentSection.includes('target') || currentSection.includes('user')) {
-        currentUser = { persona: subSection, painPoints: [] };
+      currentSubsection = trimmedLine.replace('### ', '').replace(/^\d+\.\d+\s*/, '').toLowerCase();
+      
+      // Check if this is a user persona
+      if (currentSection.includes('user') || currentSection.includes('persona') || currentSection.includes('target')) {
+        const personaName = trimmedLine.replace('### ', '').replace(/^\d+\.\d+\s*/, '');
+        currentUser = { persona: personaName, painPoints: [], context: '', jtbd: '', currentWorkaround: '' };
         prd.targetUsers.push(currentUser);
+      } else {
+        currentUser = null;
       }
       continue;
     }
 
-    // Collect content
-    if (trimmedLine.length > 0 && !trimmedLine.startsWith('---')) {
-      // Parse special fields within user sections
-      if (currentUser) {
-        if (trimmedLine.toLowerCase().startsWith('context:')) {
-          currentUser.context = trimmedLine.replace(/^context:\s*/i, '');
-        } else if (trimmedLine.toLowerCase().startsWith('pain points:')) {
-          currentUser.painPoints = trimmedLine.replace(/^pain points:\s*/i, '').split(',').map(p => p.trim());
-        } else if (trimmedLine.toLowerCase().startsWith('current workaround:')) {
-          currentUser.currentWorkaround = trimmedLine.replace(/^current workaround:\s*/i, '');
-        } else if (trimmedLine.toLowerCase().startsWith('job to be done:') || trimmedLine.toLowerCase().startsWith('jtbd:')) {
-          currentUser.jtbd = trimmedLine.replace(/^(job to be done|jtbd):\s*/i, '');
-        } else {
-          buffer.push(line);
-        }
-      } else {
-        buffer.push(line);
+    // Handle inline formatting and collect content
+    let cleanLine = trimmedLine;
+    
+    // Parse special inline fields
+    if (currentUser) {
+      if (trimmedLine.match(/^[-*•]?\s*(context|background|description):/i)) {
+        currentUser.context = trimmedLine.replace(/^[-*•]?\s*(context|background|description):\s*/i, '');
+        continue;
+      }
+      if (trimmedLine.match(/^[-*•]?\s*(pain points?|frustrations?):/i)) {
+        currentUser.painPoints = trimmedLine.replace(/^[-*•]?\s*(pain points?|frustrations?):\s*/i, '').split(',').map(p => p.trim());
+        continue;
+      }
+      if (trimmedLine.match(/^[-*•]?\s*(current workaround|workaround|today):/i)) {
+        currentUser.currentWorkaround = trimmedLine.replace(/^[-*•]?\s*(current workaround|workaround|today):\s*/i, '');
+        continue;
+      }
+      if (trimmedLine.match(/^[-*•]?\s*(jtbd|job to be done|goal):/i)) {
+        currentUser.jtbd = trimmedLine.replace(/^[-*•]?\s*(jtbd|job to be done|goal):\s*/i, '');
+        continue;
       }
     }
+
+    // Remove bold markers for cleaner text
+    cleanLine = cleanLine.replace(/\*\*([^*]+)\*\*/g, '$1').trim();
+    
+    buffer.push(cleanLine);
   }
 
   // Flush remaining buffer
   if (currentSection && buffer.length > 0) {
-    const text = flushBuffer();
-    assignToSection(prd, currentSection, text, currentUser);
+    assignToSection(prd, currentSection, currentSubsection, flushBuffer(), currentUser);
   }
 
   return prd;
 }
 
-function assignToSection(prd, section, text, currentUser) {
-  const cleanText = text.replace(/^\*\*[^*]+\*\*:\s*/gm, '').trim();
+function assignToSection(prd, section, subsection, text, currentUser) {
   const listItems = text.split('\n')
-    .map(line => line.replace(/^[-*]\s*/, '').replace(/^\*\*[^*]+\*\*:\s*/, '').trim())
-    .filter(line => line.length > 0 && !line.startsWith('**'));
+    .map(line => line.replace(/^[-*•]\s*/, '').replace(/^\d+\.\s*/, '').trim())
+    .filter(line => line.length > 0 && !line.startsWith('#'));
+  
+  const cleanText = listItems.join(' ').trim();
+  const sectionLower = section.toLowerCase();
+  const subsectionLower = subsection.toLowerCase();
 
-  if (section.includes('problem') || section.includes('executive summary')) {
-    if (!prd.problem) {
-      prd.problem = cleanText.split('\n')[0];
-      // Look for evidence
-      const evidenceMatch = text.match(/evidence[:\s]+(.+)/i);
-      if (evidenceMatch) {
-        prd.evidence = evidenceMatch[1].trim();
-      }
+  // Problem / Executive Summary
+  if (sectionLower.includes('problem') || sectionLower.includes('executive')) {
+    if (subsectionLower.includes('evidence')) {
+      prd.evidence = cleanText;
+    } else if (!prd.problem) {
+      prd.problem = cleanText;
     }
-  } else if (section.includes('vision')) {
+  }
+  // Vision
+  else if (sectionLower.includes('vision') || subsectionLower.includes('vision')) {
     prd.vision = cleanText;
-  } else if (section.includes('goal') || section.includes('objective')) {
-    prd.goals = cleanText;
-  } else if (section.includes('metric') || section.includes('success')) {
-    prd.metrics = listItems.length > 0 ? listItems : [cleanText];
-  } else if (section.includes('risk')) {
-    prd.risks = listItems.length > 0 ? listItems : [cleanText];
-  } else if (section.includes('scope')) {
-    if (section.includes('out')) {
-      prd.scopeOut = listItems.length > 0 ? listItems : [cleanText];
+  }
+  // Goals / Objectives / Desired Outcome
+  else if (sectionLower.includes('goal') || sectionLower.includes('objective') || 
+           sectionLower.includes('outcome') || subsectionLower.includes('outcome') ||
+           subsectionLower.includes('goal')) {
+    if (!prd.goals) prd.goals = cleanText;
+  }
+  // Success Metrics / Key Metrics
+  else if (sectionLower.includes('metric') || sectionLower.includes('success') ||
+           subsectionLower.includes('metric') || subsectionLower.includes('success')) {
+    prd.metrics = listItems.length > 0 ? listItems.slice(0, 5) : [cleanText];
+  }
+  // Risks
+  else if (sectionLower.includes('risk') && !sectionLower.includes('unknown')) {
+    if (subsectionLower.includes('unknown') || subsectionLower.includes('riskiest')) {
+      prd.riskiestUnknown = cleanText;
     } else {
-      prd.scopeIn = listItems.length > 0 ? listItems : [cleanText];
+      prd.risks = listItems.length > 0 ? listItems.slice(0, 5) : [cleanText];
     }
-  } else if (section.includes('assumption')) {
-    prd.assumptions = listItems.length > 0 ? listItems : [cleanText];
-  } else if (section.includes('feature')) {
+  }
+  // Scope
+  else if (sectionLower.includes('scope')) {
+    if (subsectionLower.includes('out') || subsectionLower.includes('not') || subsectionLower.includes('defer')) {
+      prd.scopeOut = listItems.map(item => ({ name: item, rationale: '' }));
+    } else if (subsectionLower.includes('in') || subsectionLower.includes('mvp')) {
+      prd.scopeIn = listItems.map(item => ({ name: item, rationale: '' }));
+    } else if (listItems.length > 0) {
+      prd.scopeIn = listItems.map(item => ({ name: item, rationale: '' }));
+    }
+  }
+  // MVP Scope
+  else if (sectionLower.includes('mvp')) {
+    prd.scopeIn = listItems.map(item => ({ name: item, rationale: '' }));
+  }
+  // Assumptions
+  else if (sectionLower.includes('assumption') || subsectionLower.includes('assumption')) {
+    prd.assumptions = listItems.map(item => ({ assumption: item, risk: '', validation: '' }));
+  }
+  // Features
+  else if (sectionLower.includes('feature') || sectionLower.includes('requirement')) {
     prd.features = listItems.map(item => ({ name: item, description: '' }));
-  } else if (section.includes('acceptance') || section.includes('criteria')) {
-    prd.acceptanceCriteria = listItems;
-  } else if (section.includes('timeline') || section.includes('milestone')) {
+  }
+  // Validation Plan
+  else if (sectionLower.includes('validation') || subsectionLower.includes('validation')) {
+    prd.validationPlan = cleanText;
+  }
+  // Timeline
+  else if (sectionLower.includes('timeline') || sectionLower.includes('milestone') ||
+           subsectionLower.includes('timeline') || subsectionLower.includes('milestone')) {
     prd.timeline = cleanText;
-  } else if (section.includes('position')) {
+  }
+  // Positioning
+  else if (sectionLower.includes('position') || subsectionLower.includes('position')) {
     prd.positioning = cleanText;
+  }
+  // Target Users - handle text that wasn't parsed as a user card
+  else if ((sectionLower.includes('user') || sectionLower.includes('persona') || sectionLower.includes('target')) && !currentUser) {
+    if (prd.targetUsers.length === 0 && cleanText) {
+      prd.targetUsers.push({ persona: cleanText, painPoints: [], context: '', jtbd: '', currentWorkaround: '' });
+    }
   }
 }
 
