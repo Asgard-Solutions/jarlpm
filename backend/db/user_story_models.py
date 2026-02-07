@@ -77,6 +77,10 @@ class UserStory(Base):
     dependencies: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)  # e.g., ["story_abc123", "API endpoint X"]
     risks: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)  # e.g., ["Third-party API reliability"]
     
+    # Enhanced PM fields (Senior PM quality)
+    edge_cases: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)  # e.g., ["User disconnects mid-operation", "Empty input handling"]
+    notes_for_engineering: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Technical implementation notes
+    
     # Lifecycle
     current_stage: Mapped[str] = mapped_column(String(50), default=UserStoryStage.DRAFT.value, nullable=False)
     
