@@ -1424,6 +1424,9 @@ async def save_initiative(
                     story_priority=story_data.priority,
                     dependencies=story_data.dependencies,
                     risks=story_data.risks,
+                    # Senior PM-level fields
+                    edge_cases=story_data.edge_cases,
+                    notes_for_engineering=story_data.notes_for_engineering,
                     current_stage="draft",
                     source="ai_generated",
                     # NOTE: story_points NOT set - scoring happens via Scoring/Poker features
