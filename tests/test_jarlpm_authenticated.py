@@ -21,7 +21,7 @@ from datetime import datetime, timedelta, timezone
 sys.path.insert(0, '/app/backend')
 
 # Get base URL from environment
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://aipm-platform-1.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://prddoc.preview.emergentagent.com').rstrip('/')
 
 
 def create_test_session():

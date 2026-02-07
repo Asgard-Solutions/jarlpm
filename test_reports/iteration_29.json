@@ -52,7 +52,7 @@
   "seed_data_creation": "None - used existing test user",
   "retest_needed": false,
   "should_main_agent_self_test": false,
-  "context_for_next_testing_agent": "Vite host blocking fix verified working. Frontend loads correctly at https://aipm-platform-1.preview.emergentagent.com. Login/logout flows working. Test user (test@jarlpm.com / Test123!) has active subscription and existing data (Pharmacy Text Connect initiative). Dashboard shows 2 Active Initiatives, 72 Points in Flight.",
+  "context_for_next_testing_agent": "Vite host blocking fix verified working. Frontend loads correctly at https://prddoc.preview.emergentagent.com. Login/logout flows working. Test user (test@jarlpm.com / Test123!) has active subscription and existing data (Pharmacy Text Connect initiative). Dashboard shows 2 Active Initiatives, 72 Points in Flight.",
   "mocked_apis": {
     "has_mocked_apis": false,
     "note": "NO MOCKED APIs - All APIs use real backend"

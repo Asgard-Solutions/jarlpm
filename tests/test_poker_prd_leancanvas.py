@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://aipm-platform-1.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://prddoc.preview.emergentagent.com')
 
 # Test session token for authenticated requests
 TEST_SESSION_TOKEN = "test_session_jarlpm_full_access_2025"

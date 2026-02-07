@@ -1,94 +1,79 @@
 <analysis>**original_problem_statement:**
 The user wants to build **JarlPM**, an AI-agnostic, conversation-driven Product Management system. The initial goal was to implement integrations with external project management tools (Linear, Jira, Azure DevOps).
 
-The focus has recently shifted to improving the user activation flow on the public landing page. This involves creating a compelling entry point that demonstrates the app's value and encourages sign-ups.
+The work has since focused on improving the user activation flow and building out a best-in-class, comprehensive Product Requirements Document (PRD) generation and management system. The latest request is to implement support for custom LLM providers.
 
 **PRODUCT REQUIREMENTS:**
 - **G0: Scope of Fully Complete**: An integration is complete when a user can connect, select a target project, preview the push, execute it idempotently, and see results.
-- **G1: Data Model**: Evolve the data model to support richer product specifications, including fields like  and  in user stories.
+- **G1: Data Model**: Evolve the data model to support richer product specifications.
 - **G2: Security**: All integration features must be scoped to the user, require an active Pro subscription, and store all tokens/secrets encrypted at rest.
 - **G3: Push Behavior**: Pushes must be idempotent. A dry-run preview is required.
 - **G4: UX & Activation**:
-    - **Landing Page**: Must be a best-in-class entry point that drives activation (arrive → understand → sign up → generate first initiative).
+    - **Landing Page**: Must be a best-in-class entry point that drives activation.
     - **Example Output**: A non-auth preview of a high-fidelity initiative output to quickly show value.
-    - **Smart Redirects**: Handle returning users intelligently.
-    - **Event Tracking**: Implement lightweight tracking for key conversion events.
-    - **UI Consistency**: Ensure UI/UX is consistent across the application, matching a Nordic theme.
-- **Provider Priority**: Linear, Jira, Azure DevOps.
+- **PRD System**: A comprehensive, 11-section PRD must be generated as structured JSON, be viewable in a collapsible UI, be editable inline, and exportable to PDF.
 - **Production Readiness**: Implement Rate Limiting, Error UX, Backups, Monitoring, and a Smoke Test script.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack React/FastAPI/PostgreSQL project. The initial integration architecture for Linear, Jira, and Azure DevOps is established.
+The application is a full-stack React/FastAPI/PostgreSQL project. A critical login bug caused by a Vite dev server configuration issue has been fixed, and authentication is now fully functional.
 
-A Production-Readiness initiative was completed, adding API rate limiting (configurable via Redis), database backups, structured logging, admin/health endpoints, and a smoke test script.
+The frontend has seen significant UI/UX enhancements. The Example Output modal on the landing page has been completely overhauled to stylistically match the actual in-app views for the PRD, User Stories, and Sprint Plan, providing a consistent and high-fidelity preview to new users.
 
-The frontend landing page has been significantly overhauled to focus on user activation. It now features an Example Output modal that previews a generated initiative from a static JSON fixture, new marketing copy, and a smart Welcome back banner for logged-in users. The UI styling for generated content (PRD, Stories) has been standardized to a Nordic theme across the example modal and the actual in-app pages.
-
-The backend  model, along with the data generation and API layers, has been extended to include  and  fields, and the UI has been updated to display them.
+A comprehensive, two-phase PRD system has been implemented:
+-   **Phase 1 (Generation & Viewing)**: The backend now generates a detailed, 11-section PRD as structured JSON, strictly validated against a Pydantic schema. A new  component renders this data in a rich, collapsible UI.
+-   **Phase 2 (Editing & Export)**: The  component was enhanced with inline section editing capabilities and a Download as PDF feature. A corresponding backend endpoint was added to save the updated JSON.
 
 **Last working item**:
--   Last item agent was working: Debugging a critical login failure. The frontend was sending API requests to  instead of the correct backend URL specified in the environment variables, resulting in a  error.
--   Status: BLOCKED
+-   Last item agent was working: The agent was beginning to implement Custom LLM provider support. It was gathering context by viewing the relevant existing files: , , , and .
+-   Status: NOT STARTED
 -   Agent Testing Done: N
--   Which testing method agent to use? Manual testing by inspecting network requests in the browser console. After the fix, the  should be used to run a full regression test on the authentication flow (login, signup, logout).
+-   Which testing method agent to use? both
 -   User Testing Done: N
 
 **All Pending/In progress Issue list**:
--   Issue 1: Login is broken due to  (Priority: P0)
--   Issue 2: Authenticated Screenshot Failures (Priority: P2)
+-   Issue 1: Authenticated Screenshot Failures (Priority: P2)
 
     Issues Detail:
 -   Issue 1:
-    -   Attempted fixes: The agent verified the  file, restarted services, and inspected build artifacts. These steps confirmed the environment variable was set correctly but did not resolve the issue. The agent was in the process of further investigation when the session ended.
+    -   Attempted fixes: In a previous session, adding the preview URL to  was attempted but did not solve the root problem. The issue was not addressed in this session as feature development was prioritized.
     -   Next debug checklist:
-        1.  **Crucial Check:** Inspect . The API client likely uses  which is incorrect for a Vite project. It **must** be changed to .
-        2.  Verify there are no hardcoded  URLs in  or related components.
-        3.  After applying the fix, restart the frontend service (frontend: ERROR (not running)
-frontend: started) and test the login functionality again.
-    -   Why fix this issue and what will be achieved with the fix? This is a **critical blocker**. Users cannot log in, rendering the entire application unusable. Fixing this will restore core functionality.
-    -   Status: IN PROGRESS
-    -   Is recurring issue? N
-    -   Should Test frontend/backend/both after fix? frontend
-    -   Blocked on other issue: None. This issue blocks everything else.
--   Issue 2:
-    -   Attempted fixes: In a previous session, the agent added the preview URL to , which resolved a Vite host error but did not fix the underlying authentication problem for the screenshot tool.
-    -   Next debug checklist:
-        1.  Investigate how cookies/tokens are handled between the screenshot tool's context and the app's preview domain.
-        2.  Check the browser console logs from the screenshot output for auth errors.
-    -   Why fix this issue and what will be achieved with the fix? This is a recurring blocker for automated UI testing. Resolving it will enable visual verification of authenticated pages.
+        1.  Investigate how cookies/tokens are handled between the screenshot tool's browser context and the app's preview domain.
+        2.  Check the browser console logs from the screenshot output for authentication or CORS errors.
+        3.  Consider if the screenshot tool needs a way to inject an auth token directly into local storage or headers before navigation.
+    -   Why fix this issue and what will be achieved with the fix? This is a recurring blocker for automated UI testing on authenticated pages. Resolving it will enable reliable visual verification and regression testing.
     -   Status: NOT STARTED
     -   Is recurring issue? Y
     -   Should Test frontend/backend/both after fix? frontend
-    -   Blocked on other issue: Issue 1 (Login is broken)
+    -   Blocked on other issue: None
 
 **In progress Task List**:
--   None. All work is blocked by the login issue.
+-   None.
 
 **Upcoming and Future Tasks**
--   **P0: Real-World Integration Validation**: Test the Linear, Jira, and Azure DevOps integrations with real user credentials (pending user input).
--   **P1: Decision & Assumption Tracking**: Persist assumptions and risks to the database and build a workflow to track their validation status.
--   **P1: Collaboration Loop**: Implement a feature to share a read-only link to an initiative and add a basic commenting system.
--   **P2: Pricing/Packaging Signature Moments**: Polish existing features to create wow moments, like a one-click Stakeholder-ready PRD summary.
+-   **P0: Implement Custom LLM Provider Support**:
+    -   Allow users to add, configure, and select different LLM providers (e.g., Anthropic, Gemini) from the Settings page. This involves backend model/service/API changes and frontend UI work.
+-   **P1: Real-World Integration Validation**:
+    -   Test the Linear, Jira, and Azure DevOps integrations with real user credentials (pending user input).
+-   **P1: Decision & Assumption Tracking**:
+    -   Persist assumptions and risks from the PRD to the database and build a workflow to track their validation status.
+-   **P1: Collaboration Loop**:
+    -   Implement a feature to share a read-only link to an initiative and add a basic commenting system.
+-   **P2: Pricing/Packaging Signature Moments**:
+    -   Polish existing features to create wow moments, like a one-click Stakeholder-ready PRD summary.
 
 **Completed work in this session**
--   **Production-Readiness Initiative**:
-    -   Completed API Rate Limiting, making it configurable with Redis for scalability.
-    -   Implemented a DB backup service and admin routes for health checks and metrics.
-    -   Added structured logging and a smoke test script for CI/CD validation.
--   **Activation-First Landing Page Overhaul**:
-    -   Redesigned  with new CTAs and an Example Output modal to showcase app value without requiring login.
-    -   Created  and the corresponding JSON data fixture.
-    -   Added a lightweight analytics utility that logs key user events to the console in development.
-    -   Updated copy to be transparent about the paid subscription model.
--   **UI/UX Consistency**:
-    -   Refactored the  page to use a new  component, matching the style of the example modal.
-    -   Standardized the Nordic theme across all generated content views.
--   **Feature Enhancement (User Stories)**:
-    -   Added  and  fields to the  database model and created the corresponding Alembic migration.
-    -   Updated the backend LLM prompts and API endpoints to generate and serve these new fields.
-    -   Updated the  UI to display the new fields on story cards.
+-   **Critical Login Bug Fix**: Resolved a  error by correctly configuring  in , making the application usable again. The fix was verified by the testing agent.
+-   **UI Consistency for Example Output**:
+    -   The Stories, PRD, and Sprint Plan tabs in the  were completely redesigned to match the styling of their corresponding in-app pages, ensuring a consistent user experience.
+-   **Comprehensive PRD System (Phase 1 - Generation & View)**:
+    -   The backend was refactored to generate PRDs as structured JSON, using  against a Pydantic schema to guarantee output quality.
+    -   The  component was created to render the complex JSON into a user-friendly, collapsible, multi-section interface.
+-   **Comprehensive PRD System (Phase 2 - Editing & Export)**:
+    -   The  component was enhanced with inline content editing for each section.
+    -   A  endpoint was created to save the edited PRD JSON.
+    -   A Download as PDF feature was added to the frontend using  and .
 
 **Earlier issues found/mentioned but not fixed**
 -   Issue 1: Authenticated Screenshot Failures (Tracked in All Pending/In progress Issue list).
@@ -102,102 +87,84 @@ frontend: started) and test the login functionality again.
 
 
 **Key Technical Concepts**
--   **Frontend Activation Flow**: Using static JSON fixtures to power high-fidelity, non-authenticated previews () to drive user sign-ups.
--   **Vite Environment Variables**: Accessing environment variables in frontend code using , not .
--   **Production Readiness**: Implementing backend services for rate limiting (), backups, structured logging, and health monitoring to ensure stability and scalability.
--   **Database Migrations**: Using  to manage schema changes, such as adding new columns to the  table.
+-   **Vite Configuration**: Correctly configuring  and  (or  in older versions) is critical for preview environments. The agent set  to  to allow external access.
+-   **Structured LLM Output**: Using Pydantic schemas with a  to validate and repair LLM-generated JSON, ensuring data consistency before database storage.
+-   **Component-Driven UI**: Building complex, interactive UI by composing components.  encapsulates all logic for rendering, editing, and exporting the PRD.
+-   **Frontend PDF Generation**: Using  and  to capture a DOM element and convert it into a downloadable PDF file directly in the browser.
+-   **Inline Editing**: Leveraging React state and  attributes to create a seamless WYSIWYG editing experience for PRD sections.
 
 **key DB schema**
--   : Added  (JSONB) and  (TEXT) columns to store richer story details.
+-   : The  column (of type ) is now used to store a structured JSON object , which contains the full 11-section PRD data. This replaces the previous markdown-based storage.
 
 **changes in tech stack**
--   No new dependencies were added. Existing libraries like  were configured for production use.
+-   **Frontend**: Added  and  for PDF export functionality.
 
 **All files of reference**
--   : **(Suspected source of login bug)** Defines the Axios instance and base URL.
--   : The redesigned, activation-focused landing page.
--   : The new modal component that displays a preview of the app's output.
--   : The static data fixture for the example modal.
--   : The SQLAlchemy model updated with new fields.
--   : The database migration script.
--   : The service configuring API rate limiting.
+-   : Fixed to resolve the critical login issue.
+-   : Completely rewritten to support viewing, editing, and exporting structured JSON PRDs.
+-   : Heavily modified to match in-app UI styling for all tabs.
+-   : Updated to use the new  component and handle JSON data.
+-   : Overhauled to include a comprehensive, structured PRD for the example output.
+-   : Added the  method.
+-   : Heavily modified to add JSON generation with strict validation, and a new endpoint for saving structured updates.
+-   : Inspected to confirm the  column type was .
 
 **Areas that need refactoring**:
--   The root cause of the login bug is in . The line  is incorrect for Vite and must be changed to use .
+-   None. The agent performed significant refactoring on the PRD-related components, moving towards a more robust and maintainable implementation.
 
 **key api endpoints**
--   : Currently failing due to a frontend configuration error.
--   : New endpoint to check service health.
--   : New endpoint to trigger a database backup.
+-   : **FIXED**.
+-   : **MODIFIED** to generate and validate a structured JSON PRD.
+-   : **NEW** endpoint to save inline edits to a structured PRD.
 
 **Critical Info for New Agent**
--   **Your immediate and only priority is to fix the login functionality.** The application is currently broken.
--   The most likely cause of the login error is in . You must replace  with .
--   After fixing the login, verify the entire authentication flow. Do not proceed to other tasks until users can successfully log in and access the application.
--   Be aware of the extensive frontend changes on the landing page and the new Example Output modal, as they are central to the user's latest requests.
+-   Your immediate task is to begin implementing **Custom LLM Provider Support**, as approved by the user. Start by exploring the files the previous agent identified: , , and .
+-   The PRD system is now based on structured JSON. While the UI can handle legacy markdown PRDs, all new PRDs are generated in the new format and leverage the inline editing and PDF export features.
+-   The recurring Authenticated Screenshot Failures issue remains unresolved and blocks automated UI testing for logged-in user flows. While it is a P2, resolving it would improve development velocity and confidence.
 
 **documents and test reports created in this job**
 -   
 -   
-==================================================
-Smoke Test Summary
-==================================================
-Base URL: http://localhost:8001
-Total Tests: 10
-Passed: 10
-Failed: 0
-Success Rate: 100.0%
--    (Updated)
--    (Updated)
+-   
+-    (Updated with recent changes)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Pointed out the login is failing with . (Status: In Progress)
-2.  **Agent**: Acknowledged the issue and began debugging.
-3.  **User**: Requested the in-app story cards match the style of the Example Output modal by adding  and . (Status: Completed)
-4.  **User**: Requested the  page match the new Nordic theme from the example modal. (Status: Completed)
-5.  **User**: Requested a solid background be added to the Example Output modal as the page content was showing through. (Status: Completed)
-6.  **Agent**: Proposed two polish changes: make analytics logging dev-only and improve sign-in routing.
-7.  **User**: Agreed with the agent's proposed polish changes. (Status: Completed)
-8.  **User**: Requested the  styling be updated to perfectly match the actual in-app pages. (Status: Completed)
-9.  **User**: Pointed out that the No Credit Card required text on the landing page was misleading. (Status: Completed)
-10. **Agent**: Finished the landing page implementation and provided a summary.
+1.  **User**: Requested the agent to start working on Custom LLM provider support. (Status: Pending Implementation)
+2.  **Agent**: Proposed a plan and asked for confirmation to proceed. (Status: Responded)
+3.  **User**: Approved the agent's plan to proceed. (Status: Completed)
+4.  **User**: Requested the PRD generation be hardened to strictly use . (Status: Completed)
+5.  **Agent**: Confirmed the stricter PRD validation was implemented. (Status: Completed)
+6.  **User**: Followed up on the agent's PRD validation, ensuring it used the correct schema. (Status: Completed)
+7.  **Agent**: Implemented stricter PRD validation and confirmed. (Status: Completed)
+8.  **User**: Requested Phase 2 of the PRD System: inline editing and PDF export. (Status: Completed)
+9.  **Agent**: Asked for clarification and scoping decisions for Phase 2. (Status: Responded)
+10. **User**: Provided clear decisions for Phase 2: use structured JSON, defer the editor to a later phase, and defined priorities. (Status: Completed)
 
 **Project Health Check:**
 -   **Broken**:
-    -   **Login/Authentication**: The entire login flow is broken due to a frontend misconfiguration ().
-    -   **Authenticated Screenshots**: This recurring issue persists, blocking automated UI testing.
-    -   **Jira/Linear Integrations**: OAuth flows are non-functional by design (pending credentials).
+    -   **Authenticated Screenshots**: Recurring issue blocks automated UI testing for logged-in pages.
 -   **Mocked**:
     -   The Example Output modal on the landing page uses static JSON data by design.
 
 **3rd Party Integrations**
 -   OpenAI GPT/DALL-E: Used for all generative AI features.
--   **Linear**: (OAuth scaffolding implemented) - For pushing project management items.
--   **Jira**: (OAuth scaffolding implemented) - For pushing project management items.
--   **Azure DevOps**: (PAT-based implementation complete) - For pushing project management items.
+-   Linear: (OAuth scaffolding implemented) - For pushing project management items.
+-   Jira: (OAuth scaffolding implemented) - For pushing project management items.
+-   Azure DevOps: (PAT-based implementation complete) - For pushing project management items.
+-   **jspdf & html2canvas**: New frontend dependencies for PDF export functionality.
 
 **Testing status**
--   Testing agent used after significant changes: NO
+-   Testing agent used after significant changes: YES (after login fix, PRD phase 1, and PRD phase 2)
 -   Troubleshoot agent used after agent stuck in loop: NO
--   Test files created:
-    -   
-    -   
-==================================================
-Smoke Test Summary
-==================================================
-Base URL: http://localhost:8001
-Total Tests: 10
-Passed: 10
-Failed: 0
-Success Rate: 100.0%
--   Known regressions: The login functionality has regressed and is completely broken.
+-   Test files created: None.
+-   Known regressions: None. The critical login regression was fixed.
 
 **Credentials to test flow:**
 | Field | Value |
 |---|---|
 | **Email** |  |
 | **Password** |  |
-| **Note:** | Login is currently broken. These credentials will work after the  bug is fixed. |
+| **Note:** | Login is fully functional. |
 
 **What agent forgot to execute**
-- The agent did not correctly identify and fix the root cause of the login error ( vs ) before the session ended. It performed several diagnostic steps but missed the critical code error in .</analysis>
+-   The agent correctly prioritized user-requested features over the long-standing Authenticated Screenshot Failures issue. While not forgotten, this issue remains the most significant piece of technical debt to be addressed.</analysis>

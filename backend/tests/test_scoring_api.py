@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('VITE_BACKEND_URL', 'https://aipm-platform-1.preview.emergentagent.com')
+BASE_URL = os.environ.get('VITE_BACKEND_URL', 'https://prddoc.preview.emergentagent.com')
 
 # Test credentials
 TEST_EMAIL = "test@jarlpm.com"
