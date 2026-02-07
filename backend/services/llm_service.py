@@ -410,6 +410,15 @@ class LLMService:
                     )
                     return response.status_code == 200
             
+            elif provider_value == LLMProvider.GOOGLE.value:
+                # Validate Google Gemini API key by listing models
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(
+                        f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}",
+                        timeout=10.0
+                    )
+                    return response.status_code == 200
+            
             elif provider_value == LLMProvider.LOCAL.value:
                 if not base_url:
                     return False
