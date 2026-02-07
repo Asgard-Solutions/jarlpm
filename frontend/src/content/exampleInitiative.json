@@ -1,0 +1,369 @@
+{
+  "product_name": "JarlPM Example",
+  "tagline": "Turn messy ideas into sprint-ready plans",
+  "prd": {
+    "problem_statement": "Small teams without dedicated PM support lose weeks translating ideas into buildable scope. Requirements are vague, acceptance criteria are missing, and sprint plans drift, causing rework and missed deadlines.",
+    "problem_evidence": "Teams routinely start work with incomplete requirements, leading to ambiguous tickets, repeated clarification cycles, and low confidence delivery dates. This shows up as blocked work, churn in backlog, and inconsistent estimates.",
+    "target_users": [
+      {
+        "persona": "Founder-Operator",
+        "context": "Runs a 2–6 person product team and owns roadmap decisions alongside sales/support.",
+        "pain_points": [
+          "Ideas stay in notes and never become usable tickets",
+          "Engineers push back due to unclear acceptance criteria",
+          "Hard to prioritize and commit to a sprint with confidence"
+        ],
+        "current_workaround": "Uses Google Docs + Slack threads + ad-hoc Jira tickets.",
+        "jtbd": "When I have a product idea, I want a fast, structured plan so I can align the team and ship without constant clarification."
+      },
+      {
+        "persona": "Senior Engineer (de facto PM)",
+        "context": "Leads implementation, ends up writing tickets and scoping work.",
+        "pain_points": [
+          "Spends too much time converting vague ideas into testable stories",
+          "Hidden edge cases cause late-cycle bugs",
+          "Estimates are debated without shared context"
+        ],
+        "current_workaround": "Creates tickets from scratch and schedules grooming sessions.",
+        "jtbd": "When requirements are unclear, I want a structured spec + AC so I can build confidently and avoid rework."
+      }
+    ],
+    "desired_outcome": "A user can paste a rough idea and get a PRD, stories with acceptance criteria, and a 2‑sprint plan that is ready to push into Jira/Linear/Azure DevOps.",
+    "key_metrics": [
+      "Time-to-first-sprint-plan: < 5 minutes from idea submission",
+      "Spec completeness score: >= 80/100 (internal rubric) within 1 generation",
+      "Reduction in clarification cycles: 30% fewer follow-up questions per epic within 30 days"
+    ],
+    "mvp_scope": [
+      {
+        "item": "Initiative generator (PRD + features + stories + sprint plan)",
+        "rationale": "This is the core magic moment that creates immediate value for teams without PMs."
+      },
+      {
+        "item": "Story quality fields (AC, edge cases, instrumentation, eng notes)",
+        "rationale": "Makes output buildable, not just descriptive."
+      },
+      {
+        "item": "Export/push-ready structure",
+        "rationale": "If it can't become tickets, it won't ship."
+      }
+    ],
+    "not_now": [
+      {
+        "item": "Full collaboration comments and read-only share links",
+        "rationale": "High value, but not required to prove the core generation + execution workflow."
+      },
+      {
+        "item": "Deep Jira/ADO field mapping wizards",
+        "rationale": "Start with sensible defaults; add advanced mapping after real customer usage."
+      }
+    ],
+    "out_of_scope": [
+      "Replacing a full roadmap tool",
+      "Automatic deployment / CI configuration",
+      "Guaranteeing delivery dates without real team data"
+    ],
+    "assumptions": [
+      {
+        "assumption": "Teams will accept AI-generated structure if it is consistent, testable, and editable.",
+        "risk_if_wrong": "Users won't trust the output and will revert to manual ticket writing.",
+        "validation_approach": "Track edits after generation; run a user study measuring time saved vs manual baseline."
+      },
+      {
+        "assumption": "A 2-sprint plan is the right default planning horizon for most small teams.",
+        "risk_if_wrong": "Plans feel unrealistic or too shallow for larger initiatives.",
+        "validation_approach": "Collect feedback in-app on plan horizon; allow a future setting for 1/2/3 sprints."
+      },
+      {
+        "assumption": "Most users will bring their own LLM keys (BYOK) if the value is clear.",
+        "risk_if_wrong": "Setup friction reduces activation, hurting conversion.",
+        "validation_approach": "Measure drop-off at LLM setup; add guided setup and model recommendations."
+      }
+    ],
+    "constraints": [
+      {
+        "constraint": "Outputs must be deterministic/repairable (strict JSON) across multiple model providers.",
+        "rationale": "Inconsistent structure breaks the pipeline and destroys trust.",
+        "impact": "high"
+      },
+      {
+        "constraint": "Must protect costs and abuse with rate limiting.",
+        "rationale": "AI endpoints can be exploited or unintentionally spammed.",
+        "impact": "high"
+      }
+    ],
+    "risks": [
+      "Weak models may produce shallow or inconsistent outputs",
+      "Users may have unclear ideas that need guided prompting",
+      "Integration API permissions/scopes can fail and block pushing"
+    ],
+    "riskiest_unknown": "Will users consider the generated stories truly buildable, or will they still need significant rewriting?",
+    "validation_plan": "Ship the example-driven preview + generation flow, measure activation to first generated epic and % of stories edited, and run 5–10 onboarding sessions with real teams.",
+    "positioning": {
+      "for_who": "small product teams without full-time PM capacity",
+      "who_struggle_with": "turning ideas into clear, testable scope and sprint commitments",
+      "our_solution": "JarlPM, a structured initiative generator and execution command center",
+      "unlike": "generic AI chatbots and template-only PM tools",
+      "key_benefit": "outputs that engineers can build immediately (AC, edge cases, instrumentation, plan)"
+    },
+    "alternatives": [
+      "Google Docs + Jira manual tickets",
+      "Notion templates",
+      "Generic LLM chat (ChatGPT/Claude) without strict schema or workflow"
+    ],
+    "gtm_notes": "Lead with the magic moment. Offer a fast demo via example output and a one-click path to 'Generate an Initiative'."
+  },
+  "epic": {
+    "title": "Initiative Generator v1",
+    "description": "Transform a rough idea into a PRD, features, buildable stories, and a 2‑sprint plan with export-ready structure.",
+    "vision": "Every team should be able to produce Senior‑PM quality scope in minutes, not weeks."
+  },
+  "features": [
+    {
+      "id": "feat_a1b2c3d4e5f6",
+      "name": "Idea → PRD Pipeline",
+      "description": "Convert a messy idea into a structured PRD with personas, metrics, assumptions, and a validation plan.",
+      "priority": "must-have",
+      "stories": [
+        {
+          "id": "story_101_prd_schema",
+          "title": "Generate Senior-PM PRD fields",
+          "description": "Generate a PRD with structured personas, measurable metrics, assumptions, constraints, and validation plan. Output must be consistent and editable by the user.",
+          "success_criteria": "PRD includes at least 2 personas, 3–5 measurable metrics, and a concrete validation plan within 1 generation.",
+          "non_goals": [
+            "Automatically validating metrics against real analytics",
+            "Guaranteeing that assumptions are correct"
+          ],
+          "edge_cases": [
+            "User provides only one sentence idea",
+            "Idea contains conflicting goals (e.g., fastest vs highest accuracy)"
+          ],
+          "ux_notes": [
+            "Show pass-by-pass progress",
+            "If a required section is missing, show a warning and offer a retry"
+          ],
+          "instrumentation": [
+            "initiative_generate_started",
+            "initiative_pass1_prd_success",
+            "initiative_pass1_prd_repaired"
+          ],
+          "notes_for_engineering": "Use strict JSON schema validation and auto-repair; log model health metrics on validation failures.",
+          "labels": ["backend", "api", "mvp"],
+          "priority": "must-have",
+          "points": 5,
+          "acceptance_criteria": [
+            "Given a user submits an idea, When generation runs, Then a PRD JSON object is returned with all required top-level keys present",
+            "Given a PRD output fails schema validation, When auto-repair runs, Then a valid PRD is returned or a structured error is shown"
+          ],
+          "dependencies": [],
+          "risks": ["Weak models may omit required PRD sections without strict validation"]
+        },
+        {
+          "id": "story_102_progress_stream",
+          "title": "Stream pass progress to UI",
+          "description": "Stream progress events for each pass so the UI can display meaningful status and reduce perceived latency.",
+          "success_criteria": "User sees pass start/progress/done events and final payload without the UI freezing.",
+          "non_goals": ["Real-time token usage display"],
+          "edge_cases": ["Client disconnects mid-stream", "Network slow / partial SSE chunks"],
+          "ux_notes": ["Show pass labels: PRD, Features, Planning, PM Check", "Provide cancel/back without breaking state"],
+          "instrumentation": ["initiative_stream_connected", "initiative_stream_completed", "initiative_stream_error"],
+          "notes_for_engineering": "Ensure streaming does not hold DB sessions; prepare LLM config up front and use sessionless streaming.",
+          "labels": ["frontend", "api", "performance", "mvp"],
+          "priority": "should-have",
+          "points": 3,
+          "acceptance_criteria": [
+            "Given generation starts, When the server emits SSE events, Then the UI updates progress without errors",
+            "Given the stream fails, When the UI receives an error event, Then a retry action is offered"
+          ],
+          "dependencies": ["Streaming endpoint implementation"],
+          "risks": ["SSE parsing edge cases cause silent UI failures"]
+        },
+        {
+          "id": "story_103_quality_mode",
+          "title": "Expose Quality Mode toggle",
+          "description": "Allow users to choose Standard vs Quality (2-pass with critique) before generating an initiative.",
+          "success_criteria": "Quality mode produces more complete outputs and never breaks schema.",
+          "non_goals": ["Per-pass token controls in v1"],
+          "edge_cases": ["Quality pass returns invalid JSON", "Quality pass removes required keys"],
+          "ux_notes": ["Toggle with clear speed vs quality copy", "Remember choice for the session"],
+          "instrumentation": ["initiative_quality_mode_selected", "initiative_quality_mode_used"],
+          "notes_for_engineering": "Re-validate quality pass output; if it fails, keep the original valid result.",
+          "labels": ["frontend", "backend", "mvp"],
+          "priority": "should-have",
+          "points": 2,
+          "acceptance_criteria": [
+            "Given a user selects Quality mode, When generation runs, Then a second critique pass is executed for PRD and decomposition",
+            "Given the quality pass output fails validation, When validation runs, Then the original valid output is preserved"
+          ],
+          "dependencies": ["PRD schema validation", "Decomposition schema validation"],
+          "risks": ["Quality mode increases latency and may frustrate users if not communicated"]
+        }
+      ]
+    },
+    {
+      "id": "feat_b2c3d4e5f6g7",
+      "name": "Decomposition → Buildable Stories",
+      "description": "Break a PRD into MVP features and stories with acceptance criteria, edge cases, instrumentation, and engineering notes.",
+      "priority": "must-have",
+      "stories": [
+        {
+          "id": "story_201_decompose_features",
+          "title": "Generate 3 MVP features with buildable stories",
+          "description": "Produce 3–5 MVP features, each with 2–4 stories that include testable acceptance criteria and PM-level context fields.",
+          "success_criteria": "Each story has 2–4 Given/When/Then criteria and includes edge cases + instrumentation.",
+          "non_goals": ["Generating a full multi-quarter roadmap"],
+          "edge_cases": ["Duplicate stories across features", "AC missing Given/When/Then tokens"],
+          "ux_notes": ["Story cards should be scannable", "Show labels/points clearly"],
+          "instrumentation": ["initiative_pass2_decomp_success", "initiative_story_fields_present_rate"],
+          "notes_for_engineering": "Enforce label whitelist; ensure at least one NFR story exists in MVP.",
+          "labels": ["backend", "api", "mvp"],
+          "priority": "must-have",
+          "points": 5,
+          "acceptance_criteria": [
+            "Given a PRD is generated, When decomposition runs, Then 3–5 features are returned with 2–4 stories each",
+            "Given a story is returned, When validated, Then it includes description, AC, edge_cases, instrumentation, and notes_for_engineering"
+          ],
+          "dependencies": ["PRD output"],
+          "risks": ["Models may generate verbose but non-actionable stories without quality constraints"]
+        },
+        {
+          "id": "story_202_require_nfr",
+          "title": "Require at least one NFR story",
+          "description": "Ensure the generated scope includes at least one non-functional requirement story (security, performance, reliability, or accessibility).",
+          "success_criteria": "NFR story is present and testable in AC.",
+          "non_goals": ["Full threat modeling"],
+          "edge_cases": ["NFR story created but is vague or untestable"],
+          "ux_notes": ["Label NFR stories and explain why they matter"],
+          "instrumentation": ["initiative_nfr_story_present"],
+          "notes_for_engineering": "Critic pass should add/repair NFR story if missing.",
+          "labels": ["security", "performance", "nfr", "mvp"],
+          "priority": "should-have",
+          "points": 2,
+          "acceptance_criteria": [
+            "Given decomposition output, When validated, Then at least one story is labeled as an NFR and includes testable AC",
+            "Given no NFR exists, When critic pass runs, Then an NFR story is added with points and AC"
+          ],
+          "dependencies": ["Decomposition output", "Critic pass"],
+          "risks": ["NFR content can become boilerplate without strong prompts"]
+        },
+        {
+          "id": "story_203_story_editing",
+          "title": "Allow user edits before saving",
+          "description": "Allow users to edit generated PRD/story fields before committing them into the epic workspace.",
+          "success_criteria": "Edits are saved and reflected in the final output payload.",
+          "non_goals": ["Real-time collaboration in v1"],
+          "edge_cases": ["User edits break expected types (arrays vs strings)", "Large pasted text"],
+          "ux_notes": ["Inline edit with autosave", "Validate fields and show friendly errors"],
+          "instrumentation": ["initiative_story_edited", "initiative_prd_edited"],
+          "notes_for_engineering": "Validate edits client-side and server-side; preserve schema.",
+          "labels": ["frontend", "ui", "mvp"],
+          "priority": "nice-to-have",
+          "points": 3,
+          "acceptance_criteria": [
+            "Given generated output is displayed, When a user edits story fields, Then the changes persist in state until save",
+            "Given invalid edits, When the user saves, Then an error explains what must be fixed"
+          ],
+          "dependencies": ["Decomposition output UI"],
+          "risks": ["Editing complexity can balloon without a clear UX boundary"]
+        }
+      ]
+    },
+    {
+      "id": "feat_c3d4e5f6g7h8",
+      "name": "Sprint Planning + Push",
+      "description": "Assign Fibonacci points, produce a 2‑sprint plan aligned to capacity, and enable push to external tools.",
+      "priority": "must-have",
+      "stories": [
+        {
+          "id": "story_301_plan_two_sprints",
+          "title": "Create a capacity-aware 2-sprint plan",
+          "description": "Assign Fibonacci story points and allocate stories into two sprints, prioritizing must-haves in Sprint 1 and balancing capacity.",
+          "success_criteria": "Sprint totals are within velocity targets and story IDs are a strict subset of generated story IDs.",
+          "non_goals": ["Automatic resource leveling across multiple teams"],
+          "edge_cases": ["Model invents story IDs", "One sprint overloaded by must-haves"],
+          "ux_notes": ["Show on-track/at-risk/overloaded status", "Allow user to re-balance by toggling deferrals"],
+          "instrumentation": ["initiative_pass3_planning_success", "initiative_scope_assessment"],
+          "notes_for_engineering": "Use strict subset constraints and validate IDs; enforce Fibonacci points.",
+          "labels": ["backend", "planning", "mvp"],
+          "priority": "must-have",
+          "points": 5,
+          "acceptance_criteria": [
+            "Given a set of story IDs, When planning runs, Then all estimates use Fibonacci values and include every story in estimated_stories",
+            "Given sprint_plan story_ids are returned, When validated, Then all story_ids exist in the generated story list"
+          ],
+          "dependencies": ["Decomposition output"],
+          "risks": ["Capacity assumptions may be wrong without delivery context"]
+        },
+        {
+          "id": "story_302_push_integrations",
+          "title": "Push to Jira/Linear/Azure DevOps",
+          "description": "Allow users to push epics/features/stories into external tools with create-or-update idempotency and push history.",
+          "success_criteria": "A second push updates existing items instead of duplicating them; user can preview changes.",
+          "non_goals": ["Complex field mapping wizard in v1"],
+          "edge_cases": ["Provider tokens expire", "Partial push failures mid-run"],
+          "ux_notes": ["Preview first, then push with progress and links", "Surface actionable errors (reconnect, missing scope)"],
+          "instrumentation": ["integration_preview_run", "integration_push_run", "integration_push_failed"],
+          "notes_for_engineering": "Use mapping table and payload hash; store push runs with summary/error JSON.",
+          "labels": ["integration", "backend", "frontend", "mvp"],
+          "priority": "should-have",
+          "points": 3,
+          "acceptance_criteria": [
+            "Given a connected provider, When preview is requested, Then the API returns a list of create/update actions without writing",
+            "Given an entity is pushed twice, When mappings exist, Then the second push updates instead of creating duplicates"
+          ],
+          "dependencies": ["Integrations configuration"],
+          "risks": ["Provider APIs vary; careful error handling required"]
+        },
+        {
+          "id": "story_303_rate_limit_abuse",
+          "title": "Protect AI and pushes with rate limiting",
+          "description": "Rate limit AI generation and integration pushes to control costs and prevent abuse.",
+          "success_criteria": "429 responses include retry-after and user-friendly messaging.",
+          "non_goals": ["Per-plan quota billing in v1"],
+          "edge_cases": ["Multiple workers cause inconsistent limits without Redis"],
+          "ux_notes": ["Show a toast with retry time", "Avoid breaking the UI state on 429"],
+          "instrumentation": ["rate_limit_exceeded"],
+          "notes_for_engineering": "Use Redis storage when available; fall back to memory for single-instance dev.",
+          "labels": ["security", "performance", "backend"],
+          "priority": "should-have",
+          "points": 2,
+          "acceptance_criteria": [
+            "Given too many requests, When rate limit triggers, Then API returns 429 with Retry-After header and JSON body",
+            "Given Redis is configured, When multiple instances run, Then rate limits are shared across instances"
+          ],
+          "dependencies": ["Rate limit middleware"],
+          "risks": ["Misconfigured storage leads to bypass under horizontal scaling"]
+        }
+      ]
+    }
+  ],
+  "sprint_plan": {
+    "sprint_1": {
+      "goal": "Generate a complete PRD and first buildable story set",
+      "story_ids": [
+        "story_101_prd_schema",
+        "story_201_decompose_features",
+        "story_301_plan_two_sprints"
+      ],
+      "total_points": 15
+    },
+    "sprint_2": {
+      "goal": "Polish the experience: progress, quality mode, and safe push to tools",
+      "story_ids": [
+        "story_102_progress_stream",
+        "story_103_quality_mode",
+        "story_202_require_nfr",
+        "story_302_push_integrations",
+        "story_303_rate_limit_abuse",
+        "story_203_story_editing"
+      ],
+      "total_points": 15
+    }
+  },
+  "total_points": 30,
+  "meta": {
+    "example": true,
+    "source": "fixture",
+    "notes": "Use this fixture for the public landing page preview modal. IDs are stable and story fields match the richer story schema used in New Initiative."
+  }
+}
