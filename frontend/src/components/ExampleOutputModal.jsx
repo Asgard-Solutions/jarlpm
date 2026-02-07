@@ -486,114 +486,258 @@ ${prd.validation_plan}
               </div>
             </TabsContent>
 
-            {/* Sprint Plan Tab */}
+            {/* Sprint Plan Tab - Matches Sprints.jsx page styling */}
             <TabsContent value="sprint" className="p-6 mt-0">
-              {/* Summary Header - Matches NewInitiative.jsx */}
-              <Card className="bg-gradient-to-r from-nordic-accent/20 to-nordic-green/20 border-nordic-accent/30 mb-6">
+              {/* Sprint Header Card */}
+              <Card className="mb-4">
                 <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-2xl font-bold text-nordic-text-primary">
-                        {exampleData.product_name}
-                      </h2>
-                      <p className="text-nordic-text-muted">{exampleData.tagline}</p>
-                    </div>
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="flex items-center gap-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-nordic-accent">{exampleData.features.length}</div>
-                        <div className="text-xs text-nordic-text-muted">Features</div>
+                      <div className="h-14 w-14 rounded-xl bg-violet-500/10 flex items-center justify-center">
+                        <span className="text-2xl font-bold text-violet-400">1</span>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-nordic-green">{totalStories}</div>
-                        <div className="text-xs text-nordic-text-muted">Stories</div>
+                      <div>
+                        <h2 className="text-xl font-bold text-nordic-text-primary">Sprint 1</h2>
+                        <p className="text-sm text-nordic-text-muted">
+                          Jan 15, 2025 - Jan 29, 2025
+                        </p>
                       </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-6">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-nordic-text-primary">{totalPoints}</div>
-                        <div className="text-xs text-nordic-text-muted">Points</div>
+                        <div className="flex items-center gap-1 text-nordic-text-muted">
+                          <Clock className="h-4 w-4" />
+                          <span className="text-sm">Days Left</span>
+                        </div>
+                        <p className="text-2xl font-bold text-nordic-text-primary">8</p>
+                      </div>
+                      
+                      <div className="w-32">
+                        <p className="text-sm text-nordic-text-muted mb-1">Progress</p>
+                        <Progress value={35} className="h-2" />
+                        <p className="text-xs text-right text-nordic-text-muted mt-1">35%</p>
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <div className="space-y-4">
-                {/* Sprint 1 */}
-                <Card className="bg-[#0d0d1a] border-nordic-border">
+              {/* Stats Row */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                {/* Capacity */}
+                <Card>
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-nordic-text-primary">Sprint 1</h4>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="border-nordic-border">
-                          {exampleData.sprint_plan.sprint_1.total_points} pts
-                        </Badge>
-                        {(() => {
-                          const status = getCapacityStatus(exampleData.sprint_plan.sprint_1.total_points);
-                          return (
-                            <Badge variant="outline" className={status.className}>
-                              {status.label}
-                            </Badge>
-                          );
-                        })()}
-                      </div>
+                    <div className="flex items-center gap-2 text-sm text-nordic-text-muted mb-2">
+                      <Target className="h-4 w-4" />
+                      Capacity
                     </div>
-                    <p className="text-sm text-nordic-text-muted mb-3">{exampleData.sprint_plan.sprint_1.goal}</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl font-bold text-nordic-text-primary">{exampleData.sprint_plan.sprint_1.total_points}</span>
+                      <span className="text-nordic-text-muted">/ 18</span>
+                    </div>
+                    <Badge variant="outline" className="mt-2 bg-green-500/10 text-green-400 border-green-500/30">
+                      <TrendingUp className="h-3 w-3 mr-1" /> 2 buffer
+                    </Badge>
+                  </CardContent>
+                </Card>
+                
+                {/* Backlog */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 text-gray-400 text-sm">
+                      <ListChecks className="h-4 w-4" />
+                      Backlog
+                    </div>
+                    <div className="text-2xl font-bold text-nordic-text-primary mt-1">2</div>
+                  </CardContent>
+                </Card>
+                
+                {/* Ready */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 text-blue-400 text-sm">
+                      <Flag className="h-4 w-4" />
+                      Ready
+                    </div>
+                    <div className="text-2xl font-bold text-nordic-text-primary mt-1">3</div>
+                  </CardContent>
+                </Card>
+                
+                {/* In Progress */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 text-amber-400 text-sm">
+                      <Play className="h-4 w-4" />
+                      In Progress
+                    </div>
+                    <div className="text-2xl font-bold text-nordic-text-primary mt-1">2</div>
+                  </CardContent>
+                </Card>
+                
+                {/* Done */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 text-green-400 text-sm">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Done
+                    </div>
+                    <div className="text-2xl font-bold text-nordic-text-primary mt-1">1</div>
+                    <p className="text-xs text-nordic-text-muted mt-1">
+                      5 / {exampleData.sprint_plan.sprint_1.total_points} pts
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Kanban Board */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                {/* Ready Column */}
+                <Card className="bg-blue-500/5">
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="flex items-center gap-2 text-sm font-medium text-nordic-text-primary">
+                        <Flag className="h-4 w-4 text-blue-400" />
+                        Ready
+                      </span>
+                      <Badge variant="secondary" className="text-xs">3</Badge>
+                    </div>
                     <div className="space-y-2">
-                      {exampleData.sprint_plan.sprint_1.story_ids.map((storyId) => {
+                      {exampleData.sprint_plan.sprint_1.story_ids.slice(0, 3).map((storyId) => {
                         const story = exampleData.features
                           .flatMap(f => f.stories)
                           .find(s => s.id === storyId);
                         return story ? (
-                          <div key={storyId} className="flex items-center justify-between p-2 bg-[#0d0d1a] rounded">
-                            <span className="text-sm text-nordic-text-primary">{story.title}</span>
-                            <Badge variant="outline" className="text-xs border-nordic-border">{story.points} pts</Badge>
-                          </div>
+                          <Card key={storyId} className="bg-[#0d0d1a] border-slate-700/50">
+                            <CardContent className="p-3">
+                              <p className="font-medium text-sm text-nordic-text-primary truncate">{story.title}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs border-slate-600">
+                                  {story.points} pts
+                                </Badge>
+                              </div>
+                            </CardContent>
+                          </Card>
                         ) : null;
                       })}
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Sprint 2 */}
-                <Card className="bg-[#0d0d1a] border-nordic-border">
-                  <CardContent className="p-4">
+                {/* In Progress Column */}
+                <Card className="bg-amber-500/5">
+                  <CardContent className="p-3">
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-nordic-text-primary">Sprint 2</h4>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="border-nordic-border">
-                          {exampleData.sprint_plan.sprint_2.total_points} pts
-                        </Badge>
-                        {(() => {
-                          const status = getCapacityStatus(exampleData.sprint_plan.sprint_2.total_points);
-                          return (
-                            <Badge variant="outline" className={status.className}>
-                              {status.label}
-                            </Badge>
-                          );
-                        })()}
-                      </div>
+                      <span className="flex items-center gap-2 text-sm font-medium text-nordic-text-primary">
+                        <Play className="h-4 w-4 text-amber-400" />
+                        In Progress
+                      </span>
+                      <Badge variant="secondary" className="text-xs">2</Badge>
                     </div>
-                    <p className="text-sm text-nordic-text-muted mb-3">{exampleData.sprint_plan.sprint_2.goal}</p>
                     <div className="space-y-2">
-                      {exampleData.sprint_plan.sprint_2.story_ids.map((storyId) => {
+                      {exampleData.sprint_plan.sprint_1.story_ids.slice(3, 5).map((storyId) => {
                         const story = exampleData.features
                           .flatMap(f => f.stories)
                           .find(s => s.id === storyId);
                         return story ? (
-                          <div key={storyId} className="flex items-center justify-between p-2 bg-[#0d0d1a] rounded">
-                            <span className="text-sm text-nordic-text-primary">{story.title}</span>
-                            <Badge variant="outline" className="text-xs border-nordic-border">{story.points} pts</Badge>
-                          </div>
+                          <Card key={storyId} className="bg-[#0d0d1a] border-slate-700/50">
+                            <CardContent className="p-3">
+                              <p className="font-medium text-sm text-nordic-text-primary truncate">{story.title}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs border-slate-600">
+                                  {story.points} pts
+                                </Badge>
+                              </div>
+                            </CardContent>
+                          </Card>
                         ) : null;
                       })}
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Capacity Note */}
-                <div className="text-center p-4 bg-[#0d0d1a] rounded-lg border border-nordic-border">
-                  <p className="text-sm text-nordic-text-muted">
-                    Based on a team velocity of ~16 points/sprint
-                  </p>
+                {/* Blocked Column */}
+                <Card className="bg-red-500/5">
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="flex items-center gap-2 text-sm font-medium text-nordic-text-primary">
+                        <Ban className="h-4 w-4 text-red-400" />
+                        Blocked
+                      </span>
+                      <Badge variant="secondary" className="text-xs">0</Badge>
+                    </div>
+                    <div className="text-center py-4">
+                      <p className="text-sm text-nordic-text-muted">No blocked stories</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Done Column */}
+                <Card className="bg-green-500/5">
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="flex items-center gap-2 text-sm font-medium text-nordic-text-primary">
+                        <CheckCircle2 className="h-4 w-4 text-green-400" />
+                        Done
+                      </span>
+                      <Badge variant="secondary" className="text-xs">1</Badge>
+                    </div>
+                    <div className="space-y-2">
+                      {exampleData.sprint_plan.sprint_1.story_ids.slice(5, 6).map((storyId) => {
+                        const story = exampleData.features
+                          .flatMap(f => f.stories)
+                          .find(s => s.id === storyId);
+                        return story ? (
+                          <Card key={storyId} className="bg-[#0d0d1a] border-slate-700/50">
+                            <CardContent className="p-3">
+                              <p className="font-medium text-sm text-nordic-text-primary truncate">{story.title}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs border-slate-600">
+                                  {story.points} pts
+                                </Badge>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ) : null;
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Sprint 2 Preview */}
+              <Card className="mt-4 bg-[#0d0d1a] border-slate-700/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-slate-700/50 flex items-center justify-center">
+                        <span className="text-lg font-bold text-nordic-text-muted">2</span>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-nordic-text-primary">Sprint 2</h4>
+                        <p className="text-xs text-nordic-text-muted">Jan 30 - Feb 13, 2025</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="border-slate-600">
+                        {exampleData.sprint_plan.sprint_2.total_points} pts
+                      </Badge>
+                      <Badge variant="outline" className="bg-slate-700/30 text-nordic-text-muted border-slate-600">
+                        Upcoming
+                      </Badge>
+                    </div>
+                  </div>
+                  <p className="text-sm text-nordic-text-muted">{exampleData.sprint_plan.sprint_2.goal}</p>
+                </CardContent>
+              </Card>
+
+              {/* Velocity Note */}
+              <div className="text-center mt-4 p-3 bg-[#0d0d1a] rounded-lg border border-slate-700/50">
+                <p className="text-sm text-nordic-text-muted">
+                  Based on a team velocity of ~16-18 points/sprint
+                </p>
+              </div>
+            </TabsContent>
                   <p className="text-xs text-nordic-text-muted/70 mt-1">
                     JarlPM adapts to your actual delivery context and capacity settings
                   </p>
