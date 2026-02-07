@@ -139,12 +139,19 @@ class StructuredPRD(BaseModel):
 
 
 class SavePRDRequest(BaseModel):
-    """Request to save PRD"""
+    """Request to save PRD (legacy markdown format)"""
     epic_id: str
     content: str  # Frontend sends as 'content', we'll store in 'sections'
     title: Optional[str] = None
     version: str = "1.0"
     status: str = "draft"
+
+
+class UpdateStructuredPRDRequest(BaseModel):
+    """Request to update structured PRD"""
+    prd: dict  # The full structured PRD JSON
+    title: Optional[str] = None
+    version: Optional[str] = None
 
 
 @router.get("/list")
