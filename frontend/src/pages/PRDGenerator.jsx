@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { 
   Loader2, FileText, Download, Copy, Check, RefreshCw,
-  Plus, ArrowLeft, Calendar, Edit3, Trash2, Save
+  Plus, ArrowLeft, Calendar, Edit3, Trash2, Save, Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
@@ -18,6 +18,7 @@ import remarkGfm from 'remark-gfm';
 import { epicAPI, featureAPI, prdAPI } from '@/api';
 import PageHeader from '@/components/PageHeader';
 import EmptyState from '@/components/EmptyState';
+import PRDPreview from '@/components/PRDPreview';
 
 const PRDGenerator = () => {
   const navigate = useNavigate();
