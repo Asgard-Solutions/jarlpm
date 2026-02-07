@@ -223,6 +223,7 @@
           "labels": ["backend", "api", "mvp"],
           "priority": "must-have",
           "points": 5,
+          "rice_score": 10.5,
           "acceptance_criteria": [
             "Given a PRD is generated, When decomposition runs, Then 3–5 features are returned with 2–4 stories each",
             "Given a story is returned, When validated, Then it includes description, AC, edge_cases, instrumentation, and notes_for_engineering"
