@@ -167,7 +167,7 @@ ${prd.validation_plan}
                   variant="outline"
                   size="sm"
                   onClick={handleCopyPRD}
-                  className="border-nordic-border text-nordic-text-primary hover:bg-nordic-bg-primary"
+                  className="border-nordic-border text-nordic-text-primary hover:bg-[#1a1a2e]"
                   data-testid="copy-prd-btn"
                 >
                   {copied ? (
