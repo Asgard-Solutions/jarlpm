@@ -15,7 +15,7 @@ JarlPM is an AI-agnostic, conversation-driven Product Management system for Prod
 
 ### Key Architectural Decisions
 
-1. **LLM Agnosticism**: Users bring their own API keys (OpenAI, Anthropic, Local HTTP). JarlPM never bundles model access.
+1. **LLM Agnosticism**: Users bring their own API keys (OpenAI, Anthropic, Google Gemini, or Self-Hosted endpoints). JarlPM never bundles model access.
 
 2. **Prompt Registry Pattern**: All AI interactions use versioned, provider-neutral prompt templates stored in the database. No provider-native agents are used.
 
