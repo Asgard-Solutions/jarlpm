@@ -116,14 +116,6 @@ ${prd.validation_plan}
   const totalStories = exampleData.features.reduce((acc, f) => acc + f.stories.length, 0);
   const totalPoints = exampleData.total_points;
 
-  // Get capacity status for sprint plan
-  const getCapacityStatus = (points, capacity = 16) => {
-    const ratio = points / capacity;
-    if (ratio <= 0.9) return { status: 'on-track', className: 'bg-green-500/20 text-green-400 border-green-500/30', label: 'On Track' };
-    if (ratio <= 1.1) return { status: 'at-risk', className: 'bg-amber-500/20 text-amber-400 border-amber-500/30', label: 'At Risk' };
-    return { status: 'overloaded', className: 'bg-red-500/20 text-red-400 border-red-500/30', label: 'Overloaded' };
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 bg-[#1a1a2e] border-nordic-border shadow-2xl">
