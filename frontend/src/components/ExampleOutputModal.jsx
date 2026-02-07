@@ -293,7 +293,7 @@ ${prd.validation_plan}
                       </div>
                       <div className="space-y-2">
                         {exampleData.prd.not_now.map((item, i) => (
-                          <div key={i} className="bg-nordic-bg-primary p-2 rounded border border-nordic-border">
+                          <div key={i} className="bg-[#0d0d1a] p-2 rounded border border-nordic-border">
                             <span className="text-nordic-text-muted">{item.item}</span>
                             <p className="text-xs text-nordic-text-muted/70 mt-1">Why: {item.rationale}</p>
                           </div>
