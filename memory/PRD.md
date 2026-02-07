@@ -549,6 +549,44 @@ When an Epic is locked, users enter Feature Planning Mode:
   - Epic selector with export preview
   - File export tab with 4 format buttons
 
+### 2026-02-07: Nordic Theme Contrast / Form Readability Fix (COMPLETE)
+
+**Problem:** Form inputs had `bg-transparent` making text hard to read against various parent backgrounds. Theme switching caused readability issues.
+
+**Solution Applied:**
+
+1. **Base UI Components Fixed**
+   - `Input.jsx`: Changed `bg-transparent` → `bg-background text-foreground`
+   - `Textarea.jsx`: Changed `bg-transparent` → `bg-background text-foreground`
+   - `Select.jsx`: Changed `bg-transparent` → `bg-background text-foreground`
+   - All components now use `ring-2 ring-ring/30 focus-visible:border-primary/40` for focus states
+
+2. **Tailwind Config Updated**
+   - Added Nordic color aliases for legacy component support:
+     - `nordic.green`, `nordic.accent`, `nordic.border`
+     - `nordic.bg.primary/secondary/tertiary`
+     - `nordic.text.primary/secondary/muted`
+
+3. **UI Classes Utility Created**
+   - `/app/frontend/src/utils/uiClasses.js`
+   - Exports `FORM_CONTROL_CLASS`, `FORM_CONTROL_ERROR_CLASS` for standardized styling
+
+**Visual QA Results:**
+- Light Mode Input: bg rgb(243, 245, 247), text rgb(32, 41, 50)
+- Dark Mode Input: bg rgb(17, 22, 29), text rgb(229, 231, 235)
+- Focus Ring: rgba(47, 94, 142, 0.3) 0px 0px 0px 2px
+
+**Pages Verified:**
+- ✅ Login/Signup - all inputs readable
+- ✅ Dashboard - Quick Start input readable
+- ✅ New Initiative - input and textarea readable
+- ✅ Settings (all tabs) - inputs, selects readable
+- ✅ Landing page - proper contrast
+- ✅ Theme toggle working correctly
+
+**Testing:** 100% (17/17 visual checks passed) - `/app/test_reports/iteration_33.json`
+
+
 
 ### 2026-02-07: Custom LLM Provider Support (COMPLETE)
 
