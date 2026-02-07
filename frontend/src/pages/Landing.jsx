@@ -239,7 +239,7 @@ const Landing = () => {
           </div>
 
           <p className="text-sm text-muted-foreground mt-4">
-            {user ? 'Welcome back — jump straight into your workspace.' : 'No credit card required. Start in under a minute.'}
+            {user ? 'Welcome back — jump straight into your workspace.' : '$45/month · Bring your own LLM keys'}
           </p>
         </div>
       </section>
