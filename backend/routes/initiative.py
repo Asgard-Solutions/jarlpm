@@ -1121,6 +1121,7 @@ async def generate_initiative(
                 for s_data in f_data.get('stories', []):
                     story = StorySchema(
                         title=s_data.get('title', 'Story'),
+                        description=s_data.get('description', ''),
                         persona=s_data.get('persona', 'a user'),
                         action=s_data.get('action', ''),
                         benefit=s_data.get('benefit', ''),
@@ -1128,7 +1129,14 @@ async def generate_initiative(
                         labels=s_data.get('labels', []),
                         priority=s_data.get('priority', feature.priority),  # Inherit from feature
                         dependencies=s_data.get('dependencies', []),
-                        risks=s_data.get('risks', [])
+                        risks=s_data.get('risks', []),
+                        # Senior PM-level fields
+                        success_criteria=s_data.get('success_criteria', ''),
+                        non_goals=s_data.get('non_goals', []),
+                        edge_cases=s_data.get('edge_cases', []),
+                        ux_notes=s_data.get('ux_notes', ''),
+                        instrumentation=s_data.get('instrumentation', []),
+                        notes_for_engineering=s_data.get('notes_for_engineering', '')
                     )
                     feature.stories.append(story)
                     all_stories.append({
