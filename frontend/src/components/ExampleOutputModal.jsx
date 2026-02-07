@@ -143,7 +143,7 @@ ${prd.validation_plan}
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1">
           <div className="px-6 pt-4 border-b border-nordic-border">
-            <TabsList className="grid w-full grid-cols-3 bg-nordic-bg-primary">
+            <TabsList className="grid w-full grid-cols-3 bg-[#0d0d1a]">
               <TabsTrigger value="prd" className="flex items-center gap-2 data-[state=active]:bg-nordic-accent data-[state=active]:text-white" data-testid="tab-prd">
                 <FileText className="w-4 h-4" />
                 PRD
