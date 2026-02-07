@@ -206,6 +206,7 @@
       "name": "Decomposition → Buildable Stories",
       "description": "Break a PRD into MVP features and stories with acceptance criteria, edge cases, instrumentation, and engineering notes.",
       "priority": "must-have",
+      "rice_score": 18.5,
       "stories": [
         {
           "id": "story_201_decompose_features",
