@@ -24,7 +24,7 @@ export default defineConfig({
   server: {
     port: 3000,
     host: '0.0.0.0',
-    allowedHosts: ['agile-pm-1.preview.emergentagent.com', 'jarlpm-ai-1.preview.emergentagent.com', 'pm-assistant-3.preview.emergentagent.com', 'teampm-agent.preview.emergentagent.com', 'pmcanvas.preview.emergentagent.com', 'convo-pm-system.preview.emergentagent.com', 'pm-sync-hub.preview.emergentagent.com'],
+    allowedHosts: ['agile-pm-1.preview.emergentagent.com', 'jarlpm-ai-1.preview.emergentagent.com', 'pm-assistant-3.preview.emergentagent.com', 'teampm-agent.preview.emergentagent.com', 'pmcanvas.preview.emergentagent.com', 'convo-pm-system.preview.emergentagent.com', 'pm-sync-hub.preview.emergentagent.com', 'product-push.preview.emergentagent.com'],
   },
   build: {
     outDir: 'build',
