@@ -736,12 +736,9 @@ ${prd.validation_plan}
                 <p className="text-sm text-nordic-text-muted">
                   Based on a team velocity of ~16-18 points/sprint
                 </p>
-              </div>
-            </TabsContent>
-                  <p className="text-xs text-nordic-text-muted/70 mt-1">
-                    JarlPM adapts to your actual delivery context and capacity settings
-                  </p>
-                </div>
+                <p className="text-xs text-nordic-text-muted/70 mt-1">
+                  JarlPM adapts to your actual delivery context and capacity settings
+                </p>
               </div>
             </TabsContent>
           </ScrollArea>
