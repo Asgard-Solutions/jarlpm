@@ -66,6 +66,14 @@ class UserStoryResponse(BaseModel):
     story_points: Optional[int] = None
     priority: Optional[int] = None
     is_standalone: bool = False
+    # Export-ready fields
+    labels: Optional[List[str]] = None
+    story_priority: Optional[str] = None
+    dependencies: Optional[List[str]] = None
+    risks: Optional[List[str]] = None
+    # Senior PM-level fields
+    edge_cases: Optional[List[str]] = None
+    notes_for_engineering: Optional[str] = None
     # RICE scoring fields
     rice_reach: Optional[int] = None
     rice_impact: Optional[float] = None
