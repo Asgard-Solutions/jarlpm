@@ -59,11 +59,17 @@ JarlPM is an AI-agnostic, conversation-driven Product Management system for Prod
 ### LLMProviderConfig
 - config_id (UUID)
 - user_id
-- provider: openai | anthropic | local
+- provider: openai | anthropic | google | local
 - encrypted_api_key (Fernet encrypted)
 - base_url (for local providers)
 - model_name
 - is_active
+
+### Supported LLM Providers (Updated 2026-02-07)
+1. **OpenAI**: GPT-4o, GPT-4 Turbo, GPT-4o-mini, GPT-3.5 Turbo
+2. **Anthropic (Claude)**: Claude Sonnet 4, Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku
+3. **Google Gemini**: Gemini 2.0 Flash, Gemini 2.0 Flash Lite, Gemini 1.5 Pro, Gemini 1.5 Flash
+4. **Self-Hosted/Custom**: LM Studio, Ollama, vLLM, or any OpenAI-compatible endpoint
 
 ### Epic
 - epic_id (UUID)
