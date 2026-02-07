@@ -515,19 +515,23 @@ ${epic.risks || '_Not yet defined_'}
       ) : (
         <Card className="bg-card border-border">
           <CardContent className="p-0">
-            <Tabs defaultValue="edit" className="w-full">
+            <Tabs defaultValue="preview" className="w-full">
               <div className="border-b border-border px-4">
                 <TabsList className="h-12 bg-transparent">
+                  <TabsTrigger value="preview" className="data-[state=active]:bg-muted">
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview
+                  </TabsTrigger>
                   <TabsTrigger value="edit" className="data-[state=active]:bg-muted">
                     <Edit3 className="h-4 w-4 mr-2" />
                     Edit
                   </TabsTrigger>
-                  <TabsTrigger value="preview" className="data-[state=active]:bg-muted">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Preview
-                  </TabsTrigger>
                 </TabsList>
               </div>
+              
+              <TabsContent value="preview" className="m-0">
+                <PRDPreview content={prdContent} />
+              </TabsContent>
               
               <TabsContent value="edit" className="m-0">
                 <Textarea
@@ -536,18 +540,6 @@ ${epic.risks || '_Not yet defined_'}
                   className="min-h-[600px] border-0 rounded-none font-mono text-sm resize-none focus-visible:ring-0"
                   placeholder="PRD content will appear here..."
                 />
-              </TabsContent>
-              
-              <TabsContent value="preview" className="m-0">
-                <ScrollArea className="h-[600px]">
-                  <div className="p-6">
-                    <div className="text-sm leading-6 space-y-4">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {prdContent || ''}
-                      </ReactMarkdown>
-                    </div>
-                  </div>
-                </ScrollArea>
               </TabsContent>
             </Tabs>
           </CardContent>
