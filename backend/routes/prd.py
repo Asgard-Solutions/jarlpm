@@ -347,6 +347,63 @@ async def save_prd(
     }
 
 
+@router.put("/update/{epic_id}")
+async def update_structured_prd(
+    epic_id: str,
+    request: Request,
+    body: UpdateStructuredPRDRequest,
+    session: AsyncSession = Depends(get_db)
+):
+    """Update structured PRD (JSON format) for an Epic"""
+    user_id = await get_current_user_id(request, session)
+    
+    # Get existing PRD
+    prd_result = await session.execute(
+        select(PRDDocument).where(
+            PRDDocument.epic_id == epic_id,
+            PRDDocument.user_id == user_id
+        )
+    )
+    prd = prd_result.scalar_one_or_none()
+    
+    if not prd:
+        raise HTTPException(status_code=404, detail="PRD not found")
+    
+    # Validate the PRD structure using Pydantic
+    try:
+        validated_prd = StructuredPRD.model_validate(body.prd)
+        prd_data = validated_prd.model_dump()
+    except Exception as e:
+        logger.warning(f"PRD validation warning: {e}")
+        # Still accept it but log the warning
+        prd_data = body.prd
+    
+    # Update the PRD
+    prd.sections = {
+        "prd": prd_data,
+        "format": "json",
+        "validated": True,
+        "edited": True
+    }
+    
+    if body.title:
+        prd.title = body.title
+    if body.version:
+        prd.version = body.version
+    
+    prd.source = "manual_edit"
+    prd.updated_at = datetime.now(timezone.utc)
+    
+    await session.commit()
+    
+    return {
+        "success": True,
+        "epic_id": epic_id,
+        "prd": prd_data,
+        "message": "PRD updated successfully"
+    }
+
+
 @router.delete("/{epic_id}")
 async def delete_prd(
     epic_id: str,
