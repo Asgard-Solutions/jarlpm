@@ -71,6 +71,9 @@ class LLMService:
         elif provider == LLMProvider.ANTHROPIC.value:
             async for chunk in self._anthropic_stream(api_key, model, system_prompt, user_prompt, conversation_history, temperature):
                 yield chunk
+        elif provider == LLMProvider.GOOGLE.value:
+            async for chunk in self._google_stream(api_key, model, system_prompt, user_prompt, conversation_history, temperature):
+                yield chunk
         elif provider == LLMProvider.LOCAL.value:
             async for chunk in self._local_stream(api_key, base_url, model, system_prompt, user_prompt, conversation_history, temperature):
                 yield chunk
@@ -108,6 +111,9 @@ class LLMService:
                 yield chunk
         elif config.provider == LLMProvider.ANTHROPIC.value:
             async for chunk in self._anthropic_stream(api_key, config.model_name, system_prompt, user_prompt, conversation_history, temperature):
+                yield chunk
+        elif config.provider == LLMProvider.GOOGLE.value:
+            async for chunk in self._google_stream(api_key, config.model_name, system_prompt, user_prompt, conversation_history, temperature):
                 yield chunk
         elif config.provider == LLMProvider.LOCAL.value:
             async for chunk in self._local_stream(api_key, config.base_url, config.model_name, system_prompt, user_prompt, conversation_history, temperature):
