@@ -1714,3 +1714,75 @@ JIRA_OAUTH_REDIRECT_URI=
 **Pending User Action:**
 - Real-world integration testing requires OAuth credentials (Linear, Jira) or PAT (Azure DevOps)
 
+
+### 2026-02-07: Activation-First Landing Page Redesign (COMPLETE)
+**Goal:** Make the public landing page a best-in-class app entry that drives activation: arrive → understand → sign up → generate first initiative.
+
+**P0 Features Implemented:**
+
+1. **"Example Output" Preview Modal** (`/app/frontend/src/components/ExampleOutputModal.jsx`)
+   - Secondary CTA "See Example Output" on hero
+   - 3 tabs: PRD, Stories, Sprint Plan
+   - High-fidelity rendering using existing UI components
+   - "Copy PRD" button for clipboard export
+   - "Generate My Own" CTA that respects auth state:
+     - Logged in → `/new`
+     - Logged out → `/signup?next=/new`
+   - JSON fixture: `/app/frontend/src/content/exampleInitiative.json`
+
+2. **Smart Redirect for Returning Users**
+   - Welcome back banner for logged-in users: "Welcome back, [name]"
+   - One-click "Go to Dashboard" button
+   - No auto-redirect (respects user intent to stay on public page)
+   - Nav bar shows "Dashboard" instead of Sign in/Get Started when logged in
+
+3. **Conversion Event Tracking** (`/app/frontend/src/utils/analytics.js`)
+   - Lightweight first-party tracking (console.log with event queue)
+   - Events tracked:
+     - `landing_page_view`
+     - `click_generate_initiative`
+     - `click_see_example`
+     - `click_sign_in`
+     - `click_get_started`
+     - `click_generate_my_own`
+     - `click_copy_prd`
+     - `preview_tab_change`
+   - Ready to swap to real analytics (Mixpanel, Amplitude, PostHog)
+
+**P1 Features Implemented:**
+
+4. **3-Step Workflow Section**
+   - Step 1: Define problem + metrics (PRD)
+   - Step 2: Generate buildable stories (AC, instrumentation, edge cases)
+   - Step 3: Plan + push (Jira/Linear/Azure DevOps)
+   - Visual cards with icons and step badges
+
+5. **Integrations Row**
+   - "Push directly to your tools" heading
+   - "Create or update — no duplicates" tagline
+   - Provider badges: Jira, Linear, Azure DevOps
+
+6. **Copy & Layout Polish**
+   - Hero: "Ship like you have a Senior PM"
+   - Primary CTA: "Generate an Initiative"
+   - Secondary CTA: "See Example Output"
+   - Context-aware helper text based on auth state
+   - Epic Lifecycle section moved lower (less priority)
+   - Pricing section updated with "Generate an Initiative" CTA
+
+**QA Verification:**
+- ✅ `npm run build` passes
+- ✅ Mobile layout responsive and looks good
+- ✅ Auth state routing works:
+  - Logged out → `/signup?next=/new`
+  - Logged in → `/new` or `/dashboard`
+- ✅ Preview modal loads instantly with all 3 tabs
+- ✅ Copy PRD button works
+- ✅ Analytics events logging to console
+
+**Files Created/Modified:**
+- `/app/frontend/src/pages/Landing.jsx` - Complete redesign
+- `/app/frontend/src/components/ExampleOutputModal.jsx` - New component
+- `/app/frontend/src/content/exampleInitiative.json` - Fixture data
+- `/app/frontend/src/utils/analytics.js` - Tracking utility
+
