@@ -549,7 +549,7 @@ ${epic.risks || '_Not yet defined_'}
                 <TabsList className="h-12 bg-transparent">
                   <TabsTrigger value="preview" className="data-[state=active]:bg-muted">
                     <Eye className="h-4 w-4 mr-2" />
-                    Preview
+                    Preview {prdFormat === 'json' && '& Edit'}
                   </TabsTrigger>
                   {prdFormat === 'markdown' && (
                     <TabsTrigger value="edit" className="data-[state=active]:bg-muted">
@@ -565,6 +565,12 @@ ${epic.risks || '_Not yet defined_'}
                   content={prdContent} 
                   prdData={prdData}
                   format={prdFormat}
+                  onSave={prdFormat === 'json' ? async (updatedPrd) => {
+                    await prdAPI.updateStructured(selectedEpicId, updatedPrd);
+                    setPrdData(updatedPrd);
+                    setLastSavedAt(new Date());
+                  } : null}
+                  readOnly={false}
                 />
               </TabsContent>
               
