@@ -10,10 +10,12 @@
  * - click_generate_my_own (from preview modal)
  * - click_copy_prd
  * 
- * Currently logs to console. Ready to swap to real analytics (Mixpanel, Amplitude, PostHog, etc.)
+ * Console logging disabled in production. Ready to swap to real analytics.
  */
 
-const TRACKING_ENABLED = true;
+// Disable console logging in production, or gate via env var
+const TRACKING_ENABLED = import.meta.env.VITE_TRACKING_ENABLED === 'true' || !import.meta.env.PROD;
+const LOG_TO_CONSOLE = !import.meta.env.PROD; // Only log to console in dev
 
 // Queue for events if we add a real analytics provider later
 const eventQueue = [];
