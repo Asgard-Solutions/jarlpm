@@ -210,7 +210,7 @@ ${prd.validation_plan}
                       </div>
                       <div className="space-y-3">
                         {exampleData.prd.target_users.map((user, i) => (
-                          <div key={i} className="bg-nordic-bg-primary p-3 rounded-lg border border-nordic-border">
+                          <div key={i} className="bg-[#0d0d1a] p-3 rounded-lg border border-nordic-border">
                             <div className="font-medium text-nordic-text-primary mb-1">{user.persona}</div>
                             <p className="text-sm text-nordic-text-muted mb-2">{user.context}</p>
                             <div className="mb-2">
