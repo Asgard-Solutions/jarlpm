@@ -173,6 +173,7 @@
           "labels": ["frontend", "api", "performance", "mvp"],
           "priority": "should-have",
           "points": 3,
+          "rice_score": 8.4,
           "acceptance_criteria": [
             "Given generation starts, When the server emits SSE events, Then the UI updates progress without errors",
             "Given the stream fails, When the UI receives an error event, Then a retry action is offered"
