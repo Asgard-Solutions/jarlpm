@@ -548,6 +548,54 @@ When an Epic is locked, users enter Feature Planning Mode:
 - **Frontend Export Page:**
   - Epic selector with export preview
   - File export tab with 4 format buttons
+
+
+### 2026-02-07: Custom LLM Provider Support (COMPLETE)
+
+**Features Implemented:**
+
+1. **Google Gemini Provider Support (NEW)**
+   - Added `GOOGLE` to LLMProvider enum
+   - Implemented `_google_stream()` method for streaming responses
+   - Google Gemini API validation via `/v1beta/models` endpoint
+   - Default model: `gemini-2.0-flash`
+   - Model suggestions: gemini-2.0-flash, gemini-2.0-flash-lite, gemini-1.5-pro, gemini-1.5-flash
+
+2. **Enhanced Self-Hosted Provider UX**
+   - Clear "Base URL" field with required indicator
+   - Helpful examples for common setups:
+     - `http://localhost:1234/v1` - LM Studio
+     - `http://localhost:11434/v1` - Ollama
+     - `http://localhost:8000/v1` - vLLM
+   - API Key marked as optional for self-hosted
+   - Supports any OpenAI-compatible API endpoint
+
+3. **Improved LLM Provider UI**
+   - `PROVIDER_INFO` object with metadata for all 4 providers
+   - Provider-specific descriptions and help text
+   - Model suggestion buttons (click to fill)
+   - Help links to API key pages (OpenAI, Anthropic, Google AI Studio)
+   - Active provider badge with checkmark icon
+   - Base URL shown for self-hosted providers
+
+4. **All API Keys Encrypted at Rest**
+   - Fernet encryption using `ENCRYPTION_SECRET_KEY`
+   - Keys never returned in API responses
+
+**Supported Providers:**
+- OpenAI (GPT-4o, GPT-4 Turbo, GPT-3.5 Turbo)
+- Anthropic (Claude Sonnet 4, Claude 3.5 Sonnet, Claude 3 Opus)
+- Google Gemini (Gemini 2.0 Flash, Gemini 1.5 Pro)
+- Self-Hosted/Custom (LM Studio, Ollama, vLLM)
+
+**Files Modified:**
+- `/app/backend/db/models.py` - Added GOOGLE to LLMProvider enum
+- `/app/backend/models/llm_provider.py` - Added GOOGLE to LLMProvider enum
+- `/app/backend/services/llm_service.py` - Added _google_stream() and Google validation
+- `/app/frontend/src/components/settings/LLMProviderTab.jsx` - Complete rewrite with enhanced UX
+
+**Testing:** Backend 100% (11/11), Frontend 100% (10/10) - Test report: `/app/test_reports/iteration_32.json`
+
   - Jira configuration tab with URL, email, API token, project key
   - Azure DevOps configuration tab with organization, project, PAT
   - Export results dialog showing created items and errors
