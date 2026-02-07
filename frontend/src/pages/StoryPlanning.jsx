@@ -958,19 +958,29 @@ const StoryCard = ({ story, onRefine, onApprove, onDelete }) => {
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isApproved ? 'bg-success/20' : story.current_stage === 'refining' ? 'bg-violet-500/20' : 'bg-amber-500/20'}`}>
               <StageIcon className={`w-5 h-5 ${isApproved ? 'text-success' : story.current_stage === 'refining' ? 'text-violet-400' : 'text-amber-400'}`} />
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className={`text-xs ${stageInfo?.color}`}>
-                {isApproved && <Lock className="w-3 h-3 mr-1" />}
-                {stageInfo?.label}
-              </Badge>
-              <Badge variant="outline" className="text-xs bg-muted text-muted-foreground">
-                {story.source === 'ai_generated' ? 'AI' : 'Manual'}
-              </Badge>
-              {story.story_points && (
-                <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/30">
-                  {story.story_points} pts
-                </Badge>
+            <div>
+              {story.title && (
+                <h4 className="font-medium text-foreground text-sm">{story.title}</h4>
               )}
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="outline" className={`text-xs ${stageInfo?.color}`}>
+                  {isApproved && <Lock className="w-3 h-3 mr-1" />}
+                  {stageInfo?.label}
+                </Badge>
+                <Badge variant="outline" className="text-xs bg-muted text-muted-foreground">
+                  {story.source === 'ai_generated' ? 'AI' : 'Manual'}
+                </Badge>
+                {story.story_points && (
+                  <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/30">
+                    {story.story_points} pts
+                  </Badge>
+                )}
+                {story.rice_total && (
+                  <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-400 border-purple-500/30">
+                    RICE: {story.rice_total.toFixed(1)}
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
           {onDelete && (
@@ -986,9 +996,22 @@ const StoryCard = ({ story, onRefine, onApprove, onDelete }) => {
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
+        {/* Story text */}
         <p className="text-sm text-foreground italic">&quot;{story.story_text}&quot;</p>
         
+        {/* Labels */}
+        {story.labels?.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {story.labels.map((label, i) => (
+              <Badge key={i} variant="secondary" className="text-[10px] px-1.5 py-0 bg-blue-500/10 text-blue-400">
+                {label}
+              </Badge>
+            ))}
+          </div>
+        )}
+        
+        {/* Acceptance Criteria */}
         {story.acceptance_criteria?.length > 0 && (
           <div className="bg-background/50 rounded-lg p-3">
             <p className="text-xs font-medium text-foreground mb-2">Acceptance Criteria:</p>
@@ -1004,6 +1027,29 @@ const StoryCard = ({ story, onRefine, onApprove, onDelete }) => {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+        
+        {/* Edge Cases */}
+        {story.edge_cases?.length > 0 && (
+          <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3">
+            <p className="text-xs font-medium text-amber-400 mb-2">Edge Cases:</p>
+            <ul className="text-xs text-muted-foreground space-y-1">
+              {story.edge_cases.map((ec, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <AlertCircle className="w-3 h-3 mt-0.5 text-amber-400 flex-shrink-0" />
+                  {ec}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {/* Notes for Engineering */}
+        {story.notes_for_engineering && (
+          <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3">
+            <p className="text-xs font-medium text-blue-400 mb-1">Notes for Engineering:</p>
+            <p className="text-xs text-muted-foreground">{story.notes_for_engineering}</p>
           </div>
         )}
         
