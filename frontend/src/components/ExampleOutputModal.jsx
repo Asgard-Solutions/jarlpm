@@ -360,7 +360,7 @@ ${prd.validation_plan}
                         
                         <div className="space-y-2">
                           {feature.stories.slice(0, 2).map((story, si) => (
-                            <div key={si} className="bg-nordic-bg-primary rounded p-3">
+                            <div key={si} className="bg-[#0d0d1a] rounded p-3">
                               {/* Story Header */}
                               <div className="flex items-center justify-between mb-2">
                                 <span className="font-medium text-sm text-nordic-text-primary">
