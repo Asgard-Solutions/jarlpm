@@ -1786,3 +1786,26 @@ JIRA_OAUTH_REDIRECT_URI=
 - `/app/frontend/src/content/exampleInitiative.json` - Fixture data
 - `/app/frontend/src/utils/analytics.js` - Tracking utility
 
+
+
+### 2026-02-07: P0 Login Fix - Vite Host Blocking (COMPLETE)
+**Issue:** Frontend was returning "Blocked request. This host is not allowed" error when accessing the preview URL, preventing all users from logging in.
+
+**Root Cause:** `vite.config.js` had a hardcoded list of specific subdomains in `allowedHosts` array, but the current preview URL `aipm-platform-1.preview.emergentagent.com` was not in the list.
+
+**Fix Applied:**
+- Changed `allowedHosts` from explicit array to wildcard: `['.preview.emergentagent.com']`
+- This allows all Emergent preview subdomains automatically
+
+**File Modified:**
+- `/app/frontend/vite.config.js` - Line 27
+
+**Testing:**
+- 18/18 frontend tests passed (100% success rate)
+- Login with `test@jarlpm.com` / `Test123!` redirects to `/dashboard`
+- Logout returns to landing page
+- Signup form loads with validation
+- Landing page fully functional
+
+**Note:** The handoff summary incorrectly identified `process.env` vs `import.meta.env` as the issue. The actual root cause was Vite host blocking configuration.
+
