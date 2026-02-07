@@ -478,6 +478,8 @@ async def duplicate_initiative(
                 story_priority=orig_story.story_priority,
                 dependencies=orig_story.dependencies,
                 risks=orig_story.risks,
+                edge_cases=orig_story.edge_cases,
+                notes_for_engineering=orig_story.notes_for_engineering,
                 current_stage="draft",  # Reset stage
                 source=orig_story.source,
                 story_points=orig_story.story_points,
