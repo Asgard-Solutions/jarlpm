@@ -198,7 +198,7 @@ ${prd.validation_plan}
                         <Target className="w-4 h-4" /> Problem
                       </div>
                       <p className="text-nordic-text-primary">{exampleData.prd.problem_statement}</p>
-                      <p className="text-sm text-nordic-text-muted mt-2 italic bg-nordic-bg-primary p-2 rounded">
+                      <p className="text-sm text-nordic-text-muted mt-2 italic bg-[#0d0d1a] p-2 rounded">
                         Evidence: {exampleData.prd.problem_evidence}
                       </p>
                     </div>
