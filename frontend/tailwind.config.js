@@ -92,6 +92,20 @@ export default {
                                         soft: 'hsl(var(--accent-red-soft))',
                                 },
                                 amber: 'hsl(var(--accent-amber))',
+                                green: 'hsl(var(--status-confirmed))',
+                                /* Legacy aliases for existing components */
+                                accent: 'hsl(var(--accent-blue))',
+                                border: 'hsl(var(--border))',
+                                bg: {
+                                        primary: 'hsl(var(--bg-primary))',
+                                        secondary: 'hsl(var(--bg-secondary))',
+                                        tertiary: 'hsl(var(--bg-tertiary))',
+                                },
+                                text: {
+                                        primary: 'hsl(var(--text-primary))',
+                                        secondary: 'hsl(var(--text-secondary))',
+                                        muted: 'hsl(var(--text-muted))',
+                                },
                         },
                         
                         /* Status Colors (Always pair with icons) */
