@@ -574,7 +574,7 @@ ${prd.validation_plan}
         </Tabs>
 
         {/* Footer CTA */}
-        <div className="px-6 py-4 border-t border-nordic-border bg-nordic-bg-primary flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-nordic-border bg-[#0d0d1a] flex items-center justify-between">
           <p className="text-sm text-nordic-text-muted">
             Ready to turn your idea into a plan?
           </p>
