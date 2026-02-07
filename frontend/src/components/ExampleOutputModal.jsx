@@ -12,6 +12,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { useAuthStore } from '@/store';
 import {
   trackPreviewTabChange,
@@ -48,6 +53,55 @@ import {
 } from 'lucide-react';
 
 import exampleData from '@/content/exampleInitiative.json';
+
+// Collapsible section component for PRD
+const PRDCollapsible = ({ 
+  title, 
+  icon: Icon, 
+  children, 
+  defaultOpen = false,
+  badge = null,
+  accentColor = 'violet'
+}) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  
+  const colorClasses = {
+    violet: 'text-violet-400 bg-violet-500/10 border-violet-500/30',
+    green: 'text-green-400 bg-green-500/10 border-green-500/30',
+    amber: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+    blue: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
+    red: 'text-red-400 bg-red-500/10 border-red-500/30',
+    slate: 'text-slate-400 bg-slate-500/10 border-slate-500/30',
+  };
+  
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <CollapsibleTrigger asChild>
+        <button className="w-full flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:bg-slate-800 transition-colors">
+          <div className="flex items-center gap-2">
+            <div className={`p-1.5 rounded ${colorClasses[accentColor]}`}>
+              <Icon className="w-4 h-4" />
+            </div>
+            <span className="font-medium text-slate-100">{title}</span>
+            {badge && (
+              <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">
+                {badge}
+              </Badge>
+            )}
+          </div>
+          {isOpen ? (
+            <ChevronDown className="w-4 h-4 text-slate-400" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-slate-400" />
+          )}
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="mt-2 pl-2">
+        {children}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
 
 const ExampleOutputModal = ({ open, onOpenChange }) => {
   const navigate = useNavigate();
