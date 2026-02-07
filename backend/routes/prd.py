@@ -234,8 +234,7 @@ async def generate_prd_with_llm(
 ):
     """
     Generate a comprehensive PRD using LLM from epic data.
-    Uses the epic's problem statement, features, and stories to create
-    a senior PM-quality PRD document.
+    Produces a structured JSON PRD with all senior PM-quality sections.
     """
     from services.llm_service import LLMService
     from services.strict_output_service import StrictOutputService
@@ -308,6 +307,8 @@ async def generate_prd_with_llm(
                     "title": s.title or s.story_text[:50] if s.story_text else "Untitled",
                     "story_text": s.story_text or "",
                     "acceptance_criteria": s.acceptance_criteria or [],
+                    "edge_cases": s.edge_cases or [],
+                    "notes_for_engineering": s.notes_for_engineering or "",
                     "points": s.story_points,
                     "priority": s.priority
                 }
@@ -319,6 +320,7 @@ async def generate_prd_with_llm(
     problem_statement = ""
     desired_outcome = ""
     epic_summary = ""
+    target_users = ""
     
     if snapshot:
         problem_statement = snapshot.problem_statement or ""
@@ -339,22 +341,129 @@ async def generate_prd_with_llm(
                 problem_statement = prd.get("problem_statement", "")
             if not desired_outcome:
                 desired_outcome = prd.get("desired_outcome", "")
+            target_users = prd.get("target_users", "")
     
-    system_prompt = """You are a Senior Product Manager creating a comprehensive PRD document.
+    system_prompt = """You are a Senior Product Manager creating a comprehensive, stakeholder-ready PRD.
 
-Given the epic data and features, generate a professional PRD in Markdown format that would be ready to share with stakeholders.
+Generate a structured JSON PRD following this EXACT schema. Every field must have meaningful content - no placeholders or "TBD".
 
-The PRD should include:
-1. Executive Summary - Problem, Vision, Target Users
-2. Goals & Objectives - Desired outcomes, success metrics, key results
-3. User Personas - Detailed personas based on target users
-4. Feature Requirements - Each feature with user stories and acceptance criteria
-5. Technical Considerations - Architecture notes, integrations, constraints
-6. Risks & Mitigations - Key risks and how to address them
-7. Success Criteria - How we'll measure success
-8. Timeline & Milestones - Suggested phasing
+OUTPUT FORMAT: Valid JSON only. No markdown, no explanations, no extra text.
 
-Make it actionable, specific, and professional. Use the actual data provided, don't invent new features."""
+REQUIRED JSON SCHEMA:
+{
+  "summary": {
+    "title": "string - Product/feature name",
+    "version": "string - e.g. '1.0'",
+    "owner": "string - Product Manager name or role",
+    "overview": "string - One paragraph executive summary (2-3 sentences)",
+    "problem_statement": "string - What's broken and why it matters (be specific with impact)",
+    "goal": "string - Measurable desired outcome with success criteria",
+    "target_users": "string - Who uses this and in what context"
+  },
+  "context": {
+    "evidence": ["array of strings - Data points, customer quotes, research findings, support tickets"],
+    "current_workflow": "string - What users do today without this solution",
+    "why_now": "string - Urgency or triggering change for building this now"
+  },
+  "personas": [
+    {
+      "name": "string - Persona name (e.g. 'Sarah, Team Lead')",
+      "context": "string - Role and situation",
+      "jtbd": "string - Job to be done (When I..., I want to..., So that...)",
+      "pain_points": ["array of strings - Top frustrations"],
+      "current_workaround": "string - How they solve it today"
+    }
+  ],
+  "scope": {
+    "mvp_in": [
+      {
+        "item": "string - What's included",
+        "rationale": "string - Why it's essential for MVP"
+      }
+    ],
+    "not_now": [
+      {
+        "item": "string - What's deferred",
+        "rationale": "string - Why it's not in MVP"
+      }
+    ],
+    "assumptions": [
+      {
+        "assumption": "string - What we're assuming is true",
+        "risk_if_wrong": "string - Impact if this assumption is false",
+        "validation": "string - How we'll validate this"
+      }
+    ]
+  },
+  "requirements": {
+    "features": [
+      {
+        "name": "string - Feature name",
+        "description": "string - What it does",
+        "priority": "string - must-have | should-have | nice-to-have",
+        "stories": [
+          {
+            "story": "string - As a [user], I want [action] so that [benefit]",
+            "acceptance_criteria": ["array of strings - Given/When/Then format"],
+            "edge_cases": ["array of strings - Failure modes and edge cases"]
+          }
+        ]
+      }
+    ]
+  },
+  "nfrs": {
+    "performance": ["array of strings - p95/p99 targets, load times"],
+    "reliability": ["array of strings - Error handling, uptime targets"],
+    "security": ["array of strings - Auth, data protection, PII handling"],
+    "accessibility": ["array of strings - WCAG level, screen reader support"]
+  },
+  "metrics": {
+    "success_metrics": [
+      {
+        "metric": "string - What we're measuring",
+        "target": "string - Specific target value",
+        "measurement": "string - How we'll measure it"
+      }
+    ],
+    "guardrails": ["array of strings - Metrics we must not hurt"],
+    "instrumentation": ["array of strings - Events and properties to track"],
+    "evaluation_window": "string - When and how we'll evaluate success"
+  },
+  "risks": [
+    {
+      "risk": "string - What could go wrong",
+      "type": "string - product | technical | execution",
+      "likelihood": "string - high | medium | low",
+      "impact": "string - high | medium | low",
+      "mitigation": "string - How we'll address it"
+    }
+  ],
+  "open_questions": [
+    {
+      "question": "string - What needs to be answered",
+      "owner": "string - Who's responsible",
+      "due_date": "string - When it needs resolution",
+      "status": "string - open | in-progress | resolved"
+    }
+  ],
+  "appendix": {
+    "alternatives_considered": ["array of strings - Other approaches we evaluated"],
+    "glossary": [
+      {
+        "term": "string - Technical term",
+        "definition": "string - Plain English explanation"
+      }
+    ]
+  }
+}
+
+QUALITY GUIDELINES:
+- Be specific and actionable, not generic
+- Use real data from the input, don't invent features
+- Acceptance criteria must be testable (Given/When/Then)
+- Metrics must have specific numeric targets
+- Risks must have concrete mitigations
+- Pain points should reflect real user frustrations"""
 
     import json as json_module
     
@@ -363,18 +472,21 @@ Make it actionable, specific, and professional. Use the actual data provided, do
 PRODUCT: {epic.title}
 
 PROBLEM STATEMENT:
-{problem_statement or 'Not defined'}
+{problem_statement or 'Needs to be defined based on the features'}
 
 DESIRED OUTCOME:
-{desired_outcome or 'Not defined'}
+{desired_outcome or 'Needs to be defined based on the features'}
+
+TARGET USERS:
+{target_users or 'Needs to be defined based on the features'}
 
 EPIC SUMMARY:
-{epic_summary or 'Not defined'}
+{epic_summary or 'Needs to be defined based on the features'}
 
 FEATURES AND USER STORIES:
-{json_module.dumps(features_context, indent=2) if features_context else 'No features defined yet'}
+{json_module.dumps(features_context, indent=2) if features_context else 'No features defined yet - create reasonable MVP features based on the problem'}
 
-Generate a professional, stakeholder-ready PRD document in Markdown format."""
+Generate the PRD as VALID JSON matching the schema exactly. Include all sections with meaningful content."""
 
     try:
         full_response = ""
@@ -386,6 +498,17 @@ Generate a professional, stakeholder-ready PRD document in Markdown format."""
         if not full_response.strip():
             raise HTTPException(status_code=500, detail="LLM returned empty response")
         
+        # Try to parse JSON from response
+        strict_service = StrictOutputService()
+        prd_json = strict_service.extract_json(full_response)
+        
+        # If JSON parsing failed, store as legacy markdown format
+        if prd_json is None:
+            logger.warning("PRD generation returned non-JSON, storing as markdown")
+            prd_data = {"content": full_response, "format": "markdown"}
+        else:
+            prd_data = {"prd": prd_json, "format": "json"}
+        
         # Save the generated PRD with a fresh session
         from db import AsyncSessionLocal
         async with AsyncSessionLocal() as new_session:
@@ -395,14 +518,14 @@ Generate a professional, stakeholder-ready PRD document in Markdown format."""
             existing_prd = existing_result.scalar_one_or_none()
             
             if existing_prd:
-                existing_prd.sections = {"content": full_response}
+                existing_prd.sections = prd_data
                 existing_prd.source = "ai_generated"
                 existing_prd.updated_at = datetime.now(timezone.utc)
             else:
                 new_prd = PRDDocument(
                     epic_id=epic_id,
                     user_id=user_id,
-                    sections={"content": full_response},
+                    sections=prd_data,
                     title=epic.title,
                     version="1.0",
                     status="draft",
@@ -415,7 +538,9 @@ Generate a professional, stakeholder-ready PRD document in Markdown format."""
         return {
             "success": True,
             "epic_id": epic_id,
-            "content": full_response,
+            "prd": prd_json if prd_json else None,
+            "content": full_response if not prd_json else None,
+            "format": "json" if prd_json else "markdown",
             "source": "ai_generated",
             "message": "PRD generated successfully"
         }
