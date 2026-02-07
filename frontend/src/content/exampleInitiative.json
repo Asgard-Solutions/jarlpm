@@ -124,6 +124,7 @@
       "name": "Idea → PRD Pipeline",
       "description": "Convert a messy idea into a structured PRD with personas, metrics, assumptions, and a validation plan.",
       "priority": "must-have",
+      "rice_score": 24.0,
       "stories": [
         {
           "id": "story_101_prd_schema",
