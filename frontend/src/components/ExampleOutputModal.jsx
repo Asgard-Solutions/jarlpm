@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuthStore } from '@/store';
@@ -22,13 +22,17 @@ import {
   Copy,
   Check,
   FileText,
-  ListChecks,
+  Layers,
   Calendar,
   Users,
   Target,
   AlertTriangle,
   CheckCircle2,
   Sparkles,
+  BarChart3,
+  Lightbulb,
+  Shield,
+  TrendingUp,
 } from 'lucide-react';
 
 import exampleData from '@/content/exampleInitiative.json';
@@ -98,34 +102,38 @@ ${prd.validation_plan}
 `;
   };
 
-  // Calculate capacity status for sprint plan
+  // Calculate totals
+  const totalStories = exampleData.features.reduce((acc, f) => acc + f.stories.length, 0);
+  const totalPoints = exampleData.total_points;
+
+  // Get capacity status for sprint plan
   const getCapacityStatus = (points, capacity = 16) => {
     const ratio = points / capacity;
-    if (ratio <= 0.9) return { status: 'on-track', color: 'text-green-600 bg-green-100', label: 'On Track' };
-    if (ratio <= 1.1) return { status: 'at-risk', color: 'text-yellow-600 bg-yellow-100', label: 'At Risk' };
-    return { status: 'overloaded', color: 'text-red-600 bg-red-100', label: 'Overloaded' };
+    if (ratio <= 0.9) return { status: 'on-track', className: 'bg-green-500/20 text-green-400 border-green-500/30', label: 'On Track' };
+    if (ratio <= 1.1) return { status: 'at-risk', className: 'bg-amber-500/20 text-amber-400 border-amber-500/30', label: 'At Risk' };
+    return { status: 'overloaded', className: 'bg-red-500/20 text-red-400 border-red-500/30', label: 'Overloaded' };
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b">
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 bg-nordic-bg-secondary border-nordic-border">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-nordic-border">
           <div className="flex items-center justify-between">
             <div>
-              <Badge variant="outline" className="mb-2 text-xs">
+              <Badge variant="outline" className="mb-2 text-xs border-nordic-accent/50 text-nordic-accent">
                 <Sparkles className="w-3 h-3 mr-1" />
                 Example Output
               </Badge>
-              <DialogTitle className="text-xl">
+              <DialogTitle className="text-xl text-nordic-text-primary">
                 {exampleData.epic.title}
               </DialogTitle>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-nordic-text-muted mt-1">
                 {exampleData.epic.vision}
               </p>
             </div>
             <Button
               onClick={handleGenerateMyOwn}
-              className="bg-primary hover:bg-primary/90"
+              className="bg-nordic-accent hover:bg-nordic-accent/90 text-white"
               data-testid="modal-generate-my-own-btn"
             >
               Generate My Own <ArrowRight className="ml-2 w-4 h-4" />
@@ -134,17 +142,17 @@ ${prd.validation_plan}
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1">
-          <div className="px-6 pt-4 border-b">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="prd" className="flex items-center gap-2" data-testid="tab-prd">
+          <div className="px-6 pt-4 border-b border-nordic-border">
+            <TabsList className="grid w-full grid-cols-3 bg-nordic-bg-primary">
+              <TabsTrigger value="prd" className="flex items-center gap-2 data-[state=active]:bg-nordic-accent data-[state=active]:text-white" data-testid="tab-prd">
                 <FileText className="w-4 h-4" />
                 PRD
               </TabsTrigger>
-              <TabsTrigger value="stories" className="flex items-center gap-2" data-testid="tab-stories">
-                <ListChecks className="w-4 h-4" />
+              <TabsTrigger value="stories" className="flex items-center gap-2 data-[state=active]:bg-nordic-accent data-[state=active]:text-white" data-testid="tab-stories">
+                <Layers className="w-4 h-4" />
                 Stories
               </TabsTrigger>
-              <TabsTrigger value="sprint" className="flex items-center gap-2" data-testid="tab-sprint">
+              <TabsTrigger value="sprint" className="flex items-center gap-2 data-[state=active]:bg-nordic-accent data-[state=active]:text-white" data-testid="tab-sprint">
                 <Calendar className="w-4 h-4" />
                 Sprint Plan
               </TabsTrigger>
@@ -152,18 +160,19 @@ ${prd.validation_plan}
           </div>
 
           <ScrollArea className="h-[60vh]">
-            {/* PRD Tab */}
+            {/* PRD Tab - Matches NewInitiative.jsx PRD Section */}
             <TabsContent value="prd" className="p-6 mt-0">
               <div className="flex justify-end mb-4">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleCopyPRD}
+                  className="border-nordic-border text-nordic-text-primary hover:bg-nordic-bg-primary"
                   data-testid="copy-prd-btn"
                 >
                   {copied ? (
                     <>
-                      <Check className="w-4 h-4 mr-2" />
+                      <Check className="w-4 h-4 mr-2 text-nordic-green" />
                       Copied!
                     </>
                   ) : (
@@ -175,284 +184,387 @@ ${prd.validation_plan}
                 </Button>
               </div>
 
-              <div className="space-y-6">
-                {/* Problem Statement */}
-                <div>
-                  <h3 className="font-semibold text-lg mb-2 flex items-center gap-2">
-                    <Target className="w-5 h-5 text-primary" />
-                    Problem Statement
+              <Card className="bg-nordic-bg-secondary border-nordic-border">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-nordic-text-primary flex items-center gap-2 mb-4">
+                    <FileText className="w-5 h-5 text-nordic-accent" />
+                    PRD Summary
                   </h3>
-                  <p className="text-muted-foreground">{exampleData.prd.problem_statement}</p>
-                  <p className="text-sm text-muted-foreground/80 mt-2 italic">
-                    {exampleData.prd.problem_evidence}
-                  </p>
-                </div>
-
-                {/* Target Users */}
-                <div>
-                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                    <Users className="w-5 h-5 text-primary" />
-                    Target Users
-                  </h3>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {exampleData.prd.target_users.map((user, i) => (
-                      <Card key={i} className="bg-muted/30">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-base">{user.persona}</CardTitle>
-                          <p className="text-sm text-muted-foreground">{user.context}</p>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                          <div>
-                            <p className="text-xs font-medium text-muted-foreground uppercase">Pain Points</p>
-                            <ul className="text-sm space-y-1 mt-1">
-                              {user.pain_points.map((p, j) => (
-                                <li key={j} className="flex items-start gap-2">
-                                  <span className="text-destructive">•</span>
-                                  <span>{p}</span>
-                                </li>
-                              ))}
-                            </ul>
+                  
+                  <div className="space-y-4">
+                    {/* Problem Statement */}
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-1">
+                        <Target className="w-4 h-4" /> Problem
+                      </div>
+                      <p className="text-nordic-text-primary">{exampleData.prd.problem_statement}</p>
+                      <p className="text-sm text-nordic-text-muted mt-2 italic bg-nordic-bg-primary p-2 rounded">
+                        Evidence: {exampleData.prd.problem_evidence}
+                      </p>
+                    </div>
+                    
+                    {/* Target Users */}
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-2">
+                        <Users className="w-4 h-4" /> Target Users
+                      </div>
+                      <div className="space-y-3">
+                        {exampleData.prd.target_users.map((user, i) => (
+                          <div key={i} className="bg-nordic-bg-primary p-3 rounded-lg border border-nordic-border">
+                            <div className="font-medium text-nordic-text-primary mb-1">{user.persona}</div>
+                            <p className="text-sm text-nordic-text-muted mb-2">{user.context}</p>
+                            <div className="mb-2">
+                              <span className="text-xs font-medium text-red-400">Pain Points: </span>
+                              <span className="text-sm text-nordic-text-muted">{user.pain_points.join(', ')}</span>
+                            </div>
+                            <div className="mb-2">
+                              <span className="text-xs font-medium text-amber-400">Current Workaround: </span>
+                              <span className="text-sm text-nordic-text-muted">{user.current_workaround}</span>
+                            </div>
+                            <div className="text-sm text-nordic-accent italic">&ldquo;{user.jtbd}&rdquo;</div>
                           </div>
-                          <div className="pt-2 border-t">
-                            <p className="text-xs font-medium text-muted-foreground uppercase">Job to Be Done</p>
-                            <p className="text-sm mt-1 italic">"{user.jtbd}"</p>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Desired Outcome */}
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-1">
+                        <Check className="w-4 h-4" /> Desired Outcome
+                      </div>
+                      <p className="text-nordic-text-primary">{exampleData.prd.desired_outcome}</p>
+                    </div>
+
+                    {/* Positioning */}
+                    <div className="bg-gradient-to-r from-nordic-accent/10 to-transparent p-3 rounded-lg border border-nordic-accent/20">
+                      <div className="flex items-center gap-2 text-sm font-medium text-nordic-accent mb-2">
+                        <TrendingUp className="w-4 h-4" /> Positioning
+                      </div>
+                      <p className="text-sm text-nordic-text-primary">
+                        For <span className="font-medium">{exampleData.prd.positioning.for_who}</span>, 
+                        who struggle with <span className="font-medium">{exampleData.prd.positioning.who_struggle_with}</span>, 
+                        our <span className="font-medium">{exampleData.prd.positioning.our_solution}</span> is unlike 
+                        <span className="font-medium"> {exampleData.prd.positioning.unlike}</span> because 
+                        <span className="font-medium text-nordic-accent"> {exampleData.prd.positioning.key_benefit}</span>.
+                      </p>
+                    </div>
+                    
+                    {/* Key Metrics & Riskiest Unknown */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-2">
+                          <BarChart3 className="w-4 h-4" /> Key Metrics
+                        </div>
+                        <div className="space-y-1">
+                          {exampleData.prd.key_metrics.map((m, i) => (
+                            <Badge key={i} variant="outline" className="mr-1 mb-1 text-nordic-text-primary border-nordic-border">
+                              {m}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-2">
+                          <AlertTriangle className="w-4 h-4" /> Riskiest Unknown
+                        </div>
+                        <p className="text-sm text-amber-400">{exampleData.prd.riskiest_unknown}</p>
+                      </div>
+                    </div>
+                    
+                    {/* MVP Scope */}
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-medium text-green-400 mb-2">
+                        <CheckCircle2 className="w-4 h-4" /> MVP Scope (In)
+                      </div>
+                      <div className="space-y-2">
+                        {exampleData.prd.mvp_scope.map((item, i) => (
+                          <div key={i} className="bg-green-500/5 border border-green-500/20 p-2 rounded">
+                            <span className="font-medium text-nordic-text-primary">{item.item}</span>
+                            <p className="text-xs text-nordic-text-muted mt-1">{item.rationale}</p>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
+                        ))}
+                      </div>
+                    </div>
 
-                {/* Key Metrics */}
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Key Metrics</h3>
-                  <ul className="space-y-2">
-                    {exampleData.prd.key_metrics.map((metric, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm">
-                        <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                        <span>{metric}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Assumptions & Risks */}
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <h3 className="font-semibold text-lg mb-2 flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5 text-yellow-600" />
-                      Riskiest Unknown
-                    </h3>
-                    <p className="text-sm text-muted-foreground p-3 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-900">
-                      {exampleData.prd.riskiest_unknown}
-                    </p>
+                    {/* Not Now */}
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-2">
+                        <Shield className="w-4 h-4" /> Deferred (Not Now)
+                      </div>
+                      <div className="space-y-2">
+                        {exampleData.prd.not_now.map((item, i) => (
+                          <div key={i} className="bg-nordic-bg-primary p-2 rounded border border-nordic-border">
+                            <span className="text-nordic-text-muted">{item.item}</span>
+                            <p className="text-xs text-nordic-text-muted/70 mt-1">Why: {item.rationale}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Assumptions */}
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-medium text-nordic-text-muted mb-2">
+                        <Lightbulb className="w-4 h-4" /> Assumptions to Validate
+                      </div>
+                      <div className="space-y-2">
+                        {exampleData.prd.assumptions.slice(0, 2).map((a, i) => (
+                          <div key={i} className="bg-amber-500/5 border border-amber-500/20 p-2 rounded">
+                            <span className="font-medium text-nordic-text-primary">{a.assumption}</span>
+                            <p className="text-xs text-red-400 mt-1">Risk if wrong: {a.risk_if_wrong}</p>
+                            <p className="text-xs text-green-400 mt-1">Validation: {a.validation_approach}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Validation Plan */}
+                    <div className="bg-green-500/5 border border-green-500/20 p-3 rounded-lg">
+                      <div className="flex items-center gap-2 text-sm font-medium text-green-400 mb-1">
+                        <CheckCircle2 className="w-4 h-4" /> Validation Plan
+                      </div>
+                      <p className="text-sm text-nordic-text-primary">{exampleData.prd.validation_plan}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-lg mb-2">Validation Plan</h3>
-                    <p className="text-sm text-muted-foreground p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900">
-                      {exampleData.prd.validation_plan}
-                    </p>
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
-            {/* Stories Tab */}
+            {/* Stories Tab - Matches NewInitiative.jsx Features & Stories Section */}
             <TabsContent value="stories" className="p-6 mt-0">
-              <div className="space-y-6">
-                {exampleData.features.slice(0, 2).map((feature) => (
-                  <div key={feature.id}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Badge variant={feature.priority === 'must-have' ? 'default' : 'secondary'}>
-                        {feature.priority}
-                      </Badge>
-                      <h3 className="font-semibold">{feature.name}</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-4">{feature.description}</p>
-                    
-                    <div className="space-y-3">
-                      {feature.stories.slice(0, 2).map((story) => (
-                        <Card key={story.id} className="bg-card border">
-                          <CardHeader className="pb-2">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <CardTitle className="text-sm font-medium">{story.title}</CardTitle>
-                                <p className="text-xs text-muted-foreground mt-1">{story.description}</p>
+              <Card className="bg-nordic-bg-secondary border-nordic-border">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-nordic-text-primary flex items-center gap-2 mb-4">
+                    <Layers className="w-5 h-5 text-nordic-accent" />
+                    Features & Stories
+                  </h3>
+                  
+                  <div className="space-y-6">
+                    {exampleData.features.map((feature, fi) => (
+                      <div key={fi} className="border border-nordic-border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium text-nordic-text-primary">{feature.name}</h4>
+                          <Badge 
+                            className={
+                              feature.priority === 'must-have' 
+                                ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                                : feature.priority === 'should-have'
+                                ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                                : 'bg-nordic-text-muted/20 text-nordic-text-muted'
+                            }
+                            variant="outline"
+                          >
+                            {feature.priority}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-nordic-text-muted mb-3">{feature.description}</p>
+                        
+                        <div className="space-y-2">
+                          {feature.stories.slice(0, 2).map((story, si) => (
+                            <div key={si} className="bg-nordic-bg-primary rounded p-3">
+                              {/* Story Header */}
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-medium text-sm text-nordic-text-primary">
+                                  {story.title}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-xs ${
+                                      story.priority === 'must-have' 
+                                        ? 'border-red-500/50 text-red-400'
+                                        : story.priority === 'should-have'
+                                        ? 'border-amber-500/50 text-amber-400'
+                                        : 'border-nordic-text-muted/50'
+                                    }`}
+                                  >
+                                    {story.priority}
+                                  </Badge>
+                                  <Badge variant="outline" className="text-xs border-nordic-border">
+                                    {story.points} pts
+                                  </Badge>
+                                </div>
                               </div>
-                              <Badge variant="outline" className="ml-2 shrink-0">
-                                {story.points} pts
-                              </Badge>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="space-y-3">
-                            {/* Acceptance Criteria */}
-                            <div>
-                              <p className="text-xs font-medium text-muted-foreground uppercase mb-1">
-                                Acceptance Criteria
+                              
+                              {/* Description */}
+                              <p className="text-xs text-nordic-text-muted mb-2">
+                                {story.description}
                               </p>
-                              <ul className="text-xs space-y-1">
-                                {story.acceptance_criteria.slice(0, 2).map((ac, i) => (
-                                  <li key={i} className="flex items-start gap-2 bg-muted/50 p-2 rounded">
-                                    <CheckCircle2 className="w-3 h-3 text-green-600 mt-0.5 flex-shrink-0" />
-                                    <span className="font-mono">{ac}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-
-                            {/* Edge Cases */}
-                            {story.edge_cases && story.edge_cases.length > 0 && (
-                              <div>
-                                <p className="text-xs font-medium text-muted-foreground uppercase mb-1">
-                                  Edge Cases
-                                </p>
-                                <ul className="text-xs space-y-1">
-                                  {story.edge_cases.slice(0, 2).map((ec, i) => (
-                                    <li key={i} className="flex items-start gap-2">
-                                      <AlertTriangle className="w-3 h-3 text-yellow-600 mt-0.5 flex-shrink-0" />
-                                      <span>{ec}</span>
+                              
+                              {/* Labels */}
+                              {story.labels?.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mb-2">
+                                  {story.labels.map((label, li) => (
+                                    <Badge 
+                                      key={li} 
+                                      variant="secondary" 
+                                      className="text-[10px] px-1.5 py-0 bg-nordic-accent/10 text-nordic-accent"
+                                    >
+                                      {label}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {/* Acceptance Criteria */}
+                              <div className="text-xs text-nordic-text-muted">
+                                <span className="font-medium">Acceptance Criteria:</span>
+                                <ul className="ml-3 mt-1 space-y-0.5">
+                                  {story.acceptance_criteria?.slice(0, 2).map((ac, ai) => (
+                                    <li key={ai} className="flex items-start gap-1">
+                                      <Check className="w-3 h-3 mt-0.5 text-nordic-green flex-shrink-0" />
+                                      <span className="line-clamp-2">{ac}</span>
                                     </li>
                                   ))}
                                 </ul>
                               </div>
-                            )}
-
-                            {/* Engineering Notes */}
-                            {story.notes_for_engineering && (
-                              <div className="pt-2 border-t">
-                                <p className="text-xs font-medium text-muted-foreground uppercase mb-1">
-                                  Notes for Engineering
-                                </p>
-                                <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                                  {story.notes_for_engineering}
-                                </p>
-                              </div>
-                            )}
-
-                            {/* Labels */}
-                            <div className="flex flex-wrap gap-1 pt-2">
-                              {story.labels.map((label) => (
-                                <Badge key={label} variant="outline" className="text-xs px-1.5 py-0">
-                                  {label}
-                                </Badge>
-                              ))}
+                              
+                              {/* Edge Cases */}
+                              {story.edge_cases?.length > 0 && (
+                                <div className="mt-2 pt-2 border-t border-nordic-border/50">
+                                  <div className="text-[10px]">
+                                    <span className="text-amber-500 font-medium">Edge Cases:</span>
+                                    <ul className="mt-0.5 text-nordic-text-muted/70">
+                                      {story.edge_cases.slice(0, 2).map((ec, ei) => (
+                                        <li key={ei} className="truncate">⚠ {ec}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Notes for Engineering */}
+                              {story.notes_for_engineering && (
+                                <div className="mt-2 pt-2 border-t border-nordic-border/50">
+                                  <div className="text-[10px]">
+                                    <span className="text-nordic-accent font-medium">Notes for Engineering:</span>
+                                    <p className="mt-0.5 text-nordic-text-muted">{story.notes_for_engineering}</p>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
+                          ))}
+                          {feature.stories.length > 2 && (
+                            <p className="text-xs text-nordic-accent text-center">
+                              +{feature.stories.length - 2} more stories
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-
-                <p className="text-sm text-muted-foreground text-center italic">
-                  + {exampleData.features.reduce((acc, f) => acc + f.stories.length, 0) - 4} more stories across {exampleData.features.length} features
-                </p>
-              </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Sprint Plan Tab */}
             <TabsContent value="sprint" className="p-6 mt-0">
-              <div className="space-y-6">
-                {/* Summary Stats */}
-                <div className="grid grid-cols-3 gap-4">
-                  <Card className="bg-muted/30">
-                    <CardContent className="pt-4 text-center">
-                      <p className="text-3xl font-bold text-primary">{exampleData.total_points}</p>
-                      <p className="text-sm text-muted-foreground">Total Points</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-muted/30">
-                    <CardContent className="pt-4 text-center">
-                      <p className="text-3xl font-bold">{exampleData.features.length}</p>
-                      <p className="text-sm text-muted-foreground">Features</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-muted/30">
-                    <CardContent className="pt-4 text-center">
-                      <p className="text-3xl font-bold">{exampleData.features.reduce((acc, f) => acc + f.stories.length, 0)}</p>
-                      <p className="text-sm text-muted-foreground">Stories</p>
-                    </CardContent>
-                  </Card>
-                </div>
+              {/* Summary Header - Matches NewInitiative.jsx */}
+              <Card className="bg-gradient-to-r from-nordic-accent/20 to-nordic-green/20 border-nordic-accent/30 mb-6">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold text-nordic-text-primary">
+                        {exampleData.product_name}
+                      </h2>
+                      <p className="text-nordic-text-muted">{exampleData.tagline}</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-nordic-accent">{exampleData.features.length}</div>
+                        <div className="text-xs text-nordic-text-muted">Features</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-nordic-green">{totalStories}</div>
+                        <div className="text-xs text-nordic-text-muted">Stories</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-nordic-text-primary">{totalPoints}</div>
+                        <div className="text-xs text-nordic-text-muted">Points</div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
+              <div className="space-y-4">
                 {/* Sprint 1 */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">Sprint 1</CardTitle>
+                <Card className="bg-nordic-bg-secondary border-nordic-border">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-nordic-text-primary">Sprint 1</h4>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline">{exampleData.sprint_plan.sprint_1.total_points} pts</Badge>
+                        <Badge variant="outline" className="border-nordic-border">
+                          {exampleData.sprint_plan.sprint_1.total_points} pts
+                        </Badge>
                         {(() => {
                           const status = getCapacityStatus(exampleData.sprint_plan.sprint_1.total_points);
                           return (
-                            <Badge className={status.color}>
+                            <Badge variant="outline" className={status.className}>
                               {status.label}
                             </Badge>
                           );
                         })()}
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">{exampleData.sprint_plan.sprint_1.goal}</p>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
+                    <p className="text-sm text-nordic-text-muted mb-3">{exampleData.sprint_plan.sprint_1.goal}</p>
+                    <div className="space-y-2">
                       {exampleData.sprint_plan.sprint_1.story_ids.map((storyId) => {
                         const story = exampleData.features
                           .flatMap(f => f.stories)
                           .find(s => s.id === storyId);
                         return story ? (
-                          <li key={storyId} className="flex items-center justify-between p-2 bg-muted/30 rounded">
-                            <span className="text-sm">{story.title}</span>
-                            <Badge variant="outline" className="text-xs">{story.points} pts</Badge>
-                          </li>
+                          <div key={storyId} className="flex items-center justify-between p-2 bg-nordic-bg-primary rounded">
+                            <span className="text-sm text-nordic-text-primary">{story.title}</span>
+                            <Badge variant="outline" className="text-xs border-nordic-border">{story.points} pts</Badge>
+                          </div>
                         ) : null;
                       })}
-                    </ul>
+                    </div>
                   </CardContent>
                 </Card>
 
                 {/* Sprint 2 */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">Sprint 2</CardTitle>
+                <Card className="bg-nordic-bg-secondary border-nordic-border">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-nordic-text-primary">Sprint 2</h4>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline">{exampleData.sprint_plan.sprint_2.total_points} pts</Badge>
+                        <Badge variant="outline" className="border-nordic-border">
+                          {exampleData.sprint_plan.sprint_2.total_points} pts
+                        </Badge>
                         {(() => {
                           const status = getCapacityStatus(exampleData.sprint_plan.sprint_2.total_points);
                           return (
-                            <Badge className={status.color}>
+                            <Badge variant="outline" className={status.className}>
                               {status.label}
                             </Badge>
                           );
                         })()}
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">{exampleData.sprint_plan.sprint_2.goal}</p>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
+                    <p className="text-sm text-nordic-text-muted mb-3">{exampleData.sprint_plan.sprint_2.goal}</p>
+                    <div className="space-y-2">
                       {exampleData.sprint_plan.sprint_2.story_ids.map((storyId) => {
                         const story = exampleData.features
                           .flatMap(f => f.stories)
                           .find(s => s.id === storyId);
                         return story ? (
-                          <li key={storyId} className="flex items-center justify-between p-2 bg-muted/30 rounded">
-                            <span className="text-sm">{story.title}</span>
-                            <Badge variant="outline" className="text-xs">{story.points} pts</Badge>
-                          </li>
+                          <div key={storyId} className="flex items-center justify-between p-2 bg-nordic-bg-primary rounded">
+                            <span className="text-sm text-nordic-text-primary">{story.title}</span>
+                            <Badge variant="outline" className="text-xs border-nordic-border">{story.points} pts</Badge>
+                          </div>
                         ) : null;
                       })}
-                    </ul>
+                    </div>
                   </CardContent>
                 </Card>
 
                 {/* Capacity Note */}
-                <div className="text-center p-4 bg-muted/30 rounded-lg">
-                  <p className="text-sm text-muted-foreground">
+                <div className="text-center p-4 bg-nordic-bg-primary rounded-lg border border-nordic-border">
+                  <p className="text-sm text-nordic-text-muted">
                     Based on a team velocity of ~16 points/sprint
                   </p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">
+                  <p className="text-xs text-nordic-text-muted/70 mt-1">
                     JarlPM adapts to your actual delivery context and capacity settings
                   </p>
                 </div>
@@ -462,13 +574,13 @@ ${prd.validation_plan}
         </Tabs>
 
         {/* Footer CTA */}
-        <div className="px-6 py-4 border-t bg-muted/30 flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
+        <div className="px-6 py-4 border-t border-nordic-border bg-nordic-bg-primary flex items-center justify-between">
+          <p className="text-sm text-nordic-text-muted">
             Ready to turn your idea into a plan?
           </p>
           <Button
             onClick={handleGenerateMyOwn}
-            className="bg-primary hover:bg-primary/90"
+            className="bg-nordic-accent hover:bg-nordic-accent/90 text-white"
             data-testid="modal-footer-generate-btn"
           >
             Generate My Own <ArrowRight className="ml-2 w-4 h-4" />
