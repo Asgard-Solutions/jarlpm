@@ -1,154 +1,174 @@
 <analysis>**original_problem_statement:**
-The user wants to build **JarlPM**, an AI-agnostic, conversation-driven Product Management system. The current goal is to implement integrations with external project management tools (Linear, Jira, Azure DevOps) to allow users to push generated product plans (Epics, Features, Stories) into their existing workflows.
+The user wants to build **JarlPM**, an AI-agnostic, conversation-driven Product Management system. The initial goal was to implement integrations with external project management tools (Linear, Jira, Azure DevOps).
+
+The focus has recently shifted to improving the user activation flow on the public landing page. This involves creating a compelling entry point that demonstrates the app's value and encourages sign-ups.
 
 **PRODUCT REQUIREMENTS:**
-- **G0: Scope of Fully Complete**: An integration is complete when a user can connect, select a target project, preview the push, execute it idempotently (no duplicates on re-push), and see results.
-- **G1: Data Model**: Add , , and  tables to the database to manage connections, track pushed items, and audit operations.
+- **G0: Scope of Fully Complete**: An integration is complete when a user can connect, select a target project, preview the push, execute it idempotently, and see results.
+- **G1: Data Model**: Evolve the data model to support richer product specifications, including fields like  and  in user stories.
 - **G2: Security**: All integration features must be scoped to the user, require an active Pro subscription, and store all tokens/secrets encrypted at rest.
 - **G3: Push Behavior**: Pushes must be idempotent. A dry-run preview is required.
-- **G4: UX Pages**:
-    - A  page to manage connections and default configurations.
-    - A Push to... feature on the Epic page to trigger the export.
-- **Provider Priority**:
-    1.  **Linear**: (Cleanest API, MVP for a full push experience)
-    2.  **Jira**: (Most common, more complex field mapping)
-    3.  **Azure DevOps**: (Enterprise-focused, use PAT auth for MVP)
+- **G4: UX & Activation**:
+    - **Landing Page**: Must be a best-in-class entry point that drives activation (arrive → understand → sign up → generate first initiative).
+    - **Example Output**: A non-auth preview of a high-fidelity initiative output to quickly show value.
+    - **Smart Redirects**: Handle returning users intelligently.
+    - **Event Tracking**: Implement lightweight tracking for key conversion events.
+    - **UI Consistency**: Ensure UI/UX is consistent across the application, matching a Nordic theme.
+- **Provider Priority**: Linear, Jira, Azure DevOps.
 - **Production Readiness**: Implement Rate Limiting, Error UX, Backups, Monitoring, and a Smoke Test script.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application has a full-stack architecture with a React frontend and FastAPI backend. A robust, shared architecture for third-party integrations (Linear, Jira, Azure DevOps) has been established, including common database models, modular API routers, and provider-specific services. The core integration functionality is complete, including UI for connecting and a push mechanism on the Epic page. The codebase has been significantly refactored for maintainability, with large route files and UI components broken down into smaller, focused modules. Key backend systems like CORS, subscription checking, and rate limiting have been implemented or improved.
+The application is a full-stack React/FastAPI/PostgreSQL project. The initial integration architecture for Linear, Jira, and Azure DevOps is established.
+
+A Production-Readiness initiative was completed, adding API rate limiting (configurable via Redis), database backups, structured logging, admin/health endpoints, and a smoke test script.
+
+The frontend landing page has been significantly overhauled to focus on user activation. It now features an Example Output modal that previews a generated initiative from a static JSON fixture, new marketing copy, and a smart Welcome back banner for logged-in users. The UI styling for generated content (PRD, Stories) has been standardized to a Nordic theme across the example modal and the actual in-app pages.
+
+The backend  model, along with the data generation and API layers, has been extended to include  and  fields, and the UI has been updated to display them.
 
 **Last working item**:
--   Last item agent was working: Implementing Rate Limiting for key API endpoints. The agent added the  library and was in the process of applying rate-limiting decorators to the API routes for auth, AI generation, and integration pushes for Linear, Jira, and Azure DevOps.
--   Status: IN PROGRESS
+-   Last item agent was working: Debugging a critical login failure. The frontend was sending API requests to  instead of the correct backend URL specified in the environment variables, resulting in a  error.
+-   Status: BLOCKED
 -   Agent Testing Done: N
--   Which testing method agent to use? backend testing agent. Create a new test file  to verify that endpoints are correctly rate-limited and return a 429 status code when the limit is exceeded.
+-   Which testing method agent to use? Manual testing by inspecting network requests in the browser console. After the fix, the  should be used to run a full regression test on the authentication flow (login, signup, logout).
 -   User Testing Done: N
 
 **All Pending/In progress Issue list**:
--   Issue 1: Authenticated Screenshot Failures (Priority: P2)
+-   Issue 1: Login is broken due to  (Priority: P0)
+-   Issue 2: Authenticated Screenshot Failures (Priority: P2)
 
     Issues Detail:
 -   Issue 1:
-    -   Attempted fixes: The agent added the preview URL to , which resolved a Vite host error but did not fix the underlying authentication problem for the screenshot tool.
+    -   Attempted fixes: The agent verified the  file, restarted services, and inspected build artifacts. These steps confirmed the environment variable was set correctly but did not resolve the issue. The agent was in the process of further investigation when the session ended.
     -   Next debug checklist:
-        1.  Investigate how cookies and session tokens are handled between the screenshot tool's context and the application's preview domain.
-        2.  Check the browser console logs from the screenshot output for authentication-related errors.
-        3.  Examine the network requests during the screenshot process to see if the auth token is being sent correctly.
-    -   Why fix this issue and what will be achieved with the fix? This is a recurring blocker for automated UI testing. Resolving it will enable visual verification of authenticated pages, which is crucial for regression testing and verifying frontend work efficiently.
+        1.  **Crucial Check:** Inspect . The API client likely uses  which is incorrect for a Vite project. It **must** be changed to .
+        2.  Verify there are no hardcoded  URLs in  or related components.
+        3.  After applying the fix, restart the frontend service (frontend: ERROR (not running)
+frontend: started) and test the login functionality again.
+    -   Why fix this issue and what will be achieved with the fix? This is a **critical blocker**. Users cannot log in, rendering the entire application unusable. Fixing this will restore core functionality.
+    -   Status: IN PROGRESS
+    -   Is recurring issue? N
+    -   Should Test frontend/backend/both after fix? frontend
+    -   Blocked on other issue: None. This issue blocks everything else.
+-   Issue 2:
+    -   Attempted fixes: In a previous session, the agent added the preview URL to , which resolved a Vite host error but did not fix the underlying authentication problem for the screenshot tool.
+    -   Next debug checklist:
+        1.  Investigate how cookies/tokens are handled between the screenshot tool's context and the app's preview domain.
+        2.  Check the browser console logs from the screenshot output for auth errors.
+    -   Why fix this issue and what will be achieved with the fix? This is a recurring blocker for automated UI testing. Resolving it will enable visual verification of authenticated pages.
     -   Status: NOT STARTED
     -   Is recurring issue? Y
     -   Should Test frontend/backend/both after fix? frontend
-    -   Blocked on other issue: None
+    -   Blocked on other issue: Issue 1 (Login is broken)
 
 **In progress Task List**:
--   Task 1: Complete Production-Readiness Implementation (Priority: P0)
-
-    Task Detail:
--   Task 1:
-    -   Where to resume: The agent finished applying rate-limiting decorators to the Azure DevOps routes in . The next step is to restart the backend to apply all rate-limiting changes and then proceed to the next item on the production-readiness list.
-    -   Next Steps (Full Task):
-        1.  **Rate limiting / abuse controls**: Finish implementation and test. (IN PROGRESS)
-        2.  **Better error UX for integrations**: Implement retries and handle partial pushes.
-        3.  **Backups/retention policy**: Implement DB backups and audit log retention.
-        4.  **Monitoring/alerting**: Integrate Sentry, add structured logs, and set up alerts.
-        5.  **Smoke Test Script**: Create a script that runs migrations and hits key endpoints.
-    -   What will be achieved with this? The application will be more secure, robust, and prepared for a production environment.
-    -   Status: IN PROGRESS
-    -   Should Test frontend/backend/both after fix? backend
-    -   Blocked on something: None
+-   None. All work is blocked by the login issue.
 
 **Upcoming and Future Tasks**
--   **P0: Real-World Integration Validation**: Test the Linear, Jira, and Azure DevOps integrations with real user credentials once provided. This is pending user input.
+-   **P0: Real-World Integration Validation**: Test the Linear, Jira, and Azure DevOps integrations with real user credentials (pending user input).
 -   **P1: Decision & Assumption Tracking**: Persist assumptions and risks to the database and build a workflow to track their validation status.
 -   **P1: Collaboration Loop**: Implement a feature to share a read-only link to an initiative and add a basic commenting system.
 -   **P2: Pricing/Packaging Signature Moments**: Polish existing features to create wow moments, like a one-click Stakeholder-ready PRD summary.
 
 **Completed work in this session**
--   **Azure DevOps Integration**: Completed the backend service, routes, and frontend  for PAT-based push functionality.
--   **Backend Code Refactoring**:
-    -   Refactored the monolithic  into a modular structure under .
-    -   Centralized subscription status checking into a new  and applied it across all routes.
--   **Frontend Code Refactoring**: Refactored the 1,700-line  into a main state component and five smaller, focused tab components in .
--   **Backend Test Suite Expansion**: Added  and , bringing the total to 59 passing backend tests.
--   **CORS & Cookie Configuration**: Fixed the backend CORS policy to allow credentialed requests from the preview domain and verified the end-to-end cookie-based authentication flow.
--   **Documentation**: Created  and  to track deliverable status.
+-   **Production-Readiness Initiative**:
+    -   Completed API Rate Limiting, making it configurable with Redis for scalability.
+    -   Implemented a DB backup service and admin routes for health checks and metrics.
+    -   Added structured logging and a smoke test script for CI/CD validation.
+-   **Activation-First Landing Page Overhaul**:
+    -   Redesigned  with new CTAs and an Example Output modal to showcase app value without requiring login.
+    -   Created  and the corresponding JSON data fixture.
+    -   Added a lightweight analytics utility that logs key user events to the console in development.
+    -   Updated copy to be transparent about the paid subscription model.
+-   **UI/UX Consistency**:
+    -   Refactored the  page to use a new  component, matching the style of the example modal.
+    -   Standardized the Nordic theme across all generated content views.
+-   **Feature Enhancement (User Stories)**:
+    -   Added  and  fields to the  database model and created the corresponding Alembic migration.
+    -   Updated the backend LLM prompts and API endpoints to generate and serve these new fields.
+    -   Updated the  UI to display the new fields on story cards.
 
 **Earlier issues found/mentioned but not fixed**
 -   Issue 1: Authenticated Screenshot Failures (Tracked in All Pending/In progress Issue list).
 
 **Known issue recurrence from previous fork**
 -   Issue recurrence in previous fork: Authenticated Screenshot Failures
--   Recurrence count: 7+
+-   Recurrence count: 8+
 -   Status: NOT STARTED
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Provider-Agnostic Integration Architecture**: A backend system with shared database models and a unified, modular API structure allowing new providers to be added with minimal redundant code.
--   **Code Refactoring for Maintainability**: Decomposing large, monolithic files (, ) into smaller, single-responsibility modules and components.
--   **API Rate Limiting**: Using  to protect key endpoints (auth, AI, integrations) from abuse and control costs.
--   **Centralized Business Logic**: Creating helper services () to ensure consistent application of business rules like subscription checks.
--   **CORS and Secure Cookies**: Configuring FastAPI and the frontend to correctly handle cross-origin credentialed requests using  and  cookies.
+-   **Frontend Activation Flow**: Using static JSON fixtures to power high-fidelity, non-authenticated previews () to drive user sign-ups.
+-   **Vite Environment Variables**: Accessing environment variables in frontend code using , not .
+-   **Production Readiness**: Implementing backend services for rate limiting (), backups, structured logging, and health monitoring to ensure stability and scalability.
+-   **Database Migrations**: Using  to manage schema changes, such as adding new columns to the  table.
 
 **key DB schema**
--   : Stores user connections to providers (Jira, Linear, ADO), including status, account info, and encrypted tokens.
--   : Maps JarlPM entities (epic, feature, story) to the corresponding external entity ID/key, ensuring idempotency.
--   : An audit log for each push operation, tracking status, and summary results.
--   : Stores user subscription status, used by the  to gate features.
+-   : Added  (JSONB) and  (TEXT) columns to store richer story details.
 
 **changes in tech stack**
--    was added to  for API rate limiting.
+-   No new dependencies were added. Existing libraries like  were configured for production use.
 
 **All files of reference**
--   : New service for defining and applying rate limits.
--   : New service for consistent subscription status checks.
--   : Directory containing the refactored integration routes.
--   : Directory containing the refactored settings page tabs.
--   : The refactored main settings page component.
--   : Contains the UI for triggering integration pushes.
--   : Document tracking the completion of integration deliverables.
+-   : **(Suspected source of login bug)** Defines the Axios instance and base URL.
+-   : The redesigned, activation-focused landing page.
+-   : The new modal component that displays a preview of the app's output.
+-   : The static data fixture for the example modal.
+-   : The SQLAlchemy model updated with new fields.
+-   : The database migration script.
+-   : The service configuring API rate limiting.
 
 **Areas that need refactoring**:
-- The refactoring of  and  has been completed. No major refactoring is immediately required.
+-   The root cause of the login bug is in . The line  is incorrect for Vite and must be changed to use .
 
 **key api endpoints**
--   : Now rate-limited.
--   : Main AI generation endpoint, now rate-limited.
--   : Pushes an epic to the provider, now rate-limited.
--   : Previews the push, now rate-limited.
+-   : Currently failing due to a frontend configuration error.
+-   : New endpoint to check service health.
+-   : New endpoint to trigger a database backup.
 
 **Critical Info for New Agent**
--   Your immediate priority is to complete the 5-point production-readiness plan. You are in the middle of the first item: Rate Limiting. Restart the backend to apply the changes, then create tests for it.
--   Proceed sequentially through the remaining production-readiness tasks: Error UX, Backups, Monitoring, and Smoke Tests.
--   The Linear and Jira integrations are scaffolded and cannot be fully tested without OAuth credentials, which are pending from the user. Do not attempt to fix their connection.
--   The user has been asked for credentials for real-world testing. Await their response before attempting to perform live pushes.
+-   **Your immediate and only priority is to fix the login functionality.** The application is currently broken.
+-   The most likely cause of the login error is in . You must replace  with .
+-   After fixing the login, verify the entire authentication flow. Do not proceed to other tasks until users can successfully log in and access the application.
+-   Be aware of the extensive frontend changes on the landing page and the new Example Output modal, as they are central to the user's latest requests.
 
 **documents and test reports created in this job**
 -   
 -   
--   
+==================================================
+Smoke Test Summary
+==================================================
+Base URL: http://localhost:8001
+Total Tests: 10
+Passed: 10
+Failed: 0
+Success Rate: 100.0%
+-    (Updated)
+-    (Updated)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Start with 1 [Rate Limiting] and work your way through 5 [Smoke Tests] until you are done. (Status: In Progress)
-2.  **Agent**: Proposed a plan to tackle the 5 production-readiness items.
-3.  **User**: Provided a list of 5 P1 should do soon production-readiness tasks. (Status: In Progress)
-4.  **Agent**: Requested credentials for real-world integration validation. (Status: Pending User Response)
-5.  **User**: Pointed out that integrations need real-world validation. (Status: Acknowledged)
-6.  **Agent**: Confirmed subscription checks were refactored.
-7.  **User**: Noted inconsistencies in subscription checks. (Status: Completed)
-8.  **Agent**: Confirmed CORS and cookie configuration is fixed.
-9.  **User**: Noted that cookie settings require HTTPS and proper production setup. (Status: Completed)
-10. **Agent**: Confirmed  refactoring is complete.
+1.  **User**: Pointed out the login is failing with . (Status: In Progress)
+2.  **Agent**: Acknowledged the issue and began debugging.
+3.  **User**: Requested the in-app story cards match the style of the Example Output modal by adding  and . (Status: Completed)
+4.  **User**: Requested the  page match the new Nordic theme from the example modal. (Status: Completed)
+5.  **User**: Requested a solid background be added to the Example Output modal as the page content was showing through. (Status: Completed)
+6.  **Agent**: Proposed two polish changes: make analytics logging dev-only and improve sign-in routing.
+7.  **User**: Agreed with the agent's proposed polish changes. (Status: Completed)
+8.  **User**: Requested the  styling be updated to perfectly match the actual in-app pages. (Status: Completed)
+9.  **User**: Pointed out that the No Credit Card required text on the landing page was misleading. (Status: Completed)
+10. **Agent**: Finished the landing page implementation and provided a summary.
 
 **Project Health Check:**
 -   **Broken**:
-    -   Jira and Linear OAuth flows are non-functional by design as they lack  and  environment variables. This is expected.
-    -   Authenticated screenshots are broken, preventing UI verification of pages behind login.
--   **Mocked**: No features are mocked.
+    -   **Login/Authentication**: The entire login flow is broken due to a frontend misconfiguration ().
+    -   **Authenticated Screenshots**: This recurring issue persists, blocking automated UI testing.
+    -   **Jira/Linear Integrations**: OAuth flows are non-functional by design (pending credentials).
+-   **Mocked**:
+    -   The Example Output modal on the landing page uses static JSON data by design.
 
 **3rd Party Integrations**
 -   OpenAI GPT/DALL-E: Used for all generative AI features.
@@ -157,19 +177,27 @@ The application has a full-stack architecture with a React frontend and FastAPI 
 -   **Azure DevOps**: (PAT-based implementation complete) - For pushing project management items.
 
 **Testing status**
--   Testing agent used after significant changes: YES, the agent used the testing agent to verify the Azure DevOps integration, which passed all tests.
+-   Testing agent used after significant changes: NO
 -   Troubleshoot agent used after agent stuck in loop: NO
 -   Test files created:
     -   
     -   
--   Known regressions: Authenticated Screenshot Failures persist.
+==================================================
+Smoke Test Summary
+==================================================
+Base URL: http://localhost:8001
+Total Tests: 10
+Passed: 10
+Failed: 0
+Success Rate: 100.0%
+-   Known regressions: The login functionality has regressed and is completely broken.
 
 **Credentials to test flow:**
 | Field | Value |
 |---|---|
 | **Email** |  |
 | **Password** |  |
-| **Note:** | For Azure DevOps, the user must provide their own Organization URL and Personal Access Token (PAT) in the frontend UI to test the connection and push. |
+| **Note:** | Login is currently broken. These credentials will work after the  bug is fixed. |
 
 **What agent forgot to execute**
-The agent accidentally created an empty file  at the root level, but later identified and removed it upon user feedback. All other tasks have been addressed systematically.</analysis>
+- The agent did not correctly identify and fix the root cause of the login error ( vs ) before the session ended. It performed several diagnostic steps but missed the critical code error in .</analysis>
