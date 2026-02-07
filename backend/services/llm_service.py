@@ -234,6 +234,77 @@ class LLMService:
                         except json.JSONDecodeError:
                             continue
     
+    async def _google_stream(
+        self,
+        api_key: str,
+        model: str,
+        system_prompt: str,
+        user_prompt: str,
+        conversation_history: list[dict] = None,
+        temperature: float = None
+    ) -> AsyncGenerator[str, None]:
+        """Stream from Google Gemini API"""
+        model = model or "gemini-2.0-flash"
+        
+        # Build contents array for Gemini format
+        contents = []
+        
+        # Add conversation history if present
+        if conversation_history:
+            for msg in conversation_history:
+                role = "user" if msg["role"] == "user" else "model"
+                contents.append({
+                    "role": role,
+                    "parts": [{"text": msg["content"]}]
+                })
+        
+        # Add current user message with system prompt embedded
+        combined_prompt = f"{system_prompt}\n\n{user_prompt}"
+        contents.append({
+            "role": "user",
+            "parts": [{"text": combined_prompt}]
+        })
+        
+        request_body = {
+            "contents": contents,
+            "generationConfig": {
+                "maxOutputTokens": 8192
+            }
+        }
+        
+        if temperature is not None:
+            request_body["generationConfig"]["temperature"] = temperature
+        
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent?key={api_key}&alt=sse"
+        
+        async with httpx.AsyncClient() as client:
+            async with client.stream(
+                "POST",
+                url,
+                headers={"Content-Type": "application/json"},
+                json=request_body,
+                timeout=120.0
+            ) as response:
+                if response.status_code != 200:
+                    error_text = await response.aread()
+                    raise ValueError(f"Google Gemini API error: {error_text.decode()}")
+                
+                async for line in response.aiter_lines():
+                    if line.startswith("data: "):
+                        data = line[6:]
+                        try:
+                            chunk = json.loads(data)
+                            candidates = chunk.get("candidates", [])
+                            if candidates:
+                                content = candidates[0].get("content", {})
+                                parts = content.get("parts", [])
+                                for part in parts:
+                                    text = part.get("text", "")
+                                    if text:
+                                        yield text
+                        except json.JSONDecodeError:
+                            continue
+    
     async def _local_stream(
         self,
         api_key: str,
