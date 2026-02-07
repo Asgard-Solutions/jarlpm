@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import ThemeToggle from '@/components/ThemeToggle';
-import { useThemeStore } from '@/store';
+import { useAuthStore, useThemeStore } from '@/store';
 import { 
   ArrowRight, 
   CheckCircle2, Brain, Lock, MessageSquare, Layers
@@ -13,6 +13,7 @@ import {
 const Landing = () => {
   const navigate = useNavigate();
   const { theme } = useThemeStore();
+  const { user } = useAuthStore();
 
   // Select logo based on theme
   const logoSrc = theme === 'dark' ? '/logo-dark.png' : '/logo-light.png';
@@ -21,8 +22,17 @@ const Landing = () => {
     navigate('/signup');
   };
 
+  const handleGenerateInitiative = () => {
+    if (user) {
+      navigate('/new');
+      return;
+    }
+    navigate('/signup?next=/new');
+  };
+
   const handleSignIn = () => {
-    navigate('/login');
+    // If the user clicked "Generate" first, we want them to continue into /new after login.
+    navigate('/login?next=/new');
   };
 
   const features = [
@@ -100,28 +110,35 @@ const Landing = () => {
             AI-Agnostic Product Management
           </Badge>
           <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
-            Build Epics That
-            <span className="text-primary"> Developers Love</span>
+            Ship like you have a
+            <span className="text-primary"> Senior PM</span>
           </h1>
-          <p className="text-xl text-muted-foreground mb-4 max-w-2xl mx-auto">
-            JarlPM helps Product Managers lead with clarity and discipline.
-            Capture problems, lock decisions, and deliver implementation-ready epics — using any LLM you choose.
+          <p className="text-xl text-muted-foreground mb-6 max-w-2xl mx-auto">
+            Turn a messy idea into a PRD, buildable stories, and a 2‑sprint plan — then push to Jira, Linear, or Azure DevOps.
           </p>
-          <p className="text-sm text-muted-foreground/70 italic mb-8">
-            Lead like a Jarl — calm authority, decisions that stick.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button 
               size="lg" 
-              onClick={handleGetStarted}
+              onClick={handleGenerateInitiative}
               className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8"
-              data-testid="hero-get-started-btn"
+              data-testid="hero-generate-initiative-btn"
             >
-              Start Building Epics <ArrowRight className="ml-2 w-5 h-5" />
+              Generate an Initiative <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={handleSignIn}
+              className="text-lg px-8"
+              data-testid="hero-signin-btn"
+            >
+              Sign in
             </Button>
           </div>
+
           <p className="text-sm text-muted-foreground mt-4">
-            Get started in minutes. No demos. No setup friction.
+            {user ? 'Welcome back — jump straight into your workspace.' : 'Create an account in under a minute.'}
           </p>
         </div>
       </section>

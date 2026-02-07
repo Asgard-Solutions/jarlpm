@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,16 @@ import { authAPI } from '@/api';
 import { Loader2, Mail, Lock, User, AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 const Signup = () => {
+  const location = useLocation();
   const navigate = useNavigate();
+
+  const nextPath = useMemo(() => {
+    const params = new URLSearchParams(location.search || '');
+    const next = params.get('next');
+    // Only allow internal paths
+    if (next && next.startsWith('/')) return next;
+    return '/dashboard';
+  }, [location.search]);
   const { setUser } = useAuthStore();
   const { theme } = useThemeStore();
   const [isLoading, setIsLoading] = useState(false);
@@ -83,7 +92,7 @@ const Signup = () => {
         picture: null
       });
       
-      navigate('/dashboard', { replace: true });
+      navigate(nextPath, { replace: true });
     } catch (err) {
       console.error('Signup error:', err);
       if (err.response?.data?.detail) {
