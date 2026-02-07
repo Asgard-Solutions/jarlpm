@@ -333,131 +333,151 @@ ${prd.validation_plan}
               </Card>
             </TabsContent>
 
-            {/* Stories Tab - Matches NewInitiative.jsx Features & Stories Section */}
+            {/* Stories Tab - Matches CompletedEpic.jsx Feature & Story Cards */}
             <TabsContent value="stories" className="p-6 mt-0">
-              <Card className="bg-[#0d0d1a] border-nordic-border">
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold text-nordic-text-primary flex items-center gap-2 mb-4">
-                    <Layers className="w-5 h-5 text-nordic-accent" />
-                    Features & Stories
-                  </h3>
+              <div className="space-y-4">
+                {exampleData.features.map((feature, fi) => {
+                  const featureStoryPoints = feature.stories.reduce((sum, s) => sum + (s.points || 0), 0);
+                  const moscowClass = feature.priority === 'must-have' 
+                    ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                    : feature.priority === 'should-have'
+                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                    : 'bg-slate-500/20 text-slate-400 border-slate-500/30';
                   
-                  <div className="space-y-6">
-                    {exampleData.features.map((feature, fi) => (
-                      <div key={fi} className="border border-nordic-border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-medium text-nordic-text-primary">{feature.name}</h4>
-                          <Badge 
-                            className={
-                              feature.priority === 'must-have' 
-                                ? 'bg-red-500/20 text-red-400 border-red-500/30'
-                                : feature.priority === 'should-have'
-                                ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                                : 'bg-nordic-text-muted/20 text-nordic-text-muted'
-                            }
-                            variant="outline"
-                          >
-                            {feature.priority}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-nordic-text-muted mb-3">{feature.description}</p>
-                        
-                        <div className="space-y-2">
-                          {feature.stories.slice(0, 2).map((story, si) => (
-                            <div key={si} className="bg-[#0d0d1a] rounded p-3">
-                              {/* Story Header */}
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="font-medium text-sm text-nordic-text-primary">
-                                  {story.title}
+                  return (
+                    <Card 
+                      key={fi} 
+                      className="border-violet-500/30 bg-violet-500/5"
+                    >
+                      {/* Feature Header */}
+                      <div className="p-4 pb-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-violet-500/20">
+                              <Puzzle className="w-5 h-5 text-violet-400" />
+                            </div>
+                            <div>
+                              <div className="text-base font-semibold text-nordic-text-primary flex items-center gap-2">
+                                {feature.name}
+                                <Lock className="w-4 h-4 text-green-400" />
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs bg-green-500/10 text-green-400 border-green-500/30">
+                                  Approved
+                                </Badge>
+                                <span className="text-xs text-nordic-text-muted">
+                                  {feature.stories.length} {feature.stories.length === 1 ? 'story' : 'stories'}
                                 </span>
-                                <div className="flex items-center gap-2">
-                                  <Badge 
-                                    variant="outline" 
-                                    className={`text-xs ${
-                                      story.priority === 'must-have' 
-                                        ? 'border-red-500/50 text-red-400'
-                                        : story.priority === 'should-have'
-                                        ? 'border-amber-500/50 text-amber-400'
-                                        : 'border-nordic-text-muted/50'
-                                    }`}
-                                  >
-                                    {story.priority}
+                                {featureStoryPoints > 0 && (
+                                  <span className="text-xs text-blue-400">
+                                    {featureStoryPoints} pts
+                                  </span>
+                                )}
+                                {/* MoSCoW Badge */}
+                                <Badge variant="outline" className={`text-xs ${moscowClass}`}>
+                                  {feature.priority === 'must-have' ? 'Must Have' : 
+                                   feature.priority === 'should-have' ? 'Should Have' : 'Nice to Have'}
+                                </Badge>
+                                {/* RICE Badge */}
+                                {feature.rice_score && (
+                                  <Badge variant="outline" className="text-xs bg-teal-500/10 text-teal-400 border-teal-500/30">
+                                    RICE: {feature.rice_score}
                                   </Badge>
-                                  <Badge variant="outline" className="text-xs border-nordic-border">
-                                    {story.points} pts
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <ChevronDown className="w-5 h-5 text-nordic-text-muted" />
+                        </div>
+                      </div>
+                      
+                      {/* Feature Content */}
+                      <CardContent className="pt-0">
+                        {/* Feature Description */}
+                        <p className="text-sm text-nordic-text-muted mb-4">{feature.description}</p>
+                        
+                        {/* User Stories */}
+                        <div className="space-y-3 pl-4 border-l-2 border-blue-500/30">
+                          <p className="text-xs font-medium text-nordic-text-primary mb-2 flex items-center gap-2">
+                            <BookOpen className="w-4 h-4 text-blue-400" />
+                            User Stories ({feature.stories.length})
+                          </p>
+                          
+                          {feature.stories.map((story, si) => (
+                            <div 
+                              key={si}
+                              className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30"
+                            >
+                              {/* Story Header with Badges */}
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <BookOpen className="w-4 h-4 text-blue-400" />
+                                  <Badge variant="outline" className="text-xs bg-green-500/10 text-green-400 border-green-500/30">
+                                    <Lock className="w-3 h-3 mr-1" />
+                                    Approved
                                   </Badge>
+                                  {story.points && (
+                                    <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/30">
+                                      {story.points} pts
+                                    </Badge>
+                                  )}
+                                  {/* RICE Score for Stories */}
+                                  {story.rice_score && (
+                                    <Badge variant="outline" className="text-xs bg-teal-500/10 text-teal-400 border-teal-500/30">
+                                      RICE: {story.rice_score}
+                                    </Badge>
+                                  )}
                                 </div>
                               </div>
                               
-                              {/* Description */}
-                              <p className="text-xs text-nordic-text-muted mb-2">
-                                {story.description}
-                              </p>
+                              {/* Story Text (italic, quoted) */}
+                              <p className="text-sm text-nordic-text-primary italic mb-2">&quot;{story.description}&quot;</p>
                               
-                              {/* Labels */}
-                              {story.labels?.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mb-2">
-                                  {story.labels.map((label, li) => (
-                                    <Badge 
-                                      key={li} 
-                                      variant="secondary" 
-                                      className="text-[10px] px-1.5 py-0 bg-nordic-accent/10 text-nordic-accent"
-                                    >
-                                      {label}
-                                    </Badge>
-                                  ))}
+                              {/* Acceptance Criteria */}
+                              {story.acceptance_criteria?.length > 0 && (
+                                <div className="bg-[#0d0d1a]/50 rounded p-2">
+                                  <p className="text-xs font-medium text-nordic-text-muted mb-1">Acceptance Criteria:</p>
+                                  <ul className="text-xs text-nordic-text-muted space-y-1">
+                                    {story.acceptance_criteria.map((ac, ai) => (
+                                      <li key={ai} className="flex items-start gap-1">
+                                        <CheckCircle2 className="w-3 h-3 mt-0.5 text-green-400 flex-shrink-0" />
+                                        {ac}
+                                      </li>
+                                    ))}
+                                  </ul>
                                 </div>
                               )}
                               
-                              {/* Acceptance Criteria */}
-                              <div className="text-xs text-nordic-text-muted">
-                                <span className="font-medium">Acceptance Criteria:</span>
-                                <ul className="ml-3 mt-1 space-y-0.5">
-                                  {story.acceptance_criteria?.slice(0, 2).map((ac, ai) => (
-                                    <li key={ai} className="flex items-start gap-1">
-                                      <Check className="w-3 h-3 mt-0.5 text-nordic-green flex-shrink-0" />
-                                      <span className="line-clamp-2">{ac}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                              
                               {/* Edge Cases */}
                               {story.edge_cases?.length > 0 && (
-                                <div className="mt-2 pt-2 border-t border-nordic-border/50">
-                                  <div className="text-[10px]">
-                                    <span className="text-amber-500 font-medium">Edge Cases:</span>
-                                    <ul className="mt-0.5 text-nordic-text-muted/70">
-                                      {story.edge_cases.slice(0, 2).map((ec, ei) => (
-                                        <li key={ei} className="truncate">⚠ {ec}</li>
-                                      ))}
-                                    </ul>
-                                  </div>
+                                <div className="mt-2 bg-amber-500/5 border border-amber-500/20 rounded p-2">
+                                  <p className="text-xs font-medium text-amber-400 mb-1">Edge Cases:</p>
+                                  <ul className="text-xs text-nordic-text-muted space-y-0.5">
+                                    {story.edge_cases.map((ec, ei) => (
+                                      <li key={ei} className="flex items-start gap-1">
+                                        <AlertTriangle className="w-3 h-3 mt-0.5 text-amber-400 flex-shrink-0" />
+                                        {ec}
+                                      </li>
+                                    ))}
+                                  </ul>
                                 </div>
                               )}
                               
                               {/* Notes for Engineering */}
                               {story.notes_for_engineering && (
-                                <div className="mt-2 pt-2 border-t border-nordic-border/50">
-                                  <div className="text-[10px]">
-                                    <span className="text-nordic-accent font-medium">Notes for Engineering:</span>
-                                    <p className="mt-0.5 text-nordic-text-muted">{story.notes_for_engineering}</p>
-                                  </div>
+                                <div className="mt-2 bg-violet-500/5 border border-violet-500/20 rounded p-2">
+                                  <p className="text-xs font-medium text-violet-400 mb-1">Notes for Engineering:</p>
+                                  <p className="text-xs text-nordic-text-muted">{story.notes_for_engineering}</p>
                                 </div>
                               )}
                             </div>
                           ))}
-                          {feature.stories.length > 2 && (
-                            <p className="text-xs text-nordic-accent text-center">
-                              +{feature.stories.length - 2} more stories
-                            </p>
-                          )}
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
             </TabsContent>
 
             {/* Sprint Plan Tab */}
