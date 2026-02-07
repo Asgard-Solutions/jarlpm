@@ -575,8 +575,9 @@ ${epic.risks || '_Not yet defined_'}
                     onChange={(e) => setPrdContent(e.target.value)}
                     className="min-h-[600px] border-0 rounded-none font-mono text-sm resize-none focus-visible:ring-0"
                     placeholder="PRD content will appear here..."
-                />
-              </TabsContent>
+                  />
+                </TabsContent>
+              )}
             </Tabs>
           </CardContent>
         </Card>
