@@ -116,7 +116,7 @@ ${prd.validation_plan}
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 bg-nordic-bg-secondary border-nordic-border">
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 bg-[#1a1a2e] border-nordic-border shadow-2xl">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-nordic-border">
           <div className="flex items-center justify-between">
             <div>
