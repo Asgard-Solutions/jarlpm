@@ -38,11 +38,13 @@ import {
   BookOpen,
   Lock,
   ChevronDown,
+  ChevronRight,
   Clock,
   ListChecks,
   Flag,
   Play,
   Ban,
+  HelpCircle,
 } from 'lucide-react';
 
 import exampleData from '@/content/exampleInitiative.json';
