@@ -889,21 +889,52 @@ const StoryDraftCard = ({ draft, onSave, onDiscard }) => {
               <Sparkles className="w-5 h-5 text-blue-400" />
             </div>
             <div>
-              <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/30">
-                AI Generated - Not Saved
-              </Badge>
-              {draft.story_points && (
-                <Badge variant="outline" className="text-xs ml-2 bg-muted text-muted-foreground">
-                  {draft.story_points} pts
-                </Badge>
+              {draft.title && (
+                <h4 className="font-medium text-foreground text-sm mb-1">{draft.title}</h4>
               )}
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/30">
+                  AI Generated - Not Saved
+                </Badge>
+                {draft.story_points && (
+                  <Badge variant="outline" className="text-xs bg-muted text-muted-foreground">
+                    {draft.story_points} pts
+                  </Badge>
+                )}
+                {draft.priority && (
+                  <Badge 
+                    variant="outline" 
+                    className={`text-xs ${
+                      draft.priority === 'must-have' 
+                        ? 'border-red-500/50 text-red-400'
+                        : draft.priority === 'should-have'
+                        ? 'border-amber-500/50 text-amber-400'
+                        : 'border-muted text-muted-foreground'
+                    }`}
+                  >
+                    {draft.priority}
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         <p className="text-sm text-foreground italic">&quot;{storyText}&quot;</p>
         
+        {/* Labels */}
+        {draft.labels?.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {draft.labels.map((label, i) => (
+              <Badge key={i} variant="secondary" className="text-[10px] px-1.5 py-0 bg-blue-500/10 text-blue-400">
+                {label}
+              </Badge>
+            ))}
+          </div>
+        )}
+        
+        {/* Acceptance Criteria */}
         {draft.acceptance_criteria?.length > 0 && (
           <div className="bg-background/50 rounded-lg p-3">
             <p className="text-xs font-medium text-foreground mb-2">Acceptance Criteria:</p>
@@ -915,6 +946,29 @@ const StoryDraftCard = ({ draft, onSave, onDiscard }) => {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+        
+        {/* Edge Cases */}
+        {draft.edge_cases?.length > 0 && (
+          <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3">
+            <p className="text-xs font-medium text-amber-400 mb-2">Edge Cases:</p>
+            <ul className="text-xs text-muted-foreground space-y-1">
+              {draft.edge_cases.map((ec, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <AlertCircle className="w-3 h-3 mt-0.5 text-amber-400 flex-shrink-0" />
+                  {ec}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {/* Notes for Engineering */}
+        {draft.notes_for_engineering && (
+          <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3">
+            <p className="text-xs font-medium text-blue-400 mb-1">Notes for Engineering:</p>
+            <p className="text-xs text-muted-foreground">{draft.notes_for_engineering}</p>
           </div>
         )}
         
