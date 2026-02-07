@@ -275,6 +275,7 @@
       "name": "Sprint Planning + Push",
       "description": "Assign Fibonacci points, produce a 2‑sprint plan aligned to capacity, and enable push to external tools.",
       "priority": "must-have",
+      "rice_score": 15.0,
       "stories": [
         {
           "id": "story_301_plan_two_sprints",
