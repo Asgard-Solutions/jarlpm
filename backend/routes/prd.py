@@ -739,9 +739,6 @@ Generate the PRD as VALID JSON matching the schema exactly. Include all sections
             "validated": True,
             "message": "PRD generated and validated successfully"
         }
-            "repair_attempts": validation_result.repair_attempts if validation_result else 0,
-            "message": "PRD generated successfully"
-        }
         
     except HTTPException:
         raise
