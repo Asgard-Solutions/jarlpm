@@ -8,6 +8,7 @@ import uuid
 class LLMProvider(str, Enum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
+    GOOGLE = "google"
     LOCAL = "local"
 
 

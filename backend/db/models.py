@@ -44,6 +44,7 @@ class SubscriptionStatus(str, PyEnum):
 class LLMProvider(str, PyEnum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
+    GOOGLE = "google"
     LOCAL = "local"
 
 
