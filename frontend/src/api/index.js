@@ -497,13 +497,20 @@ export const prdAPI = {
   // Get saved PRD for an Epic
   get: (epicId) => api.get(`/prd/${epicId}`),
   
-  // Save or update PRD
+  // Save or update PRD (legacy markdown format)
   save: (epicId, content, title = null, version = '1.0', status = 'draft') => api.post('/prd/save', {
     epic_id: epicId,
     content,
     title,
     version,
     status
+  }),
+  
+  // Update structured PRD (JSON format)
+  updateStructured: (epicId, prd, title = null, version = null) => api.put(`/prd/update/${epicId}`, {
+    prd,
+    title,
+    version
   }),
   
   // Delete PRD
