@@ -45,66 +45,46 @@ ADMIN_EMAIL_ALLOWLIST = [
 
 
 async def verify_admin_access(request: Request, session: AsyncSession) -> bool:
+    """Verify caller has admin access.
+
+    Access is granted if EITHER:
+    1) X-Admin-Token header matches ADMIN_TOKEN (recommended for ops/scripts), OR
+    2) Authenticated user's email is in ADMIN_EMAIL_ALLOWLIST
+
+    Security posture: fail-closed.
+    - If neither ADMIN_TOKEN nor ADMIN_EMAIL_ALLOWLIST is configured, deny access.
     """
-    Verify user has admin access.
-    
-    Access is granted if:
-    1. Valid X-Admin-Token header matches ADMIN_TOKEN env var, OR
-    2. Authenticated user's email is in ADMIN_EMAIL_ALLOWLIST env var
-    
-    Raises HTTPException 403 if access denied.
-    """
-    # First check for admin token in header
+
+    # 1) Token-based access (preferred)
     admin_token = request.headers.get("X-Admin-Token")
     if admin_token and ADMIN_TOKEN and admin_token == ADMIN_TOKEN:
         logger.info("Admin access granted via X-Admin-Token")
         return True
-    
-    # Get authenticated user
-    try:
-        user_id = await get_current_user_id(request, session)
-    except HTTPException:
-        raise HTTPException(
-            status_code=403,
-            detail="Admin access denied: Authentication required"
-        )
-    
-    if not user_id:
-        raise HTTPException(
-            status_code=403,
-            detail="Admin access denied: Authentication required"
-        )
-    
-    # Check if user's email is in allowlist
+
+    # 2) Allowlist-based access
     if not ADMIN_EMAIL_ALLOWLIST:
         # No allowlist configured - deny all non-token access
-        logger.warning(f"Admin access denied for user {user_id}: No ADMIN_EMAIL_ALLOWLIST configured")
         raise HTTPException(
             status_code=403,
-            detail="Admin access denied: No admin allowlist configured"
+            detail="Admin access denied"
         )
-    
-    # Fetch user email from database
-    result = await session.execute(
-        select(User.email).where(User.user_id == user_id)
-    )
+
+    # Require authenticated user for allowlist check
+    user_id = await get_current_user_id(request, session)
+    if not user_id:
+        raise HTTPException(status_code=403, detail="Admin access denied")
+
+    result = await session.execute(select(User.email).where(User.user_id == user_id))
     user_email = result.scalar_one_or_none()
-    
     if not user_email:
-        raise HTTPException(
-            status_code=403,
-            detail="Admin access denied: User not found"
-        )
-    
+        raise HTTPException(status_code=403, detail="Admin access denied")
+
     if user_email.lower() in ADMIN_EMAIL_ALLOWLIST:
         logger.info(f"Admin access granted for {user_email}")
         return True
-    
+
     logger.warning(f"Admin access denied for {user_email}: Not in allowlist")
-    raise HTTPException(
-        status_code=403,
-        detail="Admin access denied: User not authorized"
-    )
+    raise HTTPException(status_code=403, detail="Admin access denied")
 
 
 # ============================================
