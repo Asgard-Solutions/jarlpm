@@ -304,61 +304,6 @@
       ]
     }
   },
-    "out_of_scope": [
-      "Replacing a full roadmap tool",
-      "Automatic deployment / CI configuration",
-      "Guaranteeing delivery dates without real team data"
-    ],
-    "assumptions": [
-      {
-        "assumption": "Teams will accept AI-generated structure if it is consistent, testable, and editable.",
-        "risk_if_wrong": "Users won't trust the output and will revert to manual ticket writing.",
-        "validation_approach": "Track edits after generation; run a user study measuring time saved vs manual baseline."
-      },
-      {
-        "assumption": "A 2-sprint plan is the right default planning horizon for most small teams.",
-        "risk_if_wrong": "Plans feel unrealistic or too shallow for larger initiatives.",
-        "validation_approach": "Collect feedback in-app on plan horizon; allow a future setting for 1/2/3 sprints."
-      },
-      {
-        "assumption": "Most users will bring their own LLM keys (BYOK) if the value is clear.",
-        "risk_if_wrong": "Setup friction reduces activation, hurting conversion.",
-        "validation_approach": "Measure drop-off at LLM setup; add guided setup and model recommendations."
-      }
-    ],
-    "constraints": [
-      {
-        "constraint": "Outputs must be deterministic/repairable (strict JSON) across multiple model providers.",
-        "rationale": "Inconsistent structure breaks the pipeline and destroys trust.",
-        "impact": "high"
-      },
-      {
-        "constraint": "Must protect costs and abuse with rate limiting.",
-        "rationale": "AI endpoints can be exploited or unintentionally spammed.",
-        "impact": "high"
-      }
-    ],
-    "risks": [
-      "Weak models may produce shallow or inconsistent outputs",
-      "Users may have unclear ideas that need guided prompting",
-      "Integration API permissions/scopes can fail and block pushing"
-    ],
-    "riskiest_unknown": "Will users consider the generated stories truly buildable, or will they still need significant rewriting?",
-    "validation_plan": "Ship the example-driven preview + generation flow, measure activation to first generated epic and % of stories edited, and run 5–10 onboarding sessions with real teams.",
-    "positioning": {
-      "for_who": "small product teams without full-time PM capacity",
-      "who_struggle_with": "turning ideas into clear, testable scope and sprint commitments",
-      "our_solution": "JarlPM, a structured initiative generator and execution command center",
-      "unlike": "generic AI chatbots and template-only PM tools",
-      "key_benefit": "outputs that engineers can build immediately (AC, edge cases, instrumentation, plan)"
-    },
-    "alternatives": [
-      "Google Docs + Jira manual tickets",
-      "Notion templates",
-      "Generic LLM chat (ChatGPT/Claude) without strict schema or workflow"
-    ],
-    "gtm_notes": "Lead with the magic moment. Offer a fast demo via example output and a one-click path to 'Generate an Initiative'."
-  },
   "epic": {
     "title": "Initiative Generator v1",
     "description": "Transform a rough idea into a PRD, features, buildable stories, and a 2‑sprint plan with export-ready structure.",
