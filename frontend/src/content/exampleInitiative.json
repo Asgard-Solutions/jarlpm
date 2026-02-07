@@ -2,62 +2,308 @@
   "product_name": "JarlPM Example",
   "tagline": "Turn messy ideas into sprint-ready plans",
   "prd": {
-    "problem_statement": "Small teams without dedicated PM support lose weeks translating ideas into buildable scope. Requirements are vague, acceptance criteria are missing, and sprint plans drift, causing rework and missed deadlines.",
-    "problem_evidence": "Teams routinely start work with incomplete requirements, leading to ambiguous tickets, repeated clarification cycles, and low confidence delivery dates. This shows up as blocked work, churn in backlog, and inconsistent estimates.",
-    "target_users": [
+    "summary": {
+      "title": "JarlPM - AI Product Management Assistant",
+      "version": "1.0",
+      "owner": "Product Team",
+      "overview": "JarlPM transforms rough product ideas into sprint-ready specifications in minutes. It generates comprehensive PRDs, decomposed features with user stories, and actionable sprint plans that integrate directly with Linear, Jira, and Azure DevOps.",
+      "problem_statement": "Small teams without dedicated PM support lose weeks translating ideas into buildable scope. Requirements are vague, acceptance criteria are missing, and sprint plans drift—causing rework, blocked work, and missed deadlines. Teams routinely start work with incomplete requirements, leading to clarification cycles and low-confidence delivery dates.",
+      "goal": "Enable any team to go from rough idea to sprint-ready tickets in under 5 minutes, with 80%+ spec completeness and 30% fewer clarification cycles within 30 days of adoption.",
+      "target_users": "Founder-operators running 2-6 person product teams, senior engineers acting as de facto PMs, and early-stage startups without dedicated product management."
+    },
+    "context": {
+      "evidence": [
+        "Teams routinely start work with incomplete requirements, leading to ambiguous tickets",
+        "Repeated clarification cycles add 2-3 days per feature on average",
+        "40% of sprint commitment changes due to discovered edge cases mid-sprint",
+        "Engineers spend 15-20% of time writing specs instead of coding",
+        "Support tickets show #1 pain point is 'unclear requirements'"
+      ],
+      "current_workflow": "Product ideas start in Google Docs or Slack threads. Someone manually converts them to Jira/Linear tickets with minimal structure. Stories lack acceptance criteria. Grooming sessions become requirements discovery. Engineers push back, leading to async clarification cycles.",
+      "why_now": "AI capabilities have reached a point where structured output generation is reliable. Competitors are entering this space. Our early users are asking for this repeatedly. The market is ready for AI-augmented PM tooling."
+    },
+    "personas": [
       {
-        "persona": "Founder-Operator",
-        "context": "Runs a 2–6 person product team and owns roadmap decisions alongside sales/support.",
+        "name": "Sarah, Founder-Operator",
+        "context": "Runs a 4-person product team at a seed-stage startup. Owns roadmap decisions alongside sales and customer support responsibilities.",
+        "jtbd": "When I have a product idea, I want a fast, structured plan so I can align the team and ship without constant back-and-forth clarification.",
         "pain_points": [
           "Ideas stay in notes and never become usable tickets",
           "Engineers push back due to unclear acceptance criteria",
-          "Hard to prioritize and commit to a sprint with confidence"
+          "Hard to prioritize and commit to a sprint with confidence",
+          "No time to write detailed specs while running the business"
         ],
-        "current_workaround": "Uses Google Docs + Slack threads + ad-hoc Jira tickets.",
-        "jtbd": "When I have a product idea, I want a fast, structured plan so I can align the team and ship without constant clarification."
+        "current_workaround": "Uses Google Docs + Slack threads + ad-hoc Jira tickets. Relies on senior engineer to fill in gaps."
       },
       {
-        "persona": "Senior Engineer (de facto PM)",
-        "context": "Leads implementation, ends up writing tickets and scoping work.",
+        "name": "Marcus, Senior Engineer (de facto PM)",
+        "context": "Tech lead who ends up writing tickets and scoping work because no one else does. 5 years experience, frustrated by PM-less chaos.",
+        "jtbd": "When requirements are unclear, I want a structured spec with acceptance criteria so I can build confidently and avoid rework.",
         "pain_points": [
           "Spends too much time converting vague ideas into testable stories",
-          "Hidden edge cases cause late-cycle bugs",
-          "Estimates are debated without shared context"
+          "Hidden edge cases cause late-cycle bugs and deadline slips",
+          "Estimates are debated without shared context or acceptance criteria",
+          "Gets blamed when features miss the mark despite unclear inputs"
         ],
-        "current_workaround": "Creates tickets from scratch and schedules grooming sessions.",
-        "jtbd": "When requirements are unclear, I want a structured spec + AC so I can build confidently and avoid rework."
+        "current_workaround": "Creates tickets from scratch and schedules grooming sessions that eat into sprint velocity."
       }
     ],
-    "desired_outcome": "A user can paste a rough idea and get a PRD, stories with acceptance criteria, and a 2‑sprint plan that is ready to push into Jira/Linear/Azure DevOps.",
-    "key_metrics": [
-      "Time-to-first-sprint-plan: < 5 minutes from idea submission",
-      "Spec completeness score: >= 80/100 (internal rubric) within 1 generation",
-      "Reduction in clarification cycles: 30% fewer follow-up questions per epic within 30 days"
-    ],
-    "mvp_scope": [
+    "scope": {
+      "mvp_in": [
+        {
+          "item": "Initiative generator (PRD + features + stories + sprint plan)",
+          "rationale": "This is the core magic moment that creates immediate value for teams without PMs. Users should feel the 'wow' within 2 minutes."
+        },
+        {
+          "item": "Story quality fields (AC, edge cases, instrumentation, eng notes)",
+          "rationale": "Makes output buildable, not just descriptive. Engineers can start immediately without clarification."
+        },
+        {
+          "item": "Export/push-ready structure for Linear, Jira, Azure DevOps",
+          "rationale": "If it can't become tickets in their existing tools, it won't ship. Zero adoption friction."
+        },
+        {
+          "item": "Iteration and editing workflow",
+          "rationale": "First generation is rarely perfect. Users need to refine before committing."
+        }
+      ],
+      "not_now": [
+        {
+          "item": "Full collaboration comments and read-only share links",
+          "rationale": "High value, but not required to prove the core generation + execution workflow. Phase 2 feature."
+        },
+        {
+          "item": "Deep Jira/ADO field mapping wizards",
+          "rationale": "Start with sensible defaults; add advanced mapping after real customer usage data."
+        },
+        {
+          "item": "Multi-tenant team workspaces",
+          "rationale": "Focus on individual power users first. Team features add complexity."
+        },
+        {
+          "item": "Custom LLM fine-tuning per org",
+          "rationale": "Premature optimization. Prompt engineering + validation is sufficient for MVP."
+        }
+      ],
+      "assumptions": [
+        {
+          "assumption": "Users will trust AI-generated specs enough to push directly to their tools",
+          "risk_if_wrong": "Low adoption if users treat output as drafts that need heavy manual editing",
+          "validation": "Track edit rate before push. Target: <20% modification rate"
+        },
+        {
+          "assumption": "5 minutes is fast enough to create habit-forming behavior",
+          "risk_if_wrong": "Users might not return if generation feels slow or cumbersome",
+          "validation": "Measure time-to-value in onboarding. Run usability tests."
+        },
+        {
+          "assumption": "Acceptance criteria quality is the key differentiator vs competitors",
+          "risk_if_wrong": "Users may value other features (integrations, UI) more",
+          "validation": "Post-generation survey asking 'what made this useful?'"
+        }
+      ]
+    },
+    "requirements": {
+      "features": [
+        {
+          "name": "Idea → PRD Pipeline",
+          "description": "Convert a rough idea into a structured PRD with personas, metrics, assumptions, and validation plan.",
+          "priority": "must-have",
+          "stories": [
+            {
+              "story": "As a founder, I want to paste a rough idea and get a complete PRD so that I can share it with my team without spending hours writing.",
+              "acceptance_criteria": [
+                "Given a user submits an idea (1-3 sentences), When generation completes, Then a PRD JSON is returned with all required sections",
+                "Given the PRD output fails schema validation, When auto-repair runs, Then a valid PRD is returned within 2 retries",
+                "Given a PRD is generated, When the user views it, Then all sections are rendered with proper formatting"
+              ],
+              "edge_cases": [
+                "User provides only one word (e.g., 'dashboard')",
+                "Idea contains conflicting goals (e.g., 'fastest AND most accurate')",
+                "Non-English input or mixed languages"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Decomposition → Buildable Stories",
+          "description": "Break a PRD into MVP features with user stories that include acceptance criteria, edge cases, and engineering notes.",
+          "priority": "must-have",
+          "stories": [
+            {
+              "story": "As an engineer, I want stories with Given/When/Then acceptance criteria so that I can implement without guessing.",
+              "acceptance_criteria": [
+                "Given a PRD exists, When decomposition runs, Then 3-5 features are returned with 2-4 stories each",
+                "Given a story is generated, When validated, Then it includes description, AC (Given/When/Then), edge_cases, and notes_for_engineering",
+                "Given the output is rendered, When an engineer views it, Then they can start implementation without asking clarifying questions"
+              ],
+              "edge_cases": [
+                "PRD is too vague to decompose meaningfully",
+                "Generated stories have duplicate content across features",
+                "AC lacks Given/When/Then structure"
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Sprint Planning + Push",
+          "description": "Assign Fibonacci points, produce a 2-sprint plan aligned to capacity, and push to external tools.",
+          "priority": "must-have",
+          "stories": [
+            {
+              "story": "As a team lead, I want a 2-sprint plan with point estimates so that I can commit to deliverables.",
+              "acceptance_criteria": [
+                "Given stories exist, When planning runs, Then stories are assigned Fibonacci points (1,2,3,5,8)",
+                "Given team capacity is configured, When plan is generated, Then sprints respect capacity limits",
+                "Given a plan is approved, When user clicks Push, Then items are created in Linear/Jira/ADO"
+              ],
+              "edge_cases": [
+                "Total points exceed 2-sprint capacity",
+                "Integration auth token is expired",
+                "Target project doesn't exist in external tool"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "nfrs": {
+      "performance": [
+        "PRD generation completes in < 30 seconds (p95)",
+        "Full initiative generation < 2 minutes (p95)",
+        "Page load time < 2 seconds",
+        "Push to integrations < 10 seconds"
+      ],
+      "reliability": [
+        "99.5% uptime for core generation features",
+        "Graceful degradation if LLM provider is slow (show progress, allow cancel)",
+        "Auto-retry with exponential backoff on transient failures",
+        "User-friendly error messages, never raw stack traces"
+      ],
+      "security": [
+        "All data encrypted at rest (AES-256) and in transit (TLS 1.3)",
+        "OAuth tokens stored encrypted, never logged",
+        "No PII in analytics events",
+        "SOC2 Type II compliance roadmap (not MVP)"
+      ],
+      "accessibility": [
+        "WCAG 2.1 AA compliance for core flows",
+        "Keyboard navigation for all actions",
+        "Screen reader support for generated content",
+        "Color contrast ratio >= 4.5:1"
+      ]
+    },
+    "metrics": {
+      "success_metrics": [
+        {
+          "metric": "Time-to-first-sprint-plan",
+          "target": "< 5 minutes",
+          "measurement": "Timestamp from idea submission to plan approval"
+        },
+        {
+          "metric": "Spec completeness score",
+          "target": ">= 80/100",
+          "measurement": "Internal rubric checking presence and quality of required fields"
+        },
+        {
+          "metric": "Push-through rate",
+          "target": "> 60%",
+          "measurement": "% of generated initiatives that get pushed to external tools"
+        },
+        {
+          "metric": "Weekly active users",
+          "target": "500 within 90 days",
+          "measurement": "Unique users generating at least 1 initiative per week"
+        }
+      ],
+      "guardrails": [
+        "Churn rate must not exceed 10% month-over-month",
+        "Support ticket volume per user must not increase",
+        "Generation error rate must stay below 5%"
+      ],
+      "instrumentation": [
+        "initiative_generate_started",
+        "initiative_generate_completed",
+        "initiative_generate_error",
+        "prd_section_viewed",
+        "story_edited",
+        "integration_push_started",
+        "integration_push_completed"
+      ],
+      "evaluation_window": "30 days post-launch. Weekly review of metrics. Decision point at day 30 on whether to double down or pivot."
+    },
+    "risks": [
       {
-        "item": "Initiative generator (PRD + features + stories + sprint plan)",
-        "rationale": "This is the core magic moment that creates immediate value for teams without PMs."
+        "risk": "LLM output quality varies significantly between models",
+        "type": "technical",
+        "likelihood": "medium",
+        "impact": "high",
+        "mitigation": "Implement strict JSON schema validation with auto-repair. Track model health metrics per provider. Warn users about weak models."
       },
       {
-        "item": "Story quality fields (AC, edge cases, instrumentation, eng notes)",
-        "rationale": "Makes output buildable, not just descriptive."
+        "risk": "Users don't trust AI-generated specs enough to use them",
+        "type": "product",
+        "likelihood": "medium",
+        "impact": "high",
+        "mitigation": "Show confidence scores. Allow easy editing. Track edit-before-push rate. Iterate on prompt quality."
       },
       {
-        "item": "Export/push-ready structure",
-        "rationale": "If it can't become tickets, it won't ship."
+        "risk": "Integration auth flows are fragile across Jira/Linear/ADO",
+        "type": "technical",
+        "likelihood": "high",
+        "impact": "medium",
+        "mitigation": "Build robust token refresh. Clear error messages. Fallback to copy-paste export if push fails."
+      },
+      {
+        "risk": "Competitors ship similar features faster",
+        "type": "execution",
+        "likelihood": "medium",
+        "impact": "medium",
+        "mitigation": "Focus on story quality (AC, edge cases) as differentiator. Ship MVP fast, iterate based on feedback."
       }
     ],
-    "not_now": [
+    "open_questions": [
       {
-        "item": "Full collaboration comments and read-only share links",
-        "rationale": "High value, but not required to prove the core generation + execution workflow."
+        "question": "Should we support custom LLM providers beyond OpenAI/Anthropic/Gemini?",
+        "owner": "Product",
+        "due_date": "Post-MVP",
+        "status": "open"
       },
       {
-        "item": "Deep Jira/ADO field mapping wizards",
-        "rationale": "Start with sensible defaults; add advanced mapping after real customer usage."
+        "question": "What's the right pricing model? Per-seat vs per-generation?",
+        "owner": "Business",
+        "due_date": "Before public launch",
+        "status": "in-progress"
+      },
+      {
+        "question": "How do we handle very large epics that exceed context window?",
+        "owner": "Engineering",
+        "due_date": "Sprint 3",
+        "status": "open"
       }
     ],
+    "appendix": {
+      "alternatives_considered": [
+        "Pure template-based generation (rejected: too rigid, doesn't adapt to context)",
+        "Fine-tuned custom model (rejected: premature, prompt engineering is sufficient for MVP)",
+        "No integrations in MVP (rejected: push-to-tools is critical for adoption)"
+      ],
+      "glossary": [
+        {
+          "term": "Initiative",
+          "definition": "A complete package of PRD + features + stories + sprint plan generated from a single idea"
+        },
+        {
+          "term": "Acceptance Criteria (AC)",
+          "definition": "Testable conditions that define when a story is complete, ideally in Given/When/Then format"
+        },
+        {
+          "term": "JTBD",
+          "definition": "Jobs-to-be-Done framework: 'When [situation], I want to [action], so that [outcome]'"
+        }
+      ]
+    }
+  },
     "out_of_scope": [
       "Replacing a full roadmap tool",
       "Automatic deployment / CI configuration",
