@@ -152,6 +152,7 @@
           "labels": ["backend", "api", "mvp"],
           "priority": "must-have",
           "points": 5,
+          "rice_score": 12.0,
           "acceptance_criteria": [
             "Given a user submits an idea, When generation runs, Then a PRD JSON object is returned with all required top-level keys present",
             "Given a PRD output fails schema validation, When auto-repair runs, Then a valid PRD is returned or a structured error is shown"
