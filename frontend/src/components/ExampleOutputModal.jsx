@@ -529,7 +529,7 @@ ${prd.validation_plan}
                       <span className="text-nordic-text-muted">/ 18</span>
                     </div>
                     <Badge variant="outline" className="mt-2 bg-green-500/10 text-green-400 border-green-500/30">
-                      <TrendingUp className="h-3 w-3 mr-1" /> 2 buffer
+                      <TrendingUp className="h-3 w-3 mr-1" /> 3 buffer
                     </Badge>
                   </CardContent>
                 </Card>
@@ -541,7 +541,7 @@ ${prd.validation_plan}
                       <ListChecks className="h-4 w-4" />
                       Backlog
                     </div>
-                    <div className="text-2xl font-bold text-nordic-text-primary mt-1">2</div>
+                    <div className="text-2xl font-bold text-nordic-text-primary mt-1">0</div>
                   </CardContent>
                 </Card>
                 
@@ -552,7 +552,7 @@ ${prd.validation_plan}
                       <Flag className="h-4 w-4" />
                       Ready
                     </div>
-                    <div className="text-2xl font-bold text-nordic-text-primary mt-1">3</div>
+                    <div className="text-2xl font-bold text-nordic-text-primary mt-1">{exampleData.sprint_plan.sprint_1.story_ids.length}</div>
                   </CardContent>
                 </Card>
                 
@@ -563,7 +563,7 @@ ${prd.validation_plan}
                       <Play className="h-4 w-4" />
                       In Progress
                     </div>
-                    <div className="text-2xl font-bold text-nordic-text-primary mt-1">2</div>
+                    <div className="text-2xl font-bold text-nordic-text-primary mt-1">0</div>
                   </CardContent>
                 </Card>
                 
@@ -574,9 +574,9 @@ ${prd.validation_plan}
                       <CheckCircle2 className="h-4 w-4" />
                       Done
                     </div>
-                    <div className="text-2xl font-bold text-nordic-text-primary mt-1">1</div>
+                    <div className="text-2xl font-bold text-nordic-text-primary mt-1">0</div>
                     <p className="text-xs text-nordic-text-muted mt-1">
-                      5 / {exampleData.sprint_plan.sprint_1.total_points} pts
+                      0 / {exampleData.sprint_plan.sprint_1.total_points} pts
                     </p>
                   </CardContent>
                 </Card>
