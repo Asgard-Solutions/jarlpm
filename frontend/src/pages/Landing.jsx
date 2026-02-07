@@ -57,7 +57,9 @@ const Landing = () => {
 
   const handleSignIn = (location = 'nav') => {
     trackSignInClick(location);
-    navigate('/login?next=/new');
+    // Nav sign-in goes to dashboard (returning users), hero would go to /new
+    const destination = location === 'nav' ? '/dashboard' : '/new';
+    navigate(`/login?next=${destination}`);
   };
 
   const handleSeeExample = () => {
