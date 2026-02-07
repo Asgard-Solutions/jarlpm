@@ -33,6 +33,10 @@ import {
   Lightbulb,
   Shield,
   TrendingUp,
+  Puzzle,
+  BookOpen,
+  Lock,
+  ChevronDown,
 } from 'lucide-react';
 
 import exampleData from '@/content/exampleInitiative.json';
