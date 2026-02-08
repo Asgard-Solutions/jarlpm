@@ -549,6 +549,43 @@ When an Epic is locked, users enter Feature Planning Mode:
   - Epic selector with export preview
   - File export tab with 4 format buttons
 
+### 2026-02-07: Admin Route Security Fix (COMPLETE)
+
+**Problem:** `/api/admin/*` endpoints were accessible to ANY authenticated user, which is not acceptable for public launch.
+
+**Solution Implemented:** Email allowlist-based admin access control
+
+**Security Model:**
+1. **X-Admin-Token** (for automation/scripts) - Header-based token auth
+2. **ADMIN_EMAIL_ALLOWLIST** - Comma-separated list of admin emails
+
+**Environment Variables Added:**
+- `ADMIN_EMAIL_ALLOWLIST=test@jarlpm.com` - Emails allowed admin access
+- `ADMIN_TOKEN=<secret>` - Token for programmatic admin access
+
+**Access Control Logic:**
+```
+1. Check X-Admin-Token header → if valid, grant access
+2. Else require authentication
+3. Look up user email from database  
+4. If email in ADMIN_EMAIL_ALLOWLIST → grant access
+5. Else → 403 Forbidden
+```
+
+**Test Results:**
+- ✅ Unauthenticated → 403 "Authentication required"
+- ✅ Authenticated non-admin → 403 "User not authorized"
+- ✅ Authenticated admin (allowlisted) → Access granted
+- ✅ Valid X-Admin-Token → Access granted
+- ✅ Invalid X-Admin-Token → 403
+
+**Files Modified:**
+- `/app/backend/routes/admin.py` - Complete rewrite of `verify_admin_access()`
+- `/app/backend/.env` - Added `ADMIN_EMAIL_ALLOWLIST`, `ADMIN_TOKEN`
+
+**Note for Production:** When deploying, set `ADMIN_EMAIL_ALLOWLIST` to your admin email(s) and generate a secure `ADMIN_TOKEN` for any automation needs.
+
+
 ### 2026-02-07: Nordic Theme Contrast / Form Readability Fix (COMPLETE)
 
 **Problem:** Form inputs had `bg-transparent` making text hard to read against various parent backgrounds. Theme switching caused readability issues.

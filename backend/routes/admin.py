@@ -5,6 +5,10 @@ Provides administrative endpoints for:
 - Database backup management
 - System health monitoring
 - Maintenance task execution
+
+Security: Admin access requires either:
+1. Valid X-Admin-Token header (for automation/scripts)
+2. Authenticated user whose email is in ADMIN_EMAIL_ALLOWLIST
 """
 from fastapi import APIRouter, HTTPException, Request, Depends, BackgroundTasks
 from datetime import datetime, timezone
@@ -12,8 +16,10 @@ import logging
 import os
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from db import get_db
+from db.models import User
 from routes.auth import get_current_user_id
 from services.backup_service import (
     BackupService, 
@@ -29,20 +35,56 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 # Admin token for protected operations (set in environment)
 ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
 
+# Email allowlist for admin access (comma-separated)
+# Example: ADMIN_EMAIL_ALLOWLIST=admin@example.com,owner@company.com
+ADMIN_EMAIL_ALLOWLIST = [
+    email.strip().lower() 
+    for email in os.environ.get("ADMIN_EMAIL_ALLOWLIST", "").split(",") 
+    if email.strip()
+]
 
-async def verify_admin_access(request: Request, session: AsyncSession):
-    """Verify user has admin access."""
-    # First check for admin token in header
+
+async def verify_admin_access(request: Request, session: AsyncSession) -> bool:
+    """Verify caller has admin access.
+
+    Access is granted if EITHER:
+    1) X-Admin-Token header matches ADMIN_TOKEN (recommended for ops/scripts), OR
+    2) Authenticated user's email is in ADMIN_EMAIL_ALLOWLIST
+
+    Security posture: fail-closed.
+    - If neither ADMIN_TOKEN nor ADMIN_EMAIL_ALLOWLIST is configured, deny access.
+    """
+
+    # 1) Token-based access (preferred)
     admin_token = request.headers.get("X-Admin-Token")
     if admin_token and ADMIN_TOKEN and admin_token == ADMIN_TOKEN:
+        logger.info("Admin access granted via X-Admin-Token")
         return True
-    
-    # Otherwise, require authenticated user (could add admin role check here)
+
+    # 2) Allowlist-based access
+    if not ADMIN_EMAIL_ALLOWLIST:
+        # No allowlist configured - deny all non-token access
+        raise HTTPException(
+            status_code=403,
+            detail="Admin access denied"
+        )
+
+    # Require authenticated user for allowlist check
     user_id = await get_current_user_id(request, session)
-    
-    # For now, any authenticated user with test account can access admin
-    # In production, add proper admin role checking
-    return user_id is not None
+    if not user_id:
+        raise HTTPException(status_code=403, detail="Admin access denied")
+
+    result = await session.execute(select(User.email).where(User.user_id == user_id))
+    user_email = result.scalar_one_or_none()
+    if not user_email:
+        raise HTTPException(status_code=403, detail="Admin access denied")
+
+    if user_email.lower() in ADMIN_EMAIL_ALLOWLIST:
+        logger.info(f"Admin access granted for {user_email}")
+        return True
+
+    logger.warning(f"Admin access denied for {user_email}: Not in allowlist")
+    raise HTTPException(status_code=403, detail="Admin access denied")
 
 
 # ============================================
